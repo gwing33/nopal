@@ -1,0 +1,14 @@
+:root {
+    --hue: 0;
+    --saturation: 100%;
+}
+
+.naturalLightMode {
+    background-color: hsl(var(--hue), var(--saturation), 95%);
+    color: black;
+}
+
+.naturalDarkMode {
+    background-color: hsl(var(--hue), var(--saturation), 5%);
+    color: white;
+}
