@@ -1,1 +1,21 @@
 # nopal
+
+We are a company focused on building homes for humans. Everything we do is open source and transparent. We look to learn and share all our information.
+
+This repo houses all our software that helps us communicate, learn and share knowledge as well as provides us a space to build software tooling that can help us manage projects, cost estimates and define wall assemblies.
+
+## Tech Stack
+Remix for our front-end.
+Rust + SurrealDB for our logic and data.
+
+### Helpful commands:
+
+```
+# Run Remix:
+$ cd ./remix
+$ npm run dev
+
+# Nopal CLI
+$ cd ./crates
+$ cargo run --package cli test
+```
