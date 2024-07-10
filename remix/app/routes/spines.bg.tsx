@@ -1,4 +1,4 @@
-export default function ThornsBg() {
+export default function SpinesBg() {
   return (
     <div className="container mx-auto">
       <p>

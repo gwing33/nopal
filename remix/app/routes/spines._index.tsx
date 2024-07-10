@@ -1,4 +1,4 @@
-export default function ThornsIndex() {
+export default function SpinesIndex() {
   return (
     <div className="container mx-auto">
       <p>
