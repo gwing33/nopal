@@ -1,20 +1,9 @@
-# [workspace]
-# members = ["crates/cli", "crates/reframed", "crates/reframed-old"]
-# # default-members = ["crates/varn"]
-resolver = "2"
 
 [workspace]
-members = ["cli"]
+members = ["cli", "api"]
+resolver = "2"
 
 [workspace.dependencies]
 # reframed = { path = "crates/reframed" }
 
 [workspace.lints.clippy]
-
-
-# [package]
-# name = "reframed"
-# version = "0.1.0"
-# edition = "2021"
-
-# [dependencies]
