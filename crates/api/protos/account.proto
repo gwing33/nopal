@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+package account;
+
+message User {
+  uint32 id = 1;
+  string name = 2;
+  string email = 3;
+  string password = 4;
+}
+
+message Users {
+  repeated User users = 1;
+}
+
+service Account {
+  rpc AllUsers(google.protobuf.Empty) returns (Users);
+  rpc Me(google.protobuf.Empty) returns (User);
+  rpc SignUp(User) returns (google.protobuf.Empty);
+  rpc Login(User) returns (google.protobuf.Empty);
+}

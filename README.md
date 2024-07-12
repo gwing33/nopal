@@ -18,4 +18,10 @@ $ npm run dev
 # Nopal CLI
 $ cd ./crates
 $ cargo run --package cli test
+
+# Nopal API
+$ cd ./crates
+$ cargo run --package nopal-api
+# Run the gRPC server
+$ grpcui --plaintext 0.0.0.0:8080
 ```
