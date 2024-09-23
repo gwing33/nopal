@@ -20,3 +20,6 @@ package-lock.json
 
 # Environment variables
 .env
+
+# Mac Ignores
+.DS_Store
