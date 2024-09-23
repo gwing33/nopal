@@ -1,12 +1,69 @@
-.main-cta {
+.scene1 {
   height: 75vh;
   min-height: 450px;
-  background: url("/app/images/home/home.svg") bottom right -20px no-repeat,
+  background: url("/app/images/home/ocotillo.svg") bottom left 30px no-repeat,
+    url("/app/images/home/pricklyPear.svg") bottom 10px left no-repeat,
+    url("/app/images/home/home.svg") bottom right -20px no-repeat,
     url("/app/images/home/ground.svg") bottom left / 50% no-repeat,
     url("/app/images/home/backRocks.svg") bottom -25px right 180px no-repeat;
 }
 
-.second-cta {
+.scene0 {
   height: 75vh;
-  background-color: var(--yellow);
+  min-height: 384px;
+  max-height: 600px;
+  background-color: var(--farground);
+  position: relative;
+}
+.scene0-content {
+  z-index: 2;
+  position: relative;
+}
+.scene0-bg {
+  position: absolute;
+  z-index: 1;
+  top: -40px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("/app/images/home/frontRocks.svg") bottom left / auto 100%
+      no-repeat,
+    url("/app/images/home/pricklyPearFruit.svg") bottom left / auto 85%
+      no-repeat,
+    url("/app/images/home/homeShadow.svg") top 40px right 146px / auto 100%
+      no-repeat;
+}
+.scene0-shadow-bg {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 148px;
+  background-color: var(--midground);
+  z-index: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .scene1 {
+    background: url("/app/images/home/ocotillo-dark.svg") bottom left 30px
+        no-repeat,
+      url("/app/images/home/pricklyPear-dark.svg") bottom 10px left no-repeat,
+      url("/app/images/home/home-dark.svg") bottom right -20px no-repeat,
+      url("/app/images/home/ground-dark.svg") bottom left / 50% no-repeat,
+      url("/app/images/home/backRocks-dark.svg") bottom -25px right 180px no-repeat;
+  }
+  .scene0 {
+    background-color: var(--dark-farground);
+  }
+  .scene0-bg {
+    background: url("/app/images/home/frontRocks-dark.svg") bottom left / auto
+        100% no-repeat,
+      url("/app/images/home/pricklyPearFruit-dark.svg") bottom left / auto 85%
+        no-repeat,
+      url("/app/images/home/homeShadow-dark.svg") top 40px right 146px / auto
+        100% no-repeat;
+  }
+  .scene0-shadow-bg {
+    background-color: var(--dark-midground);
+  }
 }

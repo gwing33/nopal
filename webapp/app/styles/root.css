@@ -1,6 +1,15 @@
 :root {
   --purple: #3f2b46;
   --yellow: #fff9f1;
+  --green: #5da06d;
+
+  --farground: #fff9f1;
+  --midground: #ede4da;
+  --foreground: #e5d6c5;
+
+  --dark-farground: #494a72;
+  --dark-midground: #6d6e99;
+  --dark-foreground: #8d8eb4;
 }
 
 body {
@@ -8,11 +17,22 @@ body {
   color: var(--purple);
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: var(--purple);
-    color: white;
-  }
+.header .sun,
+.header .moon {
+  width: 20%;
+}
+.header .sun {
+  max-width: 142px;
+}
+.header .moon {
+  max-width: 62px;
+  margin-left: 40px;
+  margin-right: 40px;
+  margin-bottom: 40px;
+}
+
+.footer {
+  background-color: var(--foreground);
 }
 
 .btn {
@@ -24,4 +44,27 @@ body {
   background-color: var(--purple);
   padding: 16px 32px;
   color: white;
+}
+
+.btn-secondary {
+  @apply btn;
+  background-color: var(--green);
+  padding: 8px 16px;
+  color: white;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: var(--purple);
+    color: white;
+  }
+
+  .footer {
+    background-color: var(--dark-foreground);
+  }
+
+  .btn-primary {
+    background-color: white;
+    color: var(--purple);
+  }
 }

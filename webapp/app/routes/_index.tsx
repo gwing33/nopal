@@ -8,10 +8,10 @@ export const links: LinksFunction = () => [{ rel: "stylesheet", href: styles }];
 export default function Index() {
   return (
     <Layout>
-      <div className="main-cta flex items-center justify-center">
-        <div style={{ marginRight: "25%" }}>
+      <div className="scene1 flex items-start md:items-center justify-center">
+        <div className="mt-20 md:mt-0 p-10 md:p-20">
           <h1 className="text-4xl">Homes built for Humans</h1>
-          <p style={{ width: "480px" }} className="text-lg mt-4 mb-4">
+          <p style={{ maxWidth: "480px" }} className="text-lg mt-4 mb-4">
             Our homes are built so you can focus on your life all while using
             materials thoughtfully to enhance air quality and reduce energy
             consumption.
@@ -21,100 +21,33 @@ export default function Index() {
           </a>
         </div>
       </div>
-      <div className="second-cta">
-        <h2 className="text-2xl">Questions?</h2>
-        <p className="text-base  max-w-96">
-          Owning a home can be challenging, that is why we believe people should
-          be able to ask questions, learn and improve their own home at their
-          own pace.
-        </p>
-        <button>Join our Discord</button>
-        <a href="#todo">Email us</a>
+      <div className="scene0">
+        <div className="scene0-bg" />
+        <div className="scene0-shadow-bg" />
+        <div className="scene0-pricklyPearFruit" />
+        <div className="flex items-center justify-center h-full md:justify-end md:items-start">
+          <div className="scene0-content flex items-end justify-center flex-col p-10 lg:p-20">
+            <h2 className="text-2xl">Questions?</h2>
+            <p className="text-base max-w-96 mt-4 mb-4 text-right">
+              Owning a home can be challenging, that is why we believe people
+              should be able to ask questions, learn and improve their own home
+              at their own pace.
+            </p>
+            <div className="flex gap-4 items-center">
+              <a
+                href="https://discord.gg/6KypDmxE"
+                target="_blank"
+                className="btn-secondary"
+              >
+                Join our Discord
+              </a>
+              <a href="#todo" className="p-4 pt-2 pb-2">
+                Email us
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </Layout>
   );
 }
-
-// <BackRocks />
-// <PricklyPearFruit />
-// <PricklyPear />
-// <Ocotillo />
-
-// function BackRocks() {
-//   return (
-//     <div
-//       className="landscape"
-//       style={{
-//         backgroundSize: "100% auto",
-//         backgroundPosition: "80% auto",
-//         backgroundImage: `url(${backRocks})`,
-//       }}
-//     />
-//   );
-// }
-
-// function FrontRocks() {
-//   return (
-//     <div
-//       className="landscape"
-//       style={{
-//         backgroundPositionY: "250px",
-//         backgroundImage: `url(${frontRocks})`,
-//       }}
-//     />
-//   );
-// }
-
-// function Ground() {
-//   return (
-//     <div
-//       className="landscape"
-//       style={{
-//         backgroundPositionY: "102px",
-//         backgroundImage: `url(${ground})`,
-//       }}
-//     />
-//   );
-// }
-
-// function Home() {
-//   return (
-//     <div
-//       className="landscape"
-//       style={{
-//         backgroundPositionX: "right",
-//         backgroundImage: `url(${home})`,
-//       }}
-//     />
-//   );
-// }
-
-// function PricklyPearFruit() {
-//   return (
-//     <div
-//       className="landscape"
-//       style={{
-//         height: "300px",
-//         backgroundImage: `url(${pricklyPearFruit})`,
-//       }}
-//     />
-//   );
-// }
-
-// function PricklyPear() {
-//   return (
-//     <div
-//       className="landscape"
-//       style={{ height: "300px", backgroundImage: `url(${pricklyPear})` }}
-//     />
-//   );
-// }
-
-// function Ocotillo() {
-//   return (
-//     <div
-//       className="landscape"
-//       style={{ height: "300px", backgroundImage: `url(${ocotillo})` }}
-//     />
-//   );
-// }
