@@ -17,18 +17,24 @@ body {
   color: var(--purple);
 }
 
-.header .sun,
-.header .moon {
-  width: 20%;
-}
 .header .sun {
+  width: 20%;
+  min-width: 80px;
   max-width: 142px;
 }
 .header .moon {
+  width: 20%;
+  min-width: 30px;
   max-width: 62px;
-  margin-left: 40px;
-  margin-right: 40px;
-  margin-bottom: 40px;
+  margin-left: 25px;
+  margin-bottom: 25px;
+}
+@media (min-width: 640px) {
+  .header .moon {
+    margin-left: 40px;
+    margin-right: 40px;
+    margin-bottom: 40px;
+  }
 }
 
 .footer {
