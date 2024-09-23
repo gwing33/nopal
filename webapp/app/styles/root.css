@@ -1,14 +1,27 @@
 :root {
-    --hue: 0;
-    --saturation: 100%;
+  --purple: #3f2b46;
+  --yellow: #fff9f1;
 }
 
-.naturalLightMode {
-    background-color: hsl(var(--hue), var(--saturation), 95%);
-    color: black;
+body {
+  background-color: white;
+  color: var(--purple);
 }
 
-.naturalDarkMode {
-    background-color: hsl(var(--hue), var(--saturation), 5%);
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: var(--purple);
     color: white;
+  }
+}
+
+.btn {
+  @apply rounded-lg;
+  display: inline-flex;
+}
+.btn-primary {
+  @apply btn;
+  background-color: var(--purple);
+  padding: 16px 32px;
+  color: white;
 }

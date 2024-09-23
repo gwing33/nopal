@@ -1,5 +1,6 @@
 use anyhow::Result;
 use nopal_api::account::{AccountService, SurrealAccountRepository};
+use nopal_api::db::DB;
 use nopal_api::services::proto::account::account_server::AccountServer;
 use nopal_api::services::FILE_DESCRIPTOR_SET;
 use tonic::transport::Server;
@@ -11,6 +12,11 @@ use tracing_subscriber::util::SubscriberInitExt;
 async fn main() -> Result<()> {
     dotenvy::dotenv()?;
     setup_tracing_registry();
+
+    // Setup DB Connection
+    DB.connect("ws://localhost:8000").await?;
+    DB.use_ns("nopal").await?;
+    DB.use_db("account").await?;
 
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)

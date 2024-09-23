@@ -16,6 +16,9 @@ export default {
         "monospace",
       ],
     },
+    colors: {
+      purple: "#3f2b46",
+    },
     extend: {},
   },
   plugins: [],
