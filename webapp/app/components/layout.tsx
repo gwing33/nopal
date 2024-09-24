@@ -21,9 +21,15 @@ export function Layout({ children }: { children: ReactNode }) {
             </Link>
           </h1>
           <nav className="mr-4 ml-4">
-            <a className="p-2 hover:text-emerald-600">Explore</a>
-            <a className="p-2 hover:text-emerald-600">Articles</a>
-            <a className="p-2 hover:text-emerald-600">About</a>
+            <Link to="/explore" className="p-2 hover:text-emerald-600">
+              Explore
+            </Link>
+            <Link to="/health" className="p-2 hover:text-emerald-600">
+              Health
+            </Link>
+            <Link to="/specs" className="p-2 hover:text-emerald-600">
+              Specs
+            </Link>
           </nav>
           {isDark ? (
             <img className="moon" src={moon} alt="moon" />

@@ -9,10 +9,6 @@ import {
 } from "@remix-run/react";
 import { LinksFunction, json, type LoaderFunctionArgs } from "@remix-run/node";
 import styles from "./styles/root.css?url";
-import nopalLogo from "./images/nopal-v2.svg";
-import nopalDarkLogo from "./images/nopal-dark-v2.svg";
-import sun from "./images/sun.svg";
-import moon from "./images/moon.svg";
 import faviconAppleTouch from "./images/favicon/apple-touch-icon.png";
 import favicon32 from "./images/favicon/favicon-32x32.png";
 import favicon16 from "./images/favicon/favicon-16x16.png";
@@ -35,12 +31,6 @@ export const links: LinksFunction = () => [
 
   // Styles
   { rel: "stylesheet", href: styles },
-
-  // Preload images
-  { rel: "preload", href: nopalLogo, as: "image" },
-  { rel: "preload", href: nopalDarkLogo, as: "image" },
-  { rel: "preload", href: sun, as: "image" },
-  { rel: "preload", href: moon, as: "image" },
 ];
 
 export const headers = () => ({
