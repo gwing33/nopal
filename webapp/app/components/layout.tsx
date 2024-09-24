@@ -4,15 +4,13 @@ import nopalDarkLogo from "../images/nopal-dark-v2.svg";
 import sun from "../images/sun.svg";
 import moon from "../images/moon.svg";
 import pad from "../images/pad.svg";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { type RootLoaderData } from "../root";
+import { useSchemePref } from "../hooks/useSchemePref";
 
 export function Layout({ children }: { children: ReactNode }) {
-  const data = useRouteLoaderData<RootLoaderData>("root");
-  const clientHints = data?.requestInfo?.clientHints;
-  const colorSchemaPref =
-    clientHints?.colorSchemePref || clientHints?.sysColorSchemePref;
-  const isDark = colorSchemaPref === "dark";
+  const schemePref = useSchemePref();
+  const isDark = schemePref === "dark";
   return (
     <>
       <div className="header container mx-auto pl-4 pr-4">
