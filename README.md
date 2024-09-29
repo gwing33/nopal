@@ -25,3 +25,12 @@ $ cargo run --package nopal-api
 # Run the gRPC server
 $ grpcui --plaintext 0.0.0.0:8080
 ```
+
+
+# Deploy
+
+This site uses fly.io.
+
+```bash
+$ fly deploy
+```

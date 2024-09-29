@@ -5,7 +5,7 @@ export default function About() {
     <Layout>
       <div className="flex items-center justify-center m-36">
         <p>
-          <i>We are working on propagating this pad.</i>
+          <i>Pad propagation in progress.</i>
         </p>
       </div>
     </Layout>
