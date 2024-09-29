@@ -24,12 +24,6 @@ export function Layout({ children }: { children: ReactNode }) {
             <Link to="/explore" className="p-2 hover:text-emerald-600">
               Explore
             </Link>
-            <Link to="/health" className="p-2 hover:text-emerald-600">
-              Health
-            </Link>
-            <Link to="/specs" className="p-2 hover:text-emerald-600">
-              Specs
-            </Link>
           </nav>
           {isDark ? (
             <img className="moon" src={moon} alt="moon" />
@@ -39,7 +33,6 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </div>
       {children}
-      <Footer />
     </>
   );
 }
@@ -50,9 +43,6 @@ export function Footer() {
       <img src={pad} alt="nopal" />
       <img src={pad} alt="nopal" />
       <img src={pad} alt="nopal" />
-      <Link className="ml-4 underline" to="/about">
-        About
-      </Link>
     </div>
   );
 }

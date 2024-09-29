@@ -9,11 +9,18 @@ export function useSchemePref() {
     clientHints?.colorSchemePref || clientHints?.sysColorSchemePref;
   const [schemePref, setScheme] = useState(colorSchemaPref);
   useEffect(() => {
+    // Mobile safari doesn't support Accept-CH. This should bring it into alignment after load
+    const matchMode = window.matchMedia("(prefers-color-scheme: dark)");
+    setScheme(doesMatchLightOrDark(matchMode));
     window
       .matchMedia("(prefers-color-scheme: dark)")
       .addEventListener("change", (e) => {
-        setScheme(e.matches ? "dark" : "light");
+        setScheme(doesMatchLightOrDark(e));
       });
   }, []);
   return schemePref;
+}
+
+function doesMatchLightOrDark(e) {
+  return e.matches ? "dark" : "light";
 }

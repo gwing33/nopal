@@ -15,6 +15,7 @@
 body {
   background-color: white;
   color: var(--purple);
+  min-height: 100vh;
 }
 
 .header .sun {
@@ -38,7 +39,10 @@ body {
 }
 
 .footer {
-  background-color: var(--foreground);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
 }
 
 .btn {
@@ -63,10 +67,6 @@ body {
   body {
     background-color: var(--purple);
     color: white;
-  }
-
-  .footer {
-    background-color: var(--dark-foreground);
   }
 
   .btn-primary {

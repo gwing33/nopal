@@ -1,5 +1,5 @@
-import { LinksFunction, json, type LoaderFunctionArgs } from "@remix-run/node";
-import { Layout } from "../components/layout";
+import { LinksFunction } from "@remix-run/node";
+import { Layout, Footer } from "../components/layout";
 
 import styles from "../styles/home.css?url";
 
@@ -47,6 +47,7 @@ export default function Index() {
             </div>
           </div>
         </div>
+        <Footer />
       </div>
     </Layout>
   );
