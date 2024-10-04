@@ -1,5 +1,5 @@
 import { LinksFunction } from "@remix-run/node";
-import { Layout, Footer } from "../components/layout";
+import { Layout, ContactUsLinks, Footer } from "../components/layout";
 import { Link } from "@remix-run/react";
 
 import styles from "../styles/home.css?url";
@@ -37,18 +37,7 @@ export default function Index() {
               should be able to ask questions, learn and improve their own home
               at their own pace.
             </p>
-            <div className="flex gap-4 items-center">
-              <a
-                href="https://discord.gg/6KypDmxE"
-                target="_blank"
-                className="btn-secondary"
-              >
-                Join our Discord
-              </a>
-              {/* <a href="#todo" className="p-4 pt-2 pb-2">
-                Email us
-              </a> */}
-            </div>
+            <ContactUsLinks />
           </div>
         </div>
         <Footer />

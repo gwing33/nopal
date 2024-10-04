@@ -36,6 +36,23 @@ export function Layout({ children }: { children: ReactNode }) {
   );
 }
 
+export function ContactUsLinks() {
+  return (
+    <div className="flex gap-4 items-center">
+      <a
+        href="https://discord.gg/6KypDmxE"
+        target="_blank"
+        className="btn-secondary"
+      >
+        Join our Discord
+      </a>
+      {/* <a href="#todo" className="p-4 pt-2 pb-2">
+        Email us
+      </a> */}
+    </div>
+  );
+}
+
 export function Footer() {
   return (
     <div className="footer flex gap-2 p-8 pt-4 pb-4">

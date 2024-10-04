@@ -1,10 +1,77 @@
-.scene1-air-arrows {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  pointer-events: none;
-  background: url("/app/images/explore/air-arrows.svg") top left / 100%
+.explore-bg {
+  background: url("/app/images/explore/bg.svg") center center / 100% 100%
     no-repeat;
+}
+
+.example-home {
+  position: relative;
+  padding-left: 170px;
+  padding-bottom: 40px;
+
+  .example-home-arrow {
+    position: absolute;
+    bottom: 28px;
+    left: 52px;
+    color: var(--purple-light);
+    background: url("/app/images/explore/top-right-arrow.svg") bottom 5px right
+      no-repeat;
+    height: 44px;
+    padding-right: 55px;
+    display: flex;
+    align-items: flex-end;
+  }
+}
+
+.home-size {
+  width: 50%;
+  margin-left: 50%;
+}
+
+.home-size-ranges {
+  position: relative;
+  margin-top: 16px;
+  .width,
+  .depth {
+    position: absolute;
+    color: var(--purple-light);
+    text-align: center;
+    font-size: 12px;
+    > div {
+      border-color: var(--foreground);
+    }
+  }
+  .depth {
+    bottom: -34px;
+    > div {
+      border-bottom-width: 1px;
+      border-left-width: 1px;
+      border-right-width: 1px;
+      width: 222px;
+      height: 8px;
+    }
+  }
+  .width {
+    left: 189px;
+    top: 40px;
+    transform: rotate(90deg);
+    > div {
+      border-top-width: 1px;
+      border-left-width: 1px;
+      border-right-width: 1px;
+      width: 108px;
+      height: 8px;
+    }
+  }
+}
+
+.sq-ft-range {
+  width: 222px;
+  height: 108px;
+  background: white;
+  border: 1px solid var(--purple);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  color: var(--purple-light);
 }
