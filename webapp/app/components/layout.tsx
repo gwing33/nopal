@@ -1,11 +1,10 @@
-import { Link, useRouteLoaderData } from "@remix-run/react";
+import { Link, NavLink } from "@remix-run/react";
 import nopalLogo from "../images/nopal-v2.svg";
 import nopalDarkLogo from "../images/nopal-dark-v2.svg";
 import sun from "../images/sun.svg";
 import moon from "../images/moon.svg";
 import pad from "../images/pad.svg";
-import { ReactNode, useEffect, useState } from "react";
-import { type RootLoaderData } from "../root";
+import { ReactNode } from "react";
 import { useSchemePref } from "../hooks/useSchemePref";
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -20,10 +19,10 @@ export function Layout({ children }: { children: ReactNode }) {
               <img src={isDark ? nopalDarkLogo : nopalLogo} alt="nopal" />
             </Link>
           </h1>
-          <nav className="mr-4 ml-4">
-            <Link to="/explore" className="p-2 hover:text-emerald-600">
+          <nav className="main-nav mr-4 ml-4">
+            <NavLink to="/explore" className="p-2">
               Explore
-            </Link>
+            </NavLink>
           </nav>
           {isDark ? (
             <img className="moon" src={moon} alt="moon" />

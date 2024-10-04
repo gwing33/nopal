@@ -1,5 +1,6 @@
 :root {
   --purple: #3f2b46;
+  --purple-light: #7f5b8b;
   --yellow: #fff9f1;
   --green: #5da06d;
 
@@ -16,25 +17,49 @@ body {
   background-color: white;
   color: var(--purple);
   min-height: 100vh;
+  @media (prefers-color-scheme: dark) {
+    background-color: var(--purple);
+    color: white;
+  }
 }
 
-.header .sun {
-  width: 20%;
-  min-width: 80px;
-  max-width: 142px;
+.header {
+  .sun {
+    width: 20%;
+    min-width: 80px;
+    max-width: 142px;
+  }
+  .moon {
+    width: 20%;
+    min-width: 30px;
+    max-width: 62px;
+    margin-left: 25px;
+    margin-bottom: 25px;
+    @media (min-width: 640px) {
+      margin-left: 40px;
+      margin-right: 40px;
+      margin-bottom: 40px;
+    }
+  }
 }
-.header .moon {
-  width: 20%;
-  min-width: 30px;
-  max-width: 62px;
-  margin-left: 25px;
-  margin-bottom: 25px;
-}
-@media (min-width: 640px) {
-  .header .moon {
-    margin-left: 40px;
-    margin-right: 40px;
-    margin-bottom: 40px;
+
+.main-nav a {
+  position: relative;
+  &:after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0.5rem;
+    right: 0.5rem;
+    height: 4px;
+    background-color: transparent;
+    border-radius: 2px;
+  }
+  &:hover:after {
+    background-color: var(--purple-light);
+  }
+  &.active:after {
+    background-color: var(--green);
   }
 }
 
@@ -54,6 +79,10 @@ body {
   background-color: var(--purple);
   padding: 16px 32px;
   color: white;
+  @media (prefers-color-scheme: dark) {
+    background-color: white;
+    color: var(--purple);
+  }
 }
 
 .btn-secondary {
@@ -61,16 +90,4 @@ body {
   background-color: var(--green);
   padding: 8px 16px;
   color: white;
-}
-
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: var(--purple);
-    color: white;
-  }
-
-  .btn-primary {
-    background-color: white;
-    color: var(--purple);
-  }
 }

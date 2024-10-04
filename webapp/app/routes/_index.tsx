@@ -2,6 +2,7 @@ import { LinksFunction } from "@remix-run/node";
 import { Layout, Footer } from "../components/layout";
 
 import styles from "../styles/home.css?url";
+import { Link } from "@remix-run/react";
 
 export const links: LinksFunction = () => [{ rel: "stylesheet", href: styles }];
 
@@ -16,9 +17,9 @@ export default function Index() {
             materials thoughtfully to enhance air quality and reduce energy
             consumption.
           </p>
-          <a className="btn-primary" href="#todo">
-            Price a new House →
-          </a>
+          <Link className="btn-primary" to="/explore">
+            Explore
+          </Link>
         </div>
       </div>
       <div className="scene0">
