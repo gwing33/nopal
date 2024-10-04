@@ -31,8 +31,8 @@ export default function Explore() {
           </div>
         </div>
 
-        <div className="container mx-auto px-4 flex justify-end">
-          <div className="w-1/2">
+        <div className="container mx-auto px-4 flex md:justify-end">
+          <div className="md:w-1/2">
             <div>
               <span
                 className="text-2xl"
@@ -59,25 +59,23 @@ export default function Explore() {
           </div>
         </div>
 
-        <div className="mt-20">
-          <div className="container mx-auto px-4">
-            <h3 className="text-4xl" style={{ color: "var(--purple-light)" }}>
-              Clean Air, Healthy Building.
-            </h3>
-            <p className="mt-4 text-lg">
-              Air quality plays a big role in our lives. From wild fires to city
-              smog, clean air can prevent you from getting or staying sick.
-            </p>
-          </div>
+        <div className="mt-20 container mx-auto px-4">
+          <h3 className="text-4xl" style={{ color: "var(--purple-light)" }}>
+            Clean Air, Healthy Building.
+          </h3>
         </div>
+      </div>
+      <div className="container mx-auto px-4">
+        <p className="mt-4 text-lg">
+          Air quality plays a big role in our lives. From wild fires to city
+          smog, clean air can prevent you from getting or staying sick.
+        </p>
       </div>
 
       <div className="scene1">
-        <div className="container mx-auto mt-2 px-4">
-          <img src={airArrows} alt="Air arrows" style={{ width: "85%" }} />
-        </div>
-        <div className="flex -mt-6 container mx-auto px-4">
-          <div className="w-1/3">
+        <div className="air-arrows container mx-auto mt-2 px-4" />
+        <div className="sm:flex -mt-6 container mx-auto px-4">
+          <div className="lg:w-1/3 md:w-1/2 w-full">
             <h4 className="text-2xl" style={{ color: "var(--green)" }}>
               Tight Building Envelope
             </h4>
@@ -87,7 +85,7 @@ export default function Explore() {
               <li>Lower energy consumption</li>
             </ul>
           </div>
-          <div className="w-1/3">
+          <div className="lg:w-1/3 md:w-1/2 w-full">
             <h4 className="text-2xl" style={{ color: "var(--green)" }}>
               Natural Materials
             </h4>
