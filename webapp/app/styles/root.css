@@ -1,4 +1,5 @@
 :root {
+  /* TODO: At some point create a more offical color spread, e.g. purple-100 to purple-900 */
   --purple: #3f2b46;
   --purple-light: #7f5b8b;
   --yellow: #fff9f1;

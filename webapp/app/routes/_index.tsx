@@ -1,15 +1,18 @@
 import { LinksFunction } from "@remix-run/node";
 import { Layout, Footer } from "../components/layout";
+import { Link } from "@remix-run/react";
 
 import styles from "../styles/home.css?url";
-import { Link } from "@remix-run/react";
 
 export const links: LinksFunction = () => [{ rel: "stylesheet", href: styles }];
 
 export default function Index() {
   return (
     <Layout>
-      <div className="scene1 flex items-start md:items-center justify-center">
+      <div
+        style={{ height: "75vh" }}
+        className="scene1 flex items-start md:items-center justify-center"
+      >
         <div className="mt-20 md:mt-0 p-10 md:p-20">
           <h1 className="text-4xl">Homes built for Humans</h1>
           <p style={{ maxWidth: "480px" }} className="text-lg mt-4 mb-4">
@@ -42,9 +45,9 @@ export default function Index() {
               >
                 Join our Discord
               </a>
-              <a href="#todo" className="p-4 pt-2 pb-2">
+              {/* <a href="#todo" className="p-4 pt-2 pb-2">
                 Email us
-              </a>
+              </a> */}
             </div>
           </div>
         </div>
