@@ -44,6 +44,14 @@ export function Layout({ children }: { children: ReactNode }) {
       <head>
         <title>Building Healthy Homes</title>
         <meta charSet="utf-8" />
+        <meta
+          name="description"
+          content="Nopal builds healthy homes for humans"
+        />
+        <meta
+          name="keywords"
+          content="Home, House, Build, High Performance, Health, Sustainable, Natural Materials"
+        />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="msapplication-TileColor" content="#fff9f1" />
         <meta name="theme-color" content="#fff9f1" />
