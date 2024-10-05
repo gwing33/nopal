@@ -30,7 +30,6 @@
     position: absolute;
     bottom: 28px;
     left: 52px;
-    padding-right: 55px;
     display: flex;
     align-items: flex-end;
     .arrow {
@@ -45,7 +44,18 @@
   .example-home-img {
     height: 119px;
     width: 305px;
-    background: url("/app/images/explore/example-home.svg") no-repeat;
+    background: url("/app/images/explore/example-home.svg") top left / 100%
+      no-repeat;
+  }
+
+  @media (max-width: 640px) {
+    padding-left: 0;
+    display: flex;
+    justify-content: center;
+    padding-bottom: 60px;
+  }
+  @media (max-width: 400px) {
+    padding-bottom: 70px;
   }
 
   @media (prefers-color-scheme: dark) {
