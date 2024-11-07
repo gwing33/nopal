@@ -17,6 +17,8 @@ Cargo.lock
 node_modules
 remix/build
 package-lock.json
+.cache/
+build/
 
 # Environment variables
 .env
