@@ -40,7 +40,7 @@ export function ContactUsLinks() {
   return (
     <div className="flex gap-4 items-center">
       <a
-        href="https://discord.gg/6KypDmxE"
+        href="https://discord.gg/avFGzMNAXu"
         target="_blank"
         className="btn-secondary"
       >
