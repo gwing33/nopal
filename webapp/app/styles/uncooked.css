@@ -1,0 +1,6 @@
+.uncooked-link {
+  color: var(--green);
+  &:hover {
+    text-decoration: underline;
+  }
+}

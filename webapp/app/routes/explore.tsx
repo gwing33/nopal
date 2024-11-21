@@ -3,8 +3,6 @@ import { Layout, ContactUsLinks, Footer } from "../components/layout";
 
 import homeStyles from "../styles/home.css?url";
 import exploreStyles from "../styles/explore.css?url";
-import exampleHome from "../images/explore/example-home.svg";
-import exampleHomeDark from "../images/explore/example-home-dark.svg";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: homeStyles },

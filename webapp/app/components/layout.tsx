@@ -23,6 +23,9 @@ export function Layout({ children }: { children: ReactNode }) {
             <NavLink to="/explore" className="p-2">
               Explore
             </NavLink>
+            <NavLink to="/uncooked" className="p-2">
+              Uncooked
+            </NavLink>
           </nav>
           {isDark ? (
             <img className="moon" src={moon} alt="moon" />
