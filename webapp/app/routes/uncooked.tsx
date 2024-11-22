@@ -22,7 +22,9 @@ export default function Uncooked() {
         {data.ingredients.map((i) => {
           switch (i.type) {
             case "newspaper-clipping":
-              return <NewspaperClipping clipping={i} />;
+              return <NewspaperClipping key={i.id} clipping={i} />;
+            case "print":
+              return <Print key={i.id} print={i} />;
           }
           return null;
         })}
@@ -31,13 +33,42 @@ export default function Uncooked() {
   );
 }
 
+type PrintProps = {
+  print: Ingredient;
+};
+function Print({ print }: PrintProps) {
+  const { title, type, author, date, body, id, instagramId } = print;
+  return (
+    <div className="pb-4">
+      <div className="flex">
+        <img
+          src={`/app/images/uncooked/${id}.jpeg`}
+          alt={title}
+          height="356px"
+          width="356px"
+        />
+        <div className="pl-4">
+          <h3 className="font-bold pb-4">{title}</h3>
+          <div className="pb-4">
+            by: {author}, {formatDate(date)}
+          </div>
+          <p className="pb-4">{body}</p>
+          <UncookedLink instagramId={instagramId} to={`/uncooked/${id}`}>
+            {formatUncookedIdToText(id, type)}
+          </UncookedLink>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type NewspaperClippingProps = {
   clipping: Ingredient;
 };
 function NewspaperClipping({ clipping }: NewspaperClippingProps) {
-  const { title, type, author, date, body, id } = clipping;
+  const { title, type, author, date, body, id, instagramId } = clipping;
   return (
-    <div>
+    <div className="pb-8">
       <div className="flex justify-between pb-4">
         <h3 className="font-bold">{title}</h3>
         <span>
@@ -53,12 +84,25 @@ function NewspaperClipping({ clipping }: NewspaperClippingProps) {
 }
 
 function UncookedLink({
+  instagramId,
   to,
   children,
 }: {
   to: string;
+  instagramId?: string;
   children: React.ReactNode;
 }) {
+  if (instagramId) {
+    return (
+      <a
+        href={`https://www.instagram.com/p/${instagramId}`}
+        target="_blank"
+        className="uncooked-link"
+      >
+        {children}
+      </a>
+    );
+  }
   return (
     <Link to={to} className="uncooked-link">
       {children}
