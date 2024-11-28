@@ -29,6 +29,7 @@
     "@flydotio/dockerfile": "^0.5.8",
     "@remix-run/dev": "^2.9.2",
     "@types/react": "^18.3.3",
+    "@types/showdown": "^2.0.6",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.47",
     "postcss-nesting": "^13.0.0",
