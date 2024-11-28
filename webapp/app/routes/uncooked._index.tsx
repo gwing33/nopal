@@ -1,11 +1,10 @@
 import { LinksFunction } from "@remix-run/node";
-import { Link } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
 import { Layout } from "../components/layout";
 import uncookedLightImg from "../images/uncooked/uncooked-light.svg";
 import uncookedDarkImg from "../images/uncooked/uncooked-dark.svg";
 import { getUncookedIngredients } from "../data/uncooked";
-import type { Ingredient, IngredientType } from "../data/uncooked";
-import { useMemo } from "react";
+import type { Ingredients, Ingredient, IngredientType } from "../data/uncooked";
 import { formatDate } from "../util/date";
 import { useSchemePref } from "../hooks/useSchemePref";
 
@@ -15,10 +14,14 @@ export const links: LinksFunction = () => [
   { rel: "stylesheet", href: uncookedStyles },
 ];
 
+export const loader = async () => {
+  return getUncookedIngredients();
+};
+
 export default function Uncooked() {
   const schemePref = useSchemePref();
   const isDark = schemePref === "dark";
-  const data = useMemo(() => getUncookedIngredients(), []);
+  const data = useLoaderData<typeof loader>();
 
   return (
     <Layout>
@@ -28,7 +31,7 @@ export default function Uncooked() {
           alt="uncooked"
           className="-ml-20 pb-16"
         />
-        {data.ingredients.map((i) => {
+        {(data?.ingredients || []).map((i) => {
           switch (i.type) {
             case "newspaper-clipping":
               return <NewspaperClipping key={i.id} clipping={i} />;
@@ -59,7 +62,7 @@ function Print({ print }: PrintProps) {
         <div className="pl-4">
           <h3 className="font-bold pb-4">{title}</h3>
           <div className="pb-4">
-            by: {author}, {formatDate(date)}
+            by: {author}, {formatDate(new Date(date))}
           </div>
           <p className="pb-4">{body}</p>
           <UncookedLink instagramId={instagramId} to={`/uncooked/${id}`}>
@@ -81,7 +84,7 @@ function NewspaperClipping({ clipping }: NewspaperClippingProps) {
       <div className="flex justify-between pb-4">
         <h3 className="font-bold">{title}</h3>
         <span>
-          by: {author}, {formatDate(date)}
+          by: {author}, {formatDate(new Date(date))}
         </span>
       </div>
       <p className="pb-4">{body}</p>
