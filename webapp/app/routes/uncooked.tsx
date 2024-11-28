@@ -2,10 +2,12 @@ import { LinksFunction } from "@remix-run/node";
 import { Link } from "@remix-run/react";
 import { Layout } from "../components/layout";
 import uncookedLightImg from "../images/uncooked/uncooked-light.svg";
+import uncookedDarkImg from "../images/uncooked/uncooked-dark.svg";
 import { getUncookedIngredients } from "../data/uncooked";
 import type { Ingredient, IngredientType } from "../data/uncooked";
 import { useMemo } from "react";
 import { formatDate } from "../util/date";
+import { useSchemePref } from "../hooks/useSchemePref";
 
 import uncookedStyles from "../styles/uncooked.css?url";
 
@@ -14,11 +16,18 @@ export const links: LinksFunction = () => [
 ];
 
 export default function Uncooked() {
+  const schemePref = useSchemePref();
+  const isDark = schemePref === "dark";
   const data = useMemo(() => getUncookedIngredients(), []);
+
   return (
     <Layout>
       <div className="container mx-auto max-w-screen-sm font-mono">
-        <img src={uncookedLightImg} alt="uncooked" className="-ml-20 pb-16" />
+        <img
+          src={isDark ? uncookedDarkImg : uncookedLightImg}
+          alt="uncooked"
+          className="-ml-20 pb-16"
+        />
         {data.ingredients.map((i) => {
           switch (i.type) {
             case "newspaper-clipping":
