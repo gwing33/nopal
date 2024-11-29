@@ -25,21 +25,23 @@ export default function Uncooked() {
 
   return (
     <Layout>
-      <div className="container mx-auto max-w-screen-sm font-mono">
-        <img
-          src={isDark ? uncookedDarkImg : uncookedLightImg}
-          alt="uncooked"
-          className="-ml-20 pb-16"
-        />
-        {(data?.ingredients || []).map((i) => {
-          switch (i.type) {
-            case "newspaper-clipping":
-              return <NewspaperClipping key={i.id} clipping={i} />;
-            case "print":
-              return <Print key={i.id} print={i} />;
-          }
-          return null;
-        })}
+      <div className="pr-4 pl-4">
+        <div className="container mx-auto max-w-screen-sm font-mono">
+          <img
+            src={isDark ? uncookedDarkImg : uncookedLightImg}
+            alt="uncooked"
+            className="-ml-20 pb-16"
+          />
+          {(data?.ingredients || []).map((i) => {
+            switch (i.type) {
+              case "newspaper-clipping":
+                return <NewspaperClipping key={i.id} clipping={i} />;
+              case "print":
+                return <Print key={i.id} print={i} />;
+            }
+            return null;
+          })}
+        </div>
       </div>
     </Layout>
   );

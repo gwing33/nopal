@@ -1,10 +1,16 @@
-import { LoaderFunctionArgs } from "@remix-run/node";
+import { LoaderFunctionArgs, LinksFunction } from "@remix-run/node";
 import { Layout, ContactUsLinks, Footer } from "../components/layout";
 import { getUncookedIngredients } from "../data/uncooked";
 import { readPost } from "../util/readpost.server";
 import { useLoaderData } from "@remix-run/react";
 import showdown from "showdown";
 import { useMemo } from "react";
+
+import uncookedStyles from "../styles/uncooked.css?url";
+
+export const links: LinksFunction = () => [
+  { rel: "stylesheet", href: uncookedStyles },
+];
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const id = params.id;
@@ -28,7 +34,11 @@ export default function UncookedItem() {
   }, [body]);
   return (
     <Layout>
-      <div dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+      <div className="pr-4 pl-4">
+        <div className="container mx-auto max-w-screen-sm font-mono uncooked-markdown">
+          <div dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+        </div>
+      </div>
     </Layout>
   );
 }

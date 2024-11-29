@@ -4,3 +4,24 @@
     text-decoration: underline;
   }
 }
+
+.uncooked-markdown {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  b,
+  strong {
+    @apply font-bold;
+  }
+  h1,
+  h2,
+  p {
+    @apply pb-4;
+  }
+  i {
+    @apply italic;
+  }
+}
