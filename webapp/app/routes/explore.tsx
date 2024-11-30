@@ -3,8 +3,6 @@ import { Layout, ContactUsLinks, Footer } from "../components/layout";
 
 import homeStyles from "../styles/home.css?url";
 import exploreStyles from "../styles/explore.css?url";
-import exampleHome from "../images/explore/example-home.svg";
-import exampleHomeDark from "../images/explore/example-home-dark.svg";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: homeStyles },
@@ -93,23 +91,11 @@ export default function Explore() {
         </div>
       </div>
 
-      <div className="scene0">
-        <div className="scene0-bg" />
-        <div className="scene0-shadow-bg" />
-        <div className="scene0-pricklyPearFruit" />
-        <div className="flex items-center justify-center h-full md:justify-end md:items-start">
-          <div className="scene0-content flex items-end justify-center flex-col p-10 lg:p-20">
-            <h2 className="text-2xl">Curious?</h2>
-            <p className="text-base max-w-96 mt-4 mb-4 text-right">
-              Let’s learn together.
-              <br />
-              We invite you to join the discussion below.
-            </p>
-            <ContactUsLinks />
-          </div>
-        </div>
-        <Footer />
-      </div>
+      <Footer title="Curious?">
+        Let’s learn together.
+        <br />
+        We invite you to join the discussion below.
+      </Footer>
     </Layout>
   );
 }
