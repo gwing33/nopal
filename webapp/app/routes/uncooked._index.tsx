@@ -90,7 +90,7 @@ function Print({ print }: PrintProps) {
             maxHeight: "356px",
           }}
         >
-          <img src={`/app/images/uncooked/${id}.jpeg`} alt={title} />
+          <img src={`/uncooked/${id}.jpeg`} alt={title} />
         </div>
         <div className="pt-4 sm:pt-0 sm:pl-4">
           <h3 className="font-bold">{title}</h3>

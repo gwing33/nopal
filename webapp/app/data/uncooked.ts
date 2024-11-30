@@ -23,7 +23,7 @@ const data: Ingredients = {
       type: "newspaper-clipping",
       title: "Fresh Air",
       author: "Austin Trautman",
-      date: "2024-12-01T12:00:00-07:00",
+      date: "2024-11-30T12:00:00-07:00",
       body: "We have all heard the cliche you are what you eat.  We are also what we breathe.  In the simplest sense, this is all we can be.  Our bodies continuously break down and rebuild from what we put in them over time.",
     },
     {
