@@ -1,14 +1,17 @@
 import { LoaderFunctionArgs, LinksFunction } from "@remix-run/node";
-import { Layout, ContactUsLinks, Footer } from "../components/layout";
+import { Layout, Footer } from "../components/layout";
 import { getUncookedIngredients } from "../data/uncooked";
 import { readPost } from "../util/readpost.server";
 import { useLoaderData } from "@remix-run/react";
 import showdown from "showdown";
 import { useMemo } from "react";
+import { formatDate } from "../util/date";
 
+import homeStyles from "../styles/home.css?url";
 import uncookedStyles from "../styles/uncooked.css?url";
 
 export const links: LinksFunction = () => [
+  { rel: "stylesheet", href: homeStyles },
   { rel: "stylesheet", href: uncookedStyles },
 ];
 
@@ -34,11 +37,23 @@ export default function UncookedItem() {
   }, [body]);
   return (
     <Layout>
-      <div className="pr-4 pl-4">
-        <div className="container mx-auto max-w-screen-sm font-mono uncooked-markdown mt-8">
-          <div dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+      <div className="pr-4 pl-4 scene1">
+        <div className="container mx-auto max-w-screen-sm font-mono mt-8">
+          <div className="mb-6">
+            <h1 className="font-bold">{ingrediant.title}</h1>
+            <div>
+              by: {ingrediant.author}, {formatDate(new Date(ingrediant.date))}
+            </div>
+          </div>
+          <div
+            className="uncooked-markdown"
+            dangerouslySetInnerHTML={{ __html: bodyHtml }}
+          />
         </div>
       </div>
+      <Footer title="Want to learn more?">
+        Let us know what you think about this article.
+      </Footer>
     </Layout>
   );
 }

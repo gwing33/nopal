@@ -1,5 +1,3 @@
-# Fresh Air
-
 We have all heard the cliche you are what you eat.  We are also what we breathe.  In the simplest sense, this is all we can be.  Our bodies continuously break down and rebuild from what we put in them over time.
 
 A crucial part of this process is our lungs, one of the world’s impressive gas exchange systems.  With more surface area than the average human occupies in their home, our lungs efficiently absorb the gases and tiny particles in our air.  Without this efficiency, we would cease to exist.  With it comes a great responsibility to be mindful of what we breathe in.

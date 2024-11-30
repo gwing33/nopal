@@ -24,6 +24,30 @@ body {
   }
 }
 
+/* Buttons */
+.btn {
+  @apply rounded-lg;
+  display: inline-flex;
+}
+.btn-primary {
+  @apply btn;
+  background-color: var(--purple);
+  padding: 16px 32px;
+  color: white;
+  @media (prefers-color-scheme: dark) {
+    background-color: white;
+    color: var(--purple);
+  }
+}
+
+.btn-secondary {
+  @apply btn;
+  background-color: var(--green);
+  padding: 8px 16px;
+  color: white;
+}
+
+/* Header */
 .header {
   .sun {
     width: 20%;
@@ -132,31 +156,10 @@ body {
   }
 }
 
+/* Footer */
 .footer {
   position: absolute;
   bottom: 0;
   left: 0;
   z-index: 3;
-}
-
-.btn {
-  @apply rounded-lg;
-  display: inline-flex;
-}
-.btn-primary {
-  @apply btn;
-  background-color: var(--purple);
-  padding: 16px 32px;
-  color: white;
-  @media (prefers-color-scheme: dark) {
-    background-color: white;
-    color: var(--purple);
-  }
-}
-
-.btn-secondary {
-  @apply btn;
-  background-color: var(--green);
-  padding: 8px 16px;
-  color: white;
 }

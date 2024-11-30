@@ -1,6 +1,6 @@
 import { LinksFunction } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
-import { Layout } from "../components/layout";
+import { Layout, Footer } from "../components/layout";
 import uncookedLightImg from "../images/uncooked/uncooked-light.svg";
 import uncookedDarkImg from "../images/uncooked/uncooked-dark.svg";
 import { getUncookedIngredients } from "../data/uncooked";
@@ -8,9 +8,11 @@ import type { Ingredients, Ingredient, IngredientType } from "../data/uncooked";
 import { formatDate } from "../util/date";
 import { useSchemePref } from "../hooks/useSchemePref";
 
+import homeStyles from "../styles/home.css?url";
 import uncookedStyles from "../styles/uncooked.css?url";
 
 export const links: LinksFunction = () => [
+  { rel: "stylesheet", href: homeStyles },
   { rel: "stylesheet", href: uncookedStyles },
 ];
 
@@ -25,7 +27,7 @@ export default function Uncooked() {
 
   return (
     <Layout>
-      <div className="pr-4 pl-4">
+      <div className="pr-4 pl-4 scene1">
         <div className="container mx-auto max-w-screen-sm font-mono">
           <img
             src={isDark ? uncookedDarkImg : uncookedLightImg}
@@ -43,6 +45,9 @@ export default function Uncooked() {
           })}
         </div>
       </div>
+      <Footer title="Suggestions?">
+        We are always looking to add more to our collection.
+      </Footer>
     </Layout>
   );
 }
