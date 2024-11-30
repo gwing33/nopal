@@ -35,7 +35,7 @@ export default function UncookedItem() {
   return (
     <Layout>
       <div className="pr-4 pl-4">
-        <div className="container mx-auto max-w-screen-sm font-mono uncooked-markdown">
+        <div className="container mx-auto max-w-screen-sm font-mono uncooked-markdown mt-8">
           <div dangerouslySetInnerHTML={{ __html: bodyHtml }} />
         </div>
       </div>

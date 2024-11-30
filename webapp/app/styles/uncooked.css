@@ -11,17 +11,20 @@
   h3,
   h4,
   h5,
-  h6,
+  h6 {
+    @apply font-bold;
+    @apply pt-6;
+    @apply pb-6;
+  }
+  p {
+    @apply pb-4;
+  }
   b,
   strong {
     @apply font-bold;
   }
-  h1,
-  h2,
-  p {
-    @apply pb-4;
-  }
-  i {
+  i,
+  em {
     @apply italic;
   }
 }

@@ -4,12 +4,29 @@ import nopalDarkLogo from "../images/nopal-dark-v2.svg";
 import sun from "../images/sun.svg";
 import moon from "../images/moon.svg";
 import pad from "../images/pad.svg";
-import { ReactNode } from "react";
+import {
+  ReactNode,
+  useRef,
+  useState,
+  useCallback,
+  SyntheticEvent,
+} from "react";
 import { useSchemePref } from "../hooks/useSchemePref";
+import { useClickOutside } from "../hooks/useClickOutside";
 
 export function Layout({ children }: { children: ReactNode }) {
   const schemePref = useSchemePref();
   const isDark = schemePref === "dark";
+  const [expanded, setExpanded] = useState(false);
+  const onMenuClick = useCallback(
+    (e: SyntheticEvent) => {
+      e?.preventDefault();
+      setExpanded(!expanded);
+    },
+    [expanded]
+  );
+  const ref = useRef<HTMLDivElement>(null);
+  useClickOutside(ref, () => setExpanded(false));
   return (
     <>
       <div className="header container mx-auto pl-4 pr-4">
@@ -19,7 +36,19 @@ export function Layout({ children }: { children: ReactNode }) {
               <img src={isDark ? nopalDarkLogo : nopalLogo} alt="nopal" />
             </Link>
           </h1>
-          <nav className="main-nav mr-4 ml-4">
+          <a href="#" onClick={onMenuClick} className="hamburger-menu">
+            Menu
+            <div className="menu-bars">
+              <div />
+              <div />
+              <div />
+            </div>
+          </a>
+          <nav
+            ref={ref}
+            className="main-nav mr-4 ml-4"
+            style={expanded ? { display: "block" } : {}}
+          >
             <NavLink to="/explore" className="p-2">
               Explore
             </NavLink>
