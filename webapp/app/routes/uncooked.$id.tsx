@@ -3,9 +3,8 @@ import { Layout, Footer } from "../components/layout";
 import { getUncookedIngredients } from "../data/uncooked";
 import { readPost } from "../util/readpost.server";
 import { NavLink, useLoaderData } from "@remix-run/react";
-import showdown from "showdown";
-import { useMemo } from "react";
 import { formatDate } from "../util/date";
+import { useMarkdown } from "../hooks/useMarkdown";
 
 import homeStyles from "../styles/home.css?url";
 import uncookedStyles from "../styles/uncooked.css?url";
@@ -31,10 +30,7 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
 
 export default function UncookedItem() {
   const { ingrediant, body } = useLoaderData<typeof loader>();
-  const bodyHtml = useMemo(() => {
-    const converter = new showdown.Converter();
-    return converter.makeHtml(body);
-  }, [body]);
+  const bodyHtml = useMarkdown(body);
   return (
     <Layout>
       <div className="pr-4 pl-4 scene1">
@@ -45,10 +41,7 @@ export default function UncookedItem() {
               by: {ingrediant.author}, {formatDate(new Date(ingrediant.date))}
             </div>
           </div>
-          <div
-            className="uncooked-markdown"
-            dangerouslySetInnerHTML={{ __html: bodyHtml }}
-          />
+          {bodyHtml}
           <div className="mt-10">
             <NavLink to="/uncooked" className="uncooked-link">
               &larr; Back to Uncooked

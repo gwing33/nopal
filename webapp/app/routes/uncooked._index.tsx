@@ -7,6 +7,7 @@ import { getUncookedIngredients } from "../data/uncooked";
 import type { Ingredients, Ingredient, IngredientType } from "../data/uncooked";
 import { formatDate } from "../util/date";
 import { useSchemePref } from "../hooks/useSchemePref";
+import { useMarkdown } from "../hooks/useMarkdown";
 import {
   useState,
   useCallback,
@@ -90,6 +91,7 @@ type PrintProps = {
 };
 function Print({ print }: PrintProps) {
   const { title, type, author, date, body, id, instagramId } = print;
+  const bodyHtml = useMarkdown(body);
   return (
     <div className="pb-4 uncooked-print">
       <div className="flex flex-col sm:flex-row">
@@ -107,7 +109,7 @@ function Print({ print }: PrintProps) {
           <div className="pb-4">
             by: {author}, {formatDate(new Date(date))}
           </div>
-          <p className="pb-4">{body}</p>
+          {bodyHtml}
           <UncookedLink instagramId={instagramId} to={`/uncooked/${id}`}>
             {formatUncookedIdToText(id, type)}
           </UncookedLink>

@@ -48,6 +48,22 @@
       color: var(--green-light);
     }
   }
+  del {
+    color: var(--red);
+    &.uncooked-thought {
+      margin-top: 16px;
+      position: relative;
+      display: inline-block;
+      span {
+        @apply font-hand;
+        position: absolute;
+        top: -16px;
+        left: 0;
+        text-decoration: default;
+        white-space: nowrap;
+      }
+    }
+  }
 }
 
 /* Print Styles */

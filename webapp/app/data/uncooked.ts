@@ -3,6 +3,12 @@ export type IngredientType =
   | "print"
   | "betamax"
   | "view-master-reel";
+export type Annotation = {
+  target: "image" | "body";
+  context: string;
+  annotation: string;
+};
+
 export type Ingredient = {
   id: string;
   type: IngredientType;
@@ -12,6 +18,7 @@ export type Ingredient = {
   body: string;
   instagramId?: string;
   images?: string[];
+  annotations?: Annotation[];
 };
 export type Ingredients = {
   ingredients: Ingredient[];
@@ -33,7 +40,7 @@ const data: Ingredients = {
       title: "Desert Dwellers",
       author: "Austin Trautman",
       date: "2024-11-27T12:00:00-07:00",
-      body: 'Arabian Jasmine - one of our favorite recent "discoveries" as a desert plant that does oddly well in our climate with minimal water.',
+      body: '~~Arabian Jasmine~~[Blah] - one of our favorite recent "discoveries" as a desert plant that does oddly well in our climate with minimal water.',
       instagramId: "DC1uyv2Mw05",
     },
     {
@@ -106,7 +113,7 @@ const data: Ingredients = {
       title: "Dirt Desk",
       author: "Austin Trautman",
       date: "2024-11-06T12:00:00-07:00",
-      body: "Our favorite place to be is outside and in the dirt. Exploring early concepts of our first Nopal build.",
+      body: "Our favorite ~~place to be~~[office] is outside and in the dirt. Exploring early concepts of our first Nopal build.",
       instagramId: "DCCwQwrTVk9",
     },
     {
@@ -115,7 +122,7 @@ const data: Ingredients = {
       title: "Bento Box of Nature",
       author: "Austin Trautman",
       date: "2024-11-04T12:00:00-07:00",
-      body: "I had a grand plan of covering the side of a building with these vines.",
+      body: "I had a grand plan of covering the side of a building with ~~these vines~~[what species?].",
       instagramId: "DB91eF4SWeT",
     },
     {
@@ -151,7 +158,9 @@ const data: Ingredients = {
       title: "A New Post",
       author: "Gerald Leenerts",
       date: "2024-10-27T12:00:00-07:00",
-      body: "The way a frame is constructed has a massive impact on building performance and quality. Simple may not always look simple.\n\nWelcome to Nopal, where we focus on building healthy and sustainable homes.",
+      body: `The way a frame is constructed has a massive impact on building performance and quality. ~~Simple may not always look simple.~~[Simply, simple.]
+
+Welcome to Nopal, where we focus on building healthy and sustainable homes.`,
       instagramId: "DBorC56SZqj",
     },
   ],

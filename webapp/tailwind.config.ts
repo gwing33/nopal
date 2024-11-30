@@ -15,6 +15,7 @@ export default {
         "Ubuntu Mono",
         "monospace",
       ],
+      hand: ["Indie Flower", "cursive"],
     },
     colors: {
       purple: "#3f2b46",
