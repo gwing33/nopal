@@ -3,6 +3,7 @@ export type IngredientType =
   | "print"
   | "betamax"
   | "view-master-reel";
+
 export type Ingredient = {
   id: string;
   type: IngredientType;
@@ -42,7 +43,7 @@ const data: Ingredients = {
       title: "Felt Nature",
       author: "Austin Trautman",
       date: "2024-11-26T12:00:00-07:00",
-      body: "Working in nature is always the way to go.",
+      body: "Working in nature is ~~always~~ the way to go.",
       instagramId: "DC1uyv2Mw05",
     },
     {
@@ -65,7 +66,7 @@ const data: Ingredients = {
       title: "Wool ❤️ Felt",
       author: "Austin Trautman",
       date: "2024-11-23T12:00:00-07:00",
-      body: "With 3\" of open space filled with Sheep's wool and finished with acoustic felt, this ceiling system absorbs sound across the entire audible range while also filtering interior air and buffering humidity.",
+      body: "With 3\" of open space filled with Sheep's wool and finished with acoustic felt, this ceiling system absorbs sound across the entire audible range while also filtering interior air and ^[please hold...] buffering humidity.",
       instagramId: "DCt67LOtqQA",
     },
     {
@@ -74,7 +75,7 @@ const data: Ingredients = {
       title: "Felt Like Home",
       author: "Austin Trautman",
       date: "2024-11-22T12:00:00-07:00",
-      body: "On the search for the perfect Nopal ceiling. Experimenting with colorful and acoustic felt.",
+      body: "On the search for the ~~perfect Nopal~~[ideal] ceiling. Experimenting with colorful and acoustic felt.",
       instagramId: "DCsdUCxsvVn",
       images: [
         "view-master-reel-no-1-1",
@@ -88,7 +89,9 @@ const data: Ingredients = {
       title: "Path To Coexistance",
       author: "Gerald Leenerts",
       date: "2024-11-14T12:00:00-07:00",
-      body: "The truth is often more painful than we want to admit. My hope is that by surfacing it we can look for solutions.\n\nThis quail’s home is probably on the small site we are planning to develop. Will we be able to activate a space for them to continue to thrive?",
+      body: `The truth is often more painful than we want to admit. My hope is that by surfacing it we can look for solutions.
+
+This ^[poor] quail’s home is probably on the small site we are planning to develop. Will we be able to activate a space for them to continue to thrive?`,
       instagramId: "DCXa1ntz77g",
     },
     {
@@ -106,7 +109,7 @@ const data: Ingredients = {
       title: "Dirt Desk",
       author: "Austin Trautman",
       date: "2024-11-06T12:00:00-07:00",
-      body: "Our favorite place to be is outside and in the dirt. Exploring early concepts of our first Nopal build.",
+      body: "Our favorite ~~place to be~~[office] is outside and in the dirt. Exploring early concepts of our first Nopal build.",
       instagramId: "DCCwQwrTVk9",
     },
     {
@@ -115,7 +118,7 @@ const data: Ingredients = {
       title: "Bento Box of Nature",
       author: "Austin Trautman",
       date: "2024-11-04T12:00:00-07:00",
-      body: "I had a grand plan of covering the side of a building with these vines.",
+      body: "I had a grand plan of covering the side of a building with ~~these vines~~[what species?].",
       instagramId: "DB91eF4SWeT",
     },
     {
@@ -133,7 +136,7 @@ const data: Ingredients = {
       title: "Natural Business",
       author: "Austin Trautman",
       date: "2024-11-01T12:00:00-07:00",
-      body: "This is how we conduct business meetings, in nature and with laughter.",
+      body: "~~This is how we conduct~~[The original] business meeting~~s~~, in nature and with laughter.",
       instagramId: "DB1o-Qwy89D",
     },
     {
@@ -142,7 +145,11 @@ const data: Ingredients = {
       title: "Opuntia On Site",
       author: "Austin Trautman",
       date: "2024-10-29T12:00:00-07:00",
-      body: "At the core of Nopal is curiosity. One curiosity we always hold is our relationship with nature.\n\nbiophilia, biomimicry, or just sitting with a cactus for a bit. We have so much to gain as humans within nature.\n\nPS - Gerald in the background is busy scouting out a killer build site!",
+      body: `At the core of Nopal is curiosity. One curiosity we always hold is our relationship with nature.
+
+biophilia, biomimicry, or just sitting with a cactus for a bit. We have so much to gain as humans within nature.
+
+PS - Gerald in the background is busy scouting out a killer build site!`,
       instagramId: "DBuawVnSXhX",
     },
     {
@@ -151,7 +158,9 @@ const data: Ingredients = {
       title: "A New Post",
       author: "Gerald Leenerts",
       date: "2024-10-27T12:00:00-07:00",
-      body: "The way a frame is constructed has a massive impact on building performance and quality. Simple may not always look simple.\n\nWelcome to Nopal, where we focus on building healthy and sustainable homes.",
+      body: `The way a frame is constructed has a massive impact on building performance and quality. ~~Simple may not always look simple.~~[Simply, simple.]
+
+Welcome to Nopal, where we focus on building healthy and sustainable homes.`,
       instagramId: "DBorC56SZqj",
     },
   ],

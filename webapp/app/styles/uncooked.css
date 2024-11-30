@@ -48,6 +48,40 @@
       color: var(--green-light);
     }
   }
+  del {
+    color: var(--red);
+    @media (prefers-color-scheme: dark) {
+      color: var(--red-light);
+    }
+  }
+  .uncooked-thought,
+  .uncooked-added-thought {
+    margin-top: 16px;
+    position: relative;
+    display: inline-block;
+    color: var(--red);
+    @media (prefers-color-scheme: dark) {
+      color: var(--red-light);
+    }
+    span {
+      @apply font-hand;
+      position: absolute;
+      top: -16px;
+      left: 0;
+      text-decoration: default;
+      white-space: nowrap;
+    }
+  }
+  .uncooked-added-thought {
+    position: relative;
+    top: 12px;
+    left: -5px;
+    width: 0px;
+    span {
+      top: -28px;
+      transform: translateX(-20%);
+    }
+  }
 }
 
 /* Print Styles */

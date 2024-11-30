@@ -5,6 +5,8 @@
   --yellow: #fff9f1;
   --green: #5da06d;
   --green-light: #86cb97;
+  --red: #a63b31;
+  --red-light: #f6c8c3;
 
   --farground: #fff9f1;
   --midground: #ede4da;
@@ -114,6 +116,9 @@ body {
   &:hover,
   &:focus {
     background-color: var(--yellow);
+    @media (prefers-color-scheme: dark) {
+      background-color: var(--dark-midground);
+    }
   }
 }
 .menu-bars {
@@ -124,6 +129,9 @@ body {
   height: 3px;
   background-color: var(--purple);
   margin: 4px 0;
+  @media (prefers-color-scheme: dark) {
+    background-color: var(--yellow);
+  }
 }
 
 @media (max-width: 440px) {
@@ -138,8 +146,12 @@ body {
     min-width: 50%;
     background: white;
     border: 1px solid var(--foreground);
-    z-index: 0;
+    z-index: 3;
     border-radius: 4px;
+    @media (prefers-color-scheme: dark) {
+      background-color: var(--dark-midground);
+      border: 1px solid var(--dark-farground);
+    }
   }
   .main-nav a {
     display: block;
