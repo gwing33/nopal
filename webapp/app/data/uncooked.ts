@@ -3,11 +3,6 @@ export type IngredientType =
   | "print"
   | "betamax"
   | "view-master-reel";
-export type Annotation = {
-  target: "image" | "body";
-  context: string;
-  annotation: string;
-};
 
 export type Ingredient = {
   id: string;
@@ -18,7 +13,6 @@ export type Ingredient = {
   body: string;
   instagramId?: string;
   images?: string[];
-  annotations?: Annotation[];
 };
 export type Ingredients = {
   ingredients: Ingredient[];
@@ -72,7 +66,7 @@ const data: Ingredients = {
       title: "Wool ❤️ Felt",
       author: "Austin Trautman",
       date: "2024-11-23T12:00:00-07:00",
-      body: "With 3\" of open space filled with Sheep's wool and finished with acoustic felt, this ceiling system absorbs sound across the entire audible range while also filtering interior air and buffering humidity.",
+      body: "With 3\" of open space filled with Sheep's wool and finished with acoustic felt, this ceiling system absorbs sound across the entire audible range while also filtering interior air and ^[please hold...] buffering humidity.",
       instagramId: "DCt67LOtqQA",
     },
     {
@@ -81,7 +75,7 @@ const data: Ingredients = {
       title: "Felt Like Home",
       author: "Austin Trautman",
       date: "2024-11-22T12:00:00-07:00",
-      body: "On the search for the perfect Nopal ceiling. Experimenting with colorful and acoustic felt.",
+      body: "On the search for the ~~perfect Nopal~~[ideal] ceiling. Experimenting with colorful and acoustic felt.",
       instagramId: "DCsdUCxsvVn",
       images: [
         "view-master-reel-no-1-1",

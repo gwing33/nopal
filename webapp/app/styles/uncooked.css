@@ -79,7 +79,7 @@
     width: 0px;
     span {
       top: -28px;
-      transform: translateX(-50%);
+      transform: translateX(-20%);
     }
   }
 }
