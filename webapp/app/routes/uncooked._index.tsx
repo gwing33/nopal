@@ -7,7 +7,13 @@ import { getUncookedIngredients } from "../data/uncooked";
 import type { Ingredients, Ingredient, IngredientType } from "../data/uncooked";
 import { formatDate } from "../util/date";
 import { useSchemePref } from "../hooks/useSchemePref";
-import { useState, useCallback, SyntheticEvent, CSSProperties } from "react";
+import {
+  useState,
+  useCallback,
+  SyntheticEvent,
+  CSSProperties,
+  ReactNode,
+} from "react";
 
 import homeStyles from "../styles/home.css?url";
 import uncookedStyles from "../styles/uncooked.css?url";
@@ -128,6 +134,7 @@ function ViewMasterReel({ reel }: ViewMasterReelProps) {
         >
           {images?.map((img, idx) => (
             <div
+              key={img}
               className="flex-shrink-0"
               style={{
                 maxWidth: "174px",
@@ -135,7 +142,6 @@ function ViewMasterReel({ reel }: ViewMasterReelProps) {
               }}
             >
               <img
-                key={img}
                 src={`/uncooked/${img}.jpeg`}
                 alt={`${title} slide ${idx + 1}`}
               />
@@ -185,9 +191,12 @@ function UncookedLink({
   instagramId?: string;
   children: React.ReactNode;
 }) {
+  const Container = ({ children }: { children: ReactNode }) => (
+    <div className="pb-12 sm:pb-0">{children}</div>
+  );
   if (instagramId) {
     return (
-      <div className="pb-6 sm:pb-0">
+      <Container>
         <a
           href={`https://www.instagram.com/p/${instagramId}`}
           target="_blank"
@@ -195,15 +204,15 @@ function UncookedLink({
         >
           {children}
         </a>
-      </div>
+      </Container>
     );
   }
   return (
-    <div className="pb-6 sm:pb-0">
+    <Container>
       <Link to={to} className="uncooked-link">
         {children}
       </Link>
-    </div>
+    </Container>
   );
 }
 
