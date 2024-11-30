@@ -2,7 +2,7 @@ export type IngredientType =
   | "newspaper-clipping"
   | "print"
   | "betamax"
-  | "view-master-rell";
+  | "view-master-reel";
 export type Ingredient = {
   id: string;
   type: IngredientType;
@@ -11,6 +11,7 @@ export type Ingredient = {
   date: string;
   body: string;
   instagramId?: string;
+  images?: string[];
 };
 export type Ingredients = {
   ingredients: Ingredient[];
@@ -25,6 +26,61 @@ const data: Ingredients = {
       author: "Austin Trautman",
       date: "2024-11-30T12:00:00-07:00",
       body: "We have all heard the cliche you are what you eat.  We are also what we breathe.  In the simplest sense, this is all we can be.  Our bodies continuously break down and rebuild from what we put in them over time.",
+    },
+    {
+      id: "print-no-10",
+      type: "print",
+      title: "Desert Dwellers",
+      author: "Austin Trautman",
+      date: "2024-11-27T12:00:00-07:00",
+      body: 'Arabian Jasmine - one of our favorite recent "discoveries" as a desert plant that does oddly well in our climate with minimal water.',
+      instagramId: "DC1uyv2Mw05",
+    },
+    {
+      id: "print-no-9",
+      type: "print",
+      title: "Felt Nature",
+      author: "Austin Trautman",
+      date: "2024-11-26T12:00:00-07:00",
+      body: "Working in nature is always the way to go.",
+      instagramId: "DC1uyv2Mw05",
+    },
+    {
+      id: "view-master-reel-no-2",
+      type: "view-master-reel",
+      title: "Post Jig",
+      author: "Austin Trautman",
+      date: "2024-11-25T12:00:00-07:00",
+      body: "Getting jig-gy with it.",
+      instagramId: "DCzVklgCNZu",
+      images: [
+        "view-master-reel-no-2-1",
+        "view-master-reel-no-2-2",
+        "view-master-reel-no-2-3",
+      ],
+    },
+    {
+      id: "print-no-8",
+      type: "print",
+      title: "Wool ❤️ Felt",
+      author: "Austin Trautman",
+      date: "2024-11-23T12:00:00-07:00",
+      body: "With 3\" of open space filled with Sheep's wool and finished with acoustic felt, this ceiling system absorbs sound across the entire audible range while also filtering interior air and buffering humidity.",
+      instagramId: "DCt67LOtqQA",
+    },
+    {
+      id: "view-master-reel-no-1",
+      type: "view-master-reel",
+      title: "Felt Like Home",
+      author: "Austin Trautman",
+      date: "2024-11-22T12:00:00-07:00",
+      body: "On the search for the perfect Nopal ceiling. Experimenting with colorful and acoustic felt.",
+      instagramId: "DCsdUCxsvVn",
+      images: [
+        "view-master-reel-no-1-1",
+        "view-master-reel-no-1-2",
+        "view-master-reel-no-1-3",
+      ],
     },
     {
       id: "print-no-7",

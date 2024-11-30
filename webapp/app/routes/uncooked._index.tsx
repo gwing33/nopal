@@ -53,11 +53,13 @@ export default function Uncooked() {
                   return <NewspaperClipping key={i.id} clipping={i} />;
                 case "print":
                   return <Print key={i.id} print={i} />;
+                case "view-master-reel":
+                  return <ViewMasterReel key={i.id} reel={i} />;
               }
             }
             return null;
           })}
-          {showLoadMore && (
+          {showLoadMore ? (
             <button
               className="btn-secondary"
               style={{ "--btn-color": "var(--purple-light)" } as CSSProperties}
@@ -65,6 +67,8 @@ export default function Uncooked() {
             >
               Load more
             </button>
+          ) : (
+            <div>End.</div>
           )}
         </div>
       </div>
@@ -91,6 +95,52 @@ function Print({ print }: PrintProps) {
           }}
         >
           <img src={`/uncooked/${id}.jpeg`} alt={title} />
+        </div>
+        <div className="pt-4 sm:pt-0 sm:pl-4">
+          <h3 className="font-bold">{title}</h3>
+          <div className="pb-4">
+            by: {author}, {formatDate(new Date(date))}
+          </div>
+          <p className="pb-4">{body}</p>
+          <UncookedLink instagramId={instagramId} to={`/uncooked/${id}`}>
+            {formatUncookedIdToText(id, type)}
+          </UncookedLink>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type ViewMasterReelProps = {
+  reel: Ingredient;
+};
+function ViewMasterReel({ reel }: ViewMasterReelProps) {
+  const { title, type, author, date, body, id, instagramId, images } = reel;
+  return (
+    <div className="pb-4 uncooked-view-master-reel">
+      <div className="flex flex-col sm:flex-row">
+        <div
+          className="flex-shrink-0 grid grid-cols-2 grid-rows-2 gap-2"
+          style={{
+            maxWidth: "356px",
+            maxHeight: "356px",
+          }}
+        >
+          {images?.map((img, idx) => (
+            <div
+              className="flex-shrink-0"
+              style={{
+                maxWidth: "174px",
+                maxHeight: "174px",
+              }}
+            >
+              <img
+                key={img}
+                src={`/uncooked/${img}.jpeg`}
+                alt={`${title} slide ${idx + 1}`}
+              />
+            </div>
+          ))}
         </div>
         <div className="pt-4 sm:pt-0 sm:pl-4">
           <h3 className="font-bold">{title}</h3>
@@ -137,19 +187,23 @@ function UncookedLink({
 }) {
   if (instagramId) {
     return (
-      <a
-        href={`https://www.instagram.com/p/${instagramId}`}
-        target="_blank"
-        className="uncooked-link"
-      >
-        {children}
-      </a>
+      <div className="pb-6 sm:pb-0">
+        <a
+          href={`https://www.instagram.com/p/${instagramId}`}
+          target="_blank"
+          className="uncooked-link"
+        >
+          {children}
+        </a>
+      </div>
     );
   }
   return (
-    <Link to={to} className="uncooked-link">
-      {children}
-    </Link>
+    <div className="pb-6 sm:pb-0">
+      <Link to={to} className="uncooked-link">
+        {children}
+      </Link>
+    </div>
   );
 }
 
@@ -167,7 +221,7 @@ function getTextByIngredientType(type: IngredientType) {
       return "Betamax";
     case "print":
       return "Print";
-    case "view-master-rell":
+    case "view-master-reel":
       return "View-Master Reel";
   }
   return "";

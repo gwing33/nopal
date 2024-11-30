@@ -51,7 +51,8 @@
 }
 
 /* Print Styles */
-.uncooked-print img {
+.uncooked-print img,
+.uncooked-view-master-reel img {
   @apply aspect-square;
   object-fit: cover;
 }
