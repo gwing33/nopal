@@ -21,7 +21,7 @@ export const loader = async () => {
   return getUncookedIngredients();
 };
 
-const DISPLAY_LIMIT = 5;
+const DISPLAY_LIMIT = 10;
 
 export default function Uncooked() {
   const schemePref = useSchemePref();
