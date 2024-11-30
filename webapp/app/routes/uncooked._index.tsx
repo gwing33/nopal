@@ -7,6 +7,7 @@ import { getUncookedIngredients } from "../data/uncooked";
 import type { Ingredients, Ingredient, IngredientType } from "../data/uncooked";
 import { formatDate } from "../util/date";
 import { useSchemePref } from "../hooks/useSchemePref";
+import { useState, useCallback, SyntheticEvent, CSSProperties } from "react";
 
 import homeStyles from "../styles/home.css?url";
 import uncookedStyles from "../styles/uncooked.css?url";
@@ -20,29 +21,51 @@ export const loader = async () => {
   return getUncookedIngredients();
 };
 
+const DISPLAY_LIMIT = 5;
+
 export default function Uncooked() {
   const schemePref = useSchemePref();
   const isDark = schemePref === "dark";
   const data = useLoaderData<typeof loader>();
+  const [limit, setLimit] = useState(DISPLAY_LIMIT);
+  const handleLoadMore = useCallback(
+    (e: SyntheticEvent) => {
+      e.preventDefault();
+      setLimit(limit + DISPLAY_LIMIT);
+    },
+    [limit]
+  );
+  const showLoadMore = data?.ingredients.length > limit;
 
   return (
     <Layout>
       <div className="pr-4 pl-4 scene1">
-        <div className="container mx-auto max-w-screen-sm font-mono">
+        <div className="uncooked-container pb-10">
           <img
             src={isDark ? uncookedDarkImg : uncookedLightImg}
             alt="uncooked"
-            className="-ml-20 pb-16"
+            className="md:-ml-20 pb-16"
           />
-          {(data?.ingredients || []).map((i) => {
-            switch (i.type) {
-              case "newspaper-clipping":
-                return <NewspaperClipping key={i.id} clipping={i} />;
-              case "print":
-                return <Print key={i.id} print={i} />;
+          {(data?.ingredients || []).map((i, idx) => {
+            if (idx < limit) {
+              switch (i.type) {
+                case "newspaper-clipping":
+                  return <NewspaperClipping key={i.id} clipping={i} />;
+                case "print":
+                  return <Print key={i.id} print={i} />;
+              }
             }
             return null;
           })}
+          {showLoadMore && (
+            <button
+              className="btn-secondary"
+              style={{ "--btn-color": "var(--purple-light)" } as CSSProperties}
+              onClick={handleLoadMore}
+            >
+              Load more
+            </button>
+          )}
         </div>
       </div>
       <Footer title="Suggestions?">
@@ -58,16 +81,19 @@ type PrintProps = {
 function Print({ print }: PrintProps) {
   const { title, type, author, date, body, id, instagramId } = print;
   return (
-    <div className="pb-4">
-      <div className="flex">
-        <img
-          src={`/app/images/uncooked/${id}.jpeg`}
-          alt={title}
-          height="356px"
-          width="356px"
-        />
-        <div className="pl-4">
-          <h3 className="font-bold pb-4">{title}</h3>
+    <div className="pb-4 uncooked-print">
+      <div className="flex flex-col sm:flex-row">
+        <div
+          className="flex-shrink-0"
+          style={{
+            maxWidth: "356px",
+            maxHeight: "356px",
+          }}
+        >
+          <img src={`/app/images/uncooked/${id}.jpeg`} alt={title} />
+        </div>
+        <div className="pt-4 sm:pt-0 sm:pl-4">
+          <h3 className="font-bold">{title}</h3>
           <div className="pb-4">
             by: {author}, {formatDate(new Date(date))}
           </div>
@@ -88,11 +114,9 @@ function NewspaperClipping({ clipping }: NewspaperClippingProps) {
   const { title, type, author, date, body, id, instagramId } = clipping;
   return (
     <div className="pb-8">
-      <div className="flex justify-between pb-4">
-        <h3 className="font-bold">{title}</h3>
-        <span>
-          by: {author}, {formatDate(new Date(date))}
-        </span>
+      <h3 className="font-bold">{title}</h3>
+      <div className="pb-4">
+        by: {author}, {formatDate(new Date(date))}
       </div>
       <p className="pb-4">{body}</p>
       <UncookedLink to={`/uncooked/${id}`}>

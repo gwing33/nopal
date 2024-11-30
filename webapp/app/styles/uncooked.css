@@ -1,3 +1,12 @@
+.uncooked-container {
+  @apply container;
+  @apply mx-auto;
+  @apply max-w-screen-sm;
+  @apply font-mono;
+  position: relative;
+  z-index: 2;
+}
+
 .uncooked-link {
   color: var(--green);
   &:hover {
@@ -27,4 +36,10 @@
   em {
     @apply italic;
   }
+}
+
+/* Print Styles */
+.uncooked-print img {
+  @apply aspect-square;
+  object-fit: cover;
 }

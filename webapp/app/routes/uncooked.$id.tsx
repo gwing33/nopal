@@ -2,7 +2,7 @@ import { LoaderFunctionArgs, LinksFunction } from "@remix-run/node";
 import { Layout, Footer } from "../components/layout";
 import { getUncookedIngredients } from "../data/uncooked";
 import { readPost } from "../util/readpost.server";
-import { useLoaderData } from "@remix-run/react";
+import { NavLink, useLoaderData } from "@remix-run/react";
 import showdown from "showdown";
 import { useMemo } from "react";
 import { formatDate } from "../util/date";
@@ -38,7 +38,7 @@ export default function UncookedItem() {
   return (
     <Layout>
       <div className="pr-4 pl-4 scene1">
-        <div className="container mx-auto max-w-screen-sm font-mono mt-8">
+        <div className="uncooked-container mt-8">
           <div className="mb-6">
             <h1 className="font-bold">{ingrediant.title}</h1>
             <div>
@@ -49,6 +49,11 @@ export default function UncookedItem() {
             className="uncooked-markdown"
             dangerouslySetInnerHTML={{ __html: bodyHtml }}
           />
+          <div className="mt-10">
+            <NavLink to="/uncooked" className="uncooked-link">
+              &larr; Back to Uncooked
+            </NavLink>
+          </div>
         </div>
       </div>
       <Footer title="Want to learn more?">

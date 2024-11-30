@@ -31,18 +31,18 @@ body {
 }
 .btn-primary {
   @apply btn;
-  background-color: var(--purple);
+  background-color: var(--btn-color, var(--purple));
   padding: 16px 32px;
   color: white;
   @media (prefers-color-scheme: dark) {
     background-color: white;
-    color: var(--purple);
+    color: var(--btn-color, var(--purple));
   }
 }
 
 .btn-secondary {
   @apply btn;
-  background-color: var(--green);
+  background-color: var(--btn-color, var(--green));
   padding: 8px 16px;
   color: white;
 }
