@@ -40,7 +40,7 @@ const data: Ingredients = {
       title: "Desert Dwellers",
       author: "Austin Trautman",
       date: "2024-11-27T12:00:00-07:00",
-      body: '~~Arabian Jasmine~~[Blah] - one of our favorite recent "discoveries" as a desert plant that does oddly well in our climate with minimal water.',
+      body: 'Arabian Jasmine - one of our favorite recent "discoveries" as a desert plant that does oddly well in our climate with minimal water.',
       instagramId: "DC1uyv2Mw05",
     },
     {
@@ -49,7 +49,7 @@ const data: Ingredients = {
       title: "Felt Nature",
       author: "Austin Trautman",
       date: "2024-11-26T12:00:00-07:00",
-      body: "Working in nature is always the way to go.",
+      body: "Working in nature is ~~always~~ the way to go.",
       instagramId: "DC1uyv2Mw05",
     },
     {
@@ -95,7 +95,9 @@ const data: Ingredients = {
       title: "Path To Coexistance",
       author: "Gerald Leenerts",
       date: "2024-11-14T12:00:00-07:00",
-      body: "The truth is often more painful than we want to admit. My hope is that by surfacing it we can look for solutions.\n\nThis quail’s home is probably on the small site we are planning to develop. Will we be able to activate a space for them to continue to thrive?",
+      body: `The truth is often more painful than we want to admit. My hope is that by surfacing it we can look for solutions.
+
+This ^[poor] quail’s home is probably on the small site we are planning to develop. Will we be able to activate a space for them to continue to thrive?`,
       instagramId: "DCXa1ntz77g",
     },
     {
@@ -140,7 +142,7 @@ const data: Ingredients = {
       title: "Natural Business",
       author: "Austin Trautman",
       date: "2024-11-01T12:00:00-07:00",
-      body: "This is how we conduct business meetings, in nature and with laughter.",
+      body: "~~This is how we conduct~~[The original] business meeting~~s~~, in nature and with laughter.",
       instagramId: "DB1o-Qwy89D",
     },
     {
@@ -149,7 +151,11 @@ const data: Ingredients = {
       title: "Opuntia On Site",
       author: "Austin Trautman",
       date: "2024-10-29T12:00:00-07:00",
-      body: "At the core of Nopal is curiosity. One curiosity we always hold is our relationship with nature.\n\nbiophilia, biomimicry, or just sitting with a cactus for a bit. We have so much to gain as humans within nature.\n\nPS - Gerald in the background is busy scouting out a killer build site!",
+      body: `At the core of Nopal is curiosity. One curiosity we always hold is our relationship with nature.
+
+biophilia, biomimicry, or just sitting with a cactus for a bit. We have so much to gain as humans within nature.
+
+PS - Gerald in the background is busy scouting out a killer build site!`,
       instagramId: "DBuawVnSXhX",
     },
     {

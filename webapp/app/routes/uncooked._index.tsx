@@ -124,6 +124,7 @@ type ViewMasterReelProps = {
 };
 function ViewMasterReel({ reel }: ViewMasterReelProps) {
   const { title, type, author, date, body, id, instagramId, images } = reel;
+  const bodyHtml = useMarkdown(body);
   return (
     <div className="pb-4 uncooked-view-master-reel">
       <div className="flex flex-col sm:flex-row">
@@ -155,7 +156,7 @@ function ViewMasterReel({ reel }: ViewMasterReelProps) {
           <div className="pb-4">
             by: {author}, {formatDate(new Date(date))}
           </div>
-          <p className="pb-4">{body}</p>
+          {bodyHtml}
           <UncookedLink instagramId={instagramId} to={`/uncooked/${id}`}>
             {formatUncookedIdToText(id, type)}
           </UncookedLink>
@@ -170,13 +171,14 @@ type NewspaperClippingProps = {
 };
 function NewspaperClipping({ clipping }: NewspaperClippingProps) {
   const { title, type, author, date, body, id, instagramId } = clipping;
+  const bodyHtml = useMarkdown(body);
   return (
     <div className="pb-8">
       <h3 className="font-bold">{title}</h3>
       <div className="pb-4">
         by: {author}, {formatDate(new Date(date))}
       </div>
-      <p className="pb-4">{body}</p>
+      {bodyHtml}
       <UncookedLink to={`/uncooked/${id}`}>
         {formatUncookedIdToText(id, type)}
       </UncookedLink>

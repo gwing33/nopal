@@ -10,6 +10,13 @@ showdown.extension("nopal", () => {
       regex: /~~(.*?)~~\[(.*?)\]/g,
       replace: "<del class='uncooked-thought'>$1<span>$2</span></del>",
     },
+    {
+      type: "lang",
+      // Regex that matches a carot (^) followed by words in square brackets
+      // e.g. ^[text] becomes <span class='uncooked-thought'>^<span>text</span></span>
+      regex: /\^\[(.*?)\]/g,
+      replace: "<span class='uncooked-added-thought'>^<span>$1</span></span>",
+    },
   ];
 });
 
