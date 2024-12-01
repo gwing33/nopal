@@ -8,13 +8,7 @@ import type { Ingredients, Ingredient, IngredientType } from "../data/uncooked";
 import { formatDate } from "../util/date";
 import { useSchemePref } from "../hooks/useSchemePref";
 import { useMarkdown } from "../hooks/useMarkdown";
-import {
-  useState,
-  useCallback,
-  SyntheticEvent,
-  CSSProperties,
-  ReactNode,
-} from "react";
+import { useState, useCallback, SyntheticEvent, ReactNode } from "react";
 
 import homeStyles from "../styles/home.css?url";
 import uncookedStyles from "../styles/uncooked.css?url";
@@ -75,9 +69,8 @@ export default function Uncooked() {
                 Load more
               </del>
               <button
-                className="btn-secondary"
+                className="btn-secondary font-hand"
                 disabled={true}
-                style={{ "--btn-color": "var(--)" } as CSSProperties}
                 onClick={handleLoadMore}
               >
                 Learn more
