@@ -3,6 +3,7 @@ import { Layout, ContactUsLinks, Footer } from "../components/layout";
 
 import homeStyles from "../styles/home.css?url";
 import exploreStyles from "../styles/explore.css?url";
+import { NavLink } from "@remix-run/react";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: homeStyles },
@@ -87,6 +88,18 @@ export default function Explore() {
               <li>Less toxic (lower VOCs)</li>
               <li>More durable and easier to maintain</li>
             </ul>
+          </div>
+          <div className="lg:w-1/3 md:w-1/2 w-full">
+            <NavLink
+              className="btn-primary"
+              to="/uncooked/newspaper-clipping-no-1"
+            >
+              Sqeaky clear air
+            </NavLink>
+            <p className="mt-4">
+              We explore what it means to dilute and filter air and the impact
+              it can have on our lives.
+            </p>
           </div>
         </div>
       </div>

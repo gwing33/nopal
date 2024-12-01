@@ -67,13 +67,22 @@ export default function Uncooked() {
             return null;
           })}
           {showLoadMore ? (
-            <button
-              className="btn-secondary"
-              style={{ "--btn-color": "var(--purple-light)" } as CSSProperties}
-              onClick={handleLoadMore}
-            >
-              Load more
-            </button>
+            <>
+              <del
+                className="mr-4"
+                style={{ color: isDark ? "var(--red-light)" : "var(--red)" }}
+              >
+                Load more
+              </del>
+              <button
+                className="btn-secondary"
+                disabled={true}
+                style={{ "--btn-color": "var(--)" } as CSSProperties}
+                onClick={handleLoadMore}
+              >
+                Learn more
+              </button>
+            </>
           ) : (
             <div>End.</div>
           )}
