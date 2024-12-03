@@ -70,8 +70,8 @@ export default function Explore() {
 
       <div className="scene1">
         <div className="air-arrows container mx-auto mt-2 px-4" />
-        <div className="sm:flex -mt-6 container mx-auto px-4">
-          <div className="lg:w-1/3 md:w-1/2 w-full">
+        <div className="sm:flex -mt-6 container mx-auto px-4 flex-wrap gap-4 z-10 relative">
+          <div style={{ maxWidth: "360px" }} className="md:w-1/2">
             <h4 className="text-2xl explore-sub-title">
               Tight Building Envelope
             </h4>
@@ -81,7 +81,7 @@ export default function Explore() {
               <li>Lower energy consumption</li>
             </ul>
           </div>
-          <div className="lg:w-1/3 md:w-1/2 w-full mt-8 sm:mt-0">
+          <div style={{ maxWidth: "384px" }} className="mt-8 sm:mt-0">
             <h4 className="text-2xl explore-sub-title">Natural Materials</h4>
             <ul className="list-disc list-inside">
               <li>Lower environmental impact</li>
@@ -89,7 +89,7 @@ export default function Explore() {
               <li>More durable and easier to maintain</li>
             </ul>
           </div>
-          <div className="lg:w-1/3 md:w-1/2 w-full">
+          <div style={{ maxWidth: "360px" }} className="mt-8">
             <NavLink
               className="btn-primary"
               to="/uncooked/newspaper-clipping-no-1"

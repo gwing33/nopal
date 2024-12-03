@@ -70,7 +70,6 @@ export default function Uncooked() {
               </del>
               <button
                 className="btn-secondary font-hand"
-                disabled={true}
                 onClick={handleLoadMore}
               >
                 Learn more
