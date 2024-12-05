@@ -21,6 +21,34 @@ export type Ingredients = {
 const data: Ingredients = {
   ingredients: [
     {
+      id: "view-master-reel-no-2",
+      type: "view-master-reel",
+      title: "Currently, real open.",
+      author: "Austin Trautman",
+      date: "2024-12-06T12:00:00-07:00",
+      body: "Open joint Black Locust cladding on a rainscreen over Pro Clima Fronta Quattro.",
+      instagramId: undefined,
+      images: ["view-master-reel-no-3-1", "view-master-reel-no-3-2"],
+    },
+    {
+      id: "print-no-12",
+      type: "print",
+      title: "Jean Clad Van Damme",
+      author: "Austin Trautman",
+      date: "2024-12-06T12:00:00-07:00",
+      body: "A stack of rich Black Locust cladding eagerly waiting to clad this ADU.  It smells so good.",
+      instagramId: undefined,
+    },
+    {
+      id: "print-no-11",
+      type: "print",
+      title: "Family Reunion",
+      author: "Austin Trautman",
+      date: "2024-12-05T12:00:00-07:00",
+      body: "Welcome home, ~~friend~~[son].",
+      instagramId: "DDNIGlLhDIW",
+    },
+    {
       id: "newspaper-clipping-no-1",
       type: "newspaper-clipping",
       title: "Fresh Air",

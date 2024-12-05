@@ -103,7 +103,7 @@ function Print({ print }: PrintProps) {
             maxHeight: "356px",
           }}
         >
-          <img src={`/uncooked/${id}.jpeg`} alt={title} />
+          <img src={`/uncooked/${id}.jpg`} alt={title} />
         </div>
         <div className="pt-4 sm:pt-0 sm:pl-4">
           <h3 className="font-bold">{title}</h3>
@@ -111,7 +111,7 @@ function Print({ print }: PrintProps) {
             by: {author}, {formatDate(new Date(date))}
           </div>
           {bodyHtml}
-          <UncookedLink instagramId={instagramId} to={`/uncooked/${id}`}>
+          <UncookedLink instagramId={instagramId}>
             {formatUncookedIdToText(id, type)}
           </UncookedLink>
         </div>
@@ -126,11 +126,12 @@ type ViewMasterReelProps = {
 function ViewMasterReel({ reel }: ViewMasterReelProps) {
   const { title, type, author, date, body, id, instagramId, images } = reel;
   const bodyHtml = useMarkdown(body);
+  const gridRows = (images?.length || 0) > 2 ? "grid-rows-2" : "grid-rows-1";
   return (
     <div className="pb-4 uncooked-view-master-reel">
       <div className="flex flex-col sm:flex-row">
         <div
-          className="flex-shrink-0 grid grid-cols-2 grid-rows-2 gap-2"
+          className={"flex-shrink-0 grid grid-cols-2 gap-2 " + gridRows}
           style={{
             maxWidth: "356px",
             maxHeight: "356px",
@@ -146,7 +147,7 @@ function ViewMasterReel({ reel }: ViewMasterReelProps) {
               }}
             >
               <img
-                src={`/uncooked/${img}.jpeg`}
+                src={`/uncooked/${img}.jpg`}
                 alt={`${title} slide ${idx + 1}`}
               />
             </div>
@@ -158,7 +159,7 @@ function ViewMasterReel({ reel }: ViewMasterReelProps) {
             by: {author}, {formatDate(new Date(date))}
           </div>
           {bodyHtml}
-          <UncookedLink instagramId={instagramId} to={`/uncooked/${id}`}>
+          <UncookedLink instagramId={instagramId}>
             {formatUncookedIdToText(id, type)}
           </UncookedLink>
         </div>
@@ -192,33 +193,32 @@ function UncookedLink({
   to,
   children,
 }: {
-  to: string;
+  to?: string;
   instagramId?: string;
   children: React.ReactNode;
 }) {
   const Container = ({ children }: { children: ReactNode }) => (
-    <div className="pb-12 sm:pb-0">{children}</div>
+    <div className="uncooked-link pb-12 sm:pb-0">{children}</div>
   );
   if (instagramId) {
     return (
       <Container>
-        <a
-          href={`https://www.instagram.com/p/${instagramId}`}
-          target="_blank"
-          className="uncooked-link"
-        >
+        <a href={`https://www.instagram.com/p/${instagramId}`} target="_blank">
           {children}
         </a>
       </Container>
     );
   }
-  return (
-    <Container>
-      <Link to={to} className="uncooked-link">
-        {children}
-      </Link>
-    </Container>
-  );
+  if (to) {
+    return (
+      <Container>
+        <Link to={to} className="uncooked-link">
+          {children}
+        </Link>
+      </Container>
+    );
+  }
+  return <Container>{children} coming soon.</Container>;
 }
 
 function formatUncookedIdToText(id: string, type: IngredientType): string {
