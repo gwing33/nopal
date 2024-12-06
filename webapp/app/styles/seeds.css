@@ -1,0 +1,35 @@
+.home-pup {
+  height: 30vh;
+  min-height: 128px;
+  width: 448px;
+  background: url("/app/images/seeds/home-pup.svg") left center no-repeat;
+  background-size: contain;
+  position: relative;
+  @media (max-width: 448px) {
+    width: 100%;
+  }
+  .home-line {
+    position: absolute;
+    right: 50%;
+    top: -30px;
+    height: 12vh;
+    width: 0px;
+    border-left: 1px solid var(--green);
+    transform: rotate(-38deg);
+    @media (max-height: 768px) {
+      height: 10vh;
+    }
+  }
+  .pup-line {
+    position: absolute;
+    left: 8%;
+    bottom: -30px;
+    height: 12vh;
+    width: 0px;
+    border-left: 1px solid var(--green);
+    transform: rotate(10deg);
+    @media (max-height: 768px) {
+      height: 10vh;
+    }
+  }
+}
