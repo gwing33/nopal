@@ -14,7 +14,7 @@ import {
 import { useSchemePref } from "../hooks/useSchemePref";
 import { useClickOutside } from "../hooks/useClickOutside";
 
-export function Layout({ children }: { children: ReactNode }) {
+export function Layout({ children }: { children?: ReactNode }) {
   const schemePref = useSchemePref();
   const isDark = schemePref === "dark";
   const [expanded, setExpanded] = useState(false);
@@ -51,6 +51,9 @@ export function Layout({ children }: { children: ReactNode }) {
           >
             <NavLink to="/explore" className="p-2">
               Explore
+            </NavLink>
+            <NavLink to="/seeds" className="p-2">
+              Seeds
             </NavLink>
             <NavLink to="/uncooked" className="p-2">
               Uncooked
