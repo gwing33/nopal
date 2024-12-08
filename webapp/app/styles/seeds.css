@@ -2,34 +2,36 @@
   height: 30vh;
   min-height: 128px;
   width: 448px;
-  background: url("/app/images/seeds/home-pup.svg") left center no-repeat;
+  background: url("/app/images/seeds/home-pup-light.svg") left center no-repeat;
   background-size: contain;
   position: relative;
   @media (max-width: 448px) {
     width: 100%;
   }
-  .home-line {
-    position: absolute;
-    right: 50%;
-    top: -30px;
-    height: 12vh;
-    width: 0px;
-    border-left: 1px solid var(--green);
-    transform: rotate(-38deg);
-    @media (max-height: 768px) {
-      height: 10vh;
-    }
+  @media (prefers-color-scheme: dark) {
+    background: url("/app/images/seeds/home-pup-dark.svg") left center no-repeat;
   }
+  .home-line,
   .pup-line {
     position: absolute;
-    left: 8%;
-    bottom: -30px;
     height: 12vh;
     width: 0px;
-    border-left: 1px solid var(--green);
-    transform: rotate(10deg);
+    border-left: 1px solid var(--foreground);
     @media (max-height: 768px) {
       height: 10vh;
     }
+    @media (prefers-color-scheme: dark) {
+      border-left-color: var(--dark-foreground);
+    }
+  }
+  .home-line {
+    right: 50%;
+    top: -30px;
+    transform: rotate(-38deg);
+  }
+  .pup-line {
+    left: 8%;
+    bottom: -30px;
+    transform: rotate(10deg);
   }
 }
