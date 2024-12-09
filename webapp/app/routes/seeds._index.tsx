@@ -21,15 +21,15 @@ export default function Seeds() {
           no={1}
           desc="The heart is where the home is."
         />
-        <div className="home-pup mt-8 mb-8">
+        <div className="home-varn mt-8 mb-8">
           <div className="home-line" />
-          <div className="pup-line" />
+          <div className="varn-line" />
         </div>
         <Seed
-          title="Pup"
-          scientificName="(pirum pup)"
+          title="Varn"
+          scientificName="(lanam horreum)"
           no={2}
-          desc="The home is where the heart is."
+          desc="Experiences yet to be discovered."
         />
       </div>
     </div>

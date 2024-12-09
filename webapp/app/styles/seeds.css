@@ -1,18 +1,19 @@
-.home-pup {
+.home-varn {
   height: 30vh;
   min-height: 128px;
   width: 448px;
-  background: url("/app/images/seeds/home-pup-light.svg") left center no-repeat;
+  background: url("/app/images/seeds/home-varn-light.svg") left center no-repeat;
   background-size: contain;
   position: relative;
   @media (max-width: 448px) {
     width: 100%;
   }
   @media (prefers-color-scheme: dark) {
-    background: url("/app/images/seeds/home-pup-dark.svg") left center no-repeat;
+    background: url("/app/images/seeds/home-varn-dark.svg") left center
+      no-repeat;
   }
   .home-line,
-  .pup-line {
+  .varn-line {
     position: absolute;
     height: 12vh;
     width: 0px;
@@ -29,7 +30,7 @@
     top: -30px;
     transform: rotate(-38deg);
   }
-  .pup-line {
+  .varn-line {
     left: 8%;
     bottom: -30px;
     transform: rotate(10deg);
