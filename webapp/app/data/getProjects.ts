@@ -33,7 +33,7 @@ const data: Projects = {
       author: "Austin Trautman",
       date: "2024-12-06T12:00:00-07:00",
       body: "Open joint Black Locust cladding on a rainscreen over Pro Clima Fronta Quattro.",
-      externalHref: undefined,
+      externalHref: getInstagramUrl("DDQS7jnM2Ai"),
       images: ["view-master-reel-no-3-1", "view-master-reel-no-3-2"],
     },
     {
@@ -43,7 +43,7 @@ const data: Projects = {
       author: "Austin Trautman",
       date: "2024-12-06T12:00:00-07:00",
       body: "A stack of rich Black Locust cladding eagerly waiting to clad this ADU.  It smells so good.",
-      externalHref: undefined,
+      externalHref: getInstagramUrl("DDPiwGbBHAF"),
     },
     {
       id: "print-no-11",
