@@ -1,5 +1,6 @@
 import { LinksFunction } from "@remix-run/node";
-import { Layout, ContactUsLinks, Footer } from "../components/layout";
+import { Layout } from "../components/Layout";
+import { Footer } from "../components/Footer";
 
 import homeStyles from "../styles/home.css?url";
 import exploreStyles from "../styles/explore.css?url";

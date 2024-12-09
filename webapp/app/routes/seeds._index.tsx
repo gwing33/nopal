@@ -1,5 +1,5 @@
 import { LinksFunction } from "@remix-run/node";
-import { Layout } from "../components/layout";
+import { Layout } from "../components/Layout";
 
 import homeStyles from "../styles/home.css?url";
 import seedsStyles from "../styles/seeds.css?url";

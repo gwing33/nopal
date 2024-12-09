@@ -27,6 +27,16 @@ body {
   }
 }
 
+/* Simple Container */
+.simple-container {
+  @apply container;
+  @apply mx-auto;
+  @apply max-w-screen-sm;
+  @apply font-mono;
+  position: relative;
+  z-index: 2;
+}
+
 /* Link */
 .link {
   color: var(--green);

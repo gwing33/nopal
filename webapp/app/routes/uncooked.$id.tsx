@@ -1,9 +1,10 @@
 import { LoaderFunctionArgs, LinksFunction } from "@remix-run/node";
-import { Layout, Footer } from "../components/layout";
-import { getUncookedIngredients } from "../data/uncooked";
+import { Layout } from "../components/Layout";
+import { Footer } from "../components/Footer";
+import { getProjects } from "../data/getProjects";
 import { readPost } from "../util/readpost.server";
 import { NavLink, useLoaderData } from "@remix-run/react";
-import { formatDate } from "../util/date";
+import { formatDate } from "../util/formatDate";
 import { useMarkdown } from "../hooks/useMarkdown";
 
 import homeStyles from "../styles/home.css?url";
@@ -17,9 +18,7 @@ export const links: LinksFunction = () => [
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const id = params.id;
   if (id) {
-    const ingrediant = getUncookedIngredients().ingredients.find(
-      (ing) => ing.id === id
-    );
+    const ingrediant = getProjects().projects.find((p) => p.id === id);
     if (ingrediant?.type == "newspaper-clipping") {
       const body = await readPost(ingrediant.id + ".md");
       return { ingrediant, body };
@@ -34,7 +33,7 @@ export default function UncookedItem() {
   return (
     <Layout>
       <div className="pr-4 pl-4 scene1">
-        <div className="uncooked-container mt-8">
+        <div className="simple-container mt-8">
           <div className="mb-6">
             <h1 className="font-bold">{ingrediant.title}</h1>
             <div>
@@ -43,7 +42,7 @@ export default function UncookedItem() {
           </div>
           {bodyHtml}
           <div className="mt-10">
-            <NavLink to="/uncooked" className="uncooked-link">
+            <NavLink to="/uncooked" className="link">
               &larr; Back to Uncooked
             </NavLink>
           </div>

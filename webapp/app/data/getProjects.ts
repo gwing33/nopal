@@ -1,25 +1,31 @@
-export type IngredientType =
+export type ArtMedium =
   | "newspaper-clipping"
   | "print"
   | "betamax"
-  | "view-master-reel";
+  | "view-master-reel"
+  | "presentation";
 
-export type Ingredient = {
+export type Project = {
   id: string;
-  type: IngredientType;
+  type: ArtMedium;
   title: string;
   author: string;
   date: string;
   body: string;
-  instagramId?: string;
+  externalHref?: string;
+  customImage?: string;
   images?: string[];
 };
-export type Ingredients = {
-  ingredients: Ingredient[];
+export type Projects = {
+  projects: Project[];
 };
 
-const data: Ingredients = {
-  ingredients: [
+function getInstagramUrl(id: string): string {
+  return `https://www.instagram.com/p/${id}`;
+}
+
+const data: Projects = {
+  projects: [
     {
       id: "view-master-reel-no-2",
       type: "view-master-reel",
@@ -27,7 +33,7 @@ const data: Ingredients = {
       author: "Austin Trautman",
       date: "2024-12-06T12:00:00-07:00",
       body: "Open joint Black Locust cladding on a rainscreen over Pro Clima Fronta Quattro.",
-      instagramId: undefined,
+      externalHref: undefined,
       images: ["view-master-reel-no-3-1", "view-master-reel-no-3-2"],
     },
     {
@@ -37,7 +43,7 @@ const data: Ingredients = {
       author: "Austin Trautman",
       date: "2024-12-06T12:00:00-07:00",
       body: "A stack of rich Black Locust cladding eagerly waiting to clad this ADU.  It smells so good.",
-      instagramId: undefined,
+      externalHref: undefined,
     },
     {
       id: "print-no-11",
@@ -46,7 +52,7 @@ const data: Ingredients = {
       author: "Austin Trautman",
       date: "2024-12-05T12:00:00-07:00",
       body: "Welcome home, ~~friend~~[son].",
-      instagramId: "DDNIGlLhDIW",
+      externalHref: getInstagramUrl("DDNIGlLhDIW"),
     },
     {
       id: "newspaper-clipping-no-1",
@@ -63,7 +69,7 @@ const data: Ingredients = {
       author: "Austin Trautman",
       date: "2024-11-27T12:00:00-07:00",
       body: 'Arabian Jasmine - one of our favorite recent "discoveries" as a desert plant that does oddly well in our climate with minimal water.',
-      instagramId: "DC1uyv2Mw05",
+      externalHref: getInstagramUrl("DC1uyv2Mw05"),
     },
     {
       id: "print-no-9",
@@ -72,7 +78,7 @@ const data: Ingredients = {
       author: "Austin Trautman",
       date: "2024-11-26T12:00:00-07:00",
       body: "Working in nature is ~~always~~ the way to go.",
-      instagramId: "DC1uyv2Mw05",
+      externalHref: getInstagramUrl("DC1uyv2Mw05"),
     },
     {
       id: "view-master-reel-no-2",
@@ -81,7 +87,7 @@ const data: Ingredients = {
       author: "Austin Trautman",
       date: "2024-11-25T12:00:00-07:00",
       body: "Getting jig-gy with it.",
-      instagramId: "DCzVklgCNZu",
+      externalHref: getInstagramUrl("DCzVklgCNZu"),
       images: [
         "view-master-reel-no-2-1",
         "view-master-reel-no-2-2",
@@ -95,7 +101,7 @@ const data: Ingredients = {
       author: "Austin Trautman",
       date: "2024-11-23T12:00:00-07:00",
       body: "With 3\" of open space filled with Sheep's wool and finished with acoustic felt, this ceiling system absorbs sound across the entire audible range while also filtering interior air and ^[please hold...] buffering humidity.",
-      instagramId: "DCt67LOtqQA",
+      externalHref: getInstagramUrl("DCt67LOtqQA"),
     },
     {
       id: "view-master-reel-no-1",
@@ -104,7 +110,7 @@ const data: Ingredients = {
       author: "Austin Trautman",
       date: "2024-11-22T12:00:00-07:00",
       body: "On the search for the ~~perfect Nopal~~[ideal] ceiling. Experimenting with colorful and acoustic felt.",
-      instagramId: "DCsdUCxsvVn",
+      externalHref: getInstagramUrl("DCsdUCxsvVn"),
       images: [
         "view-master-reel-no-1-1",
         "view-master-reel-no-1-2",
@@ -120,7 +126,7 @@ const data: Ingredients = {
       body: `The truth is often more painful than we want to admit. My hope is that by surfacing it we can look for solutions.
 
 This ^[poor] quail’s home is probably on the small site we are planning to develop. Will we be able to activate a space for them to continue to thrive?`,
-      instagramId: "DCXa1ntz77g",
+      externalHref: getInstagramUrl("DCXa1ntz77g"),
     },
     {
       id: "print-no-6",
@@ -129,7 +135,7 @@ This ^[poor] quail’s home is probably on the small site we are planning to dev
       author: "Austin Trautman",
       date: "2024-11-12T12:00:00-07:00",
       body: "Morning light always holds that crisp hope of something interesting to come.",
-      instagramId: "DCSIn6Gy9yx",
+      externalHref: getInstagramUrl("DCSIn6Gy9yx"),
     },
     {
       id: "print-no-5",
@@ -138,7 +144,7 @@ This ^[poor] quail’s home is probably on the small site we are planning to dev
       author: "Austin Trautman",
       date: "2024-11-06T12:00:00-07:00",
       body: "Our favorite ~~place to be~~[office] is outside and in the dirt. Exploring early concepts of our first Nopal build.",
-      instagramId: "DCCwQwrTVk9",
+      externalHref: getInstagramUrl("DCCwQwrTVk9"),
     },
     {
       id: "print-no-4",
@@ -147,7 +153,7 @@ This ^[poor] quail’s home is probably on the small site we are planning to dev
       author: "Austin Trautman",
       date: "2024-11-04T12:00:00-07:00",
       body: "I had a grand plan of covering the side of a building with ~~these vines~~[what species?].",
-      instagramId: "DB91eF4SWeT",
+      externalHref: getInstagramUrl("DB91eF4SWeT"),
     },
     {
       id: "betamax-no-1",
@@ -156,7 +162,7 @@ This ^[poor] quail’s home is probably on the small site we are planning to dev
       author: "Austin Trautman",
       date: "2024-11-04T12:00:00-07:00",
       body: "A human connection to nature and a deep understanding of existing well within the Sonoran Desert is core to Nopal.",
-      instagramId: "DB9j72eBK7v",
+      externalHref: getInstagramUrl("DB9j72eBK7v"),
     },
     {
       id: "print-no-3",
@@ -165,7 +171,7 @@ This ^[poor] quail’s home is probably on the small site we are planning to dev
       author: "Austin Trautman",
       date: "2024-11-01T12:00:00-07:00",
       body: "~~This is how we conduct~~[The original] business meeting~~s~~, in nature and with laughter.",
-      instagramId: "DB1o-Qwy89D",
+      externalHref: getInstagramUrl("DB1o-Qwy89D"),
     },
     {
       id: "print-no-2",
@@ -178,7 +184,7 @@ This ^[poor] quail’s home is probably on the small site we are planning to dev
 biophilia, biomimicry, or just sitting with a cactus for a bit. We have so much to gain as humans within nature.
 
 PS - Gerald in the background is busy scouting out a killer build site!`,
-      instagramId: "DBuawVnSXhX",
+      externalHref: getInstagramUrl("DBuawVnSXhX"),
     },
     {
       id: "print-no-1",
@@ -189,11 +195,11 @@ PS - Gerald in the background is busy scouting out a killer build site!`,
       body: `The way a frame is constructed has a massive impact on building performance and quality. ~~Simple may not always look simple.~~[Simply, simple.]
 
 Welcome to Nopal, where we focus on building healthy and sustainable homes.`,
-      instagramId: "DBorC56SZqj",
+      externalHref: getInstagramUrl("DBorC56SZqj"),
     },
   ],
 };
 
-export function getUncookedIngredients(): Ingredients {
+export function getProjects(): Projects {
   return data;
 }
