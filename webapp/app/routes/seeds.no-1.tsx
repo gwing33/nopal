@@ -86,7 +86,7 @@ function BaseFloorPlan() {
 
   return (
     <div className="flex flex-col sm:flex-row mt-12 pb-12">
-      <div className="pt-4 sm:pt-0 sm:pl-4">
+      <div className="pb-8 sm:pl-4">
         <h3 className="font-bold">Floor Plan Base</h3>
         <p className="pb-4">
           Due to the lot size and constraints we developed this layout to focus
@@ -169,17 +169,17 @@ function BaseSizeLink({
 
 function SitePlanNo1() {
   return (
-    <div className="flex flex-col sm:flex-row mt-12">
+    <div className="flex flex-col-reverse sm:flex-row mt-12">
       <div
-        className="flex-shrink-0"
+        className="flex-shrink-0 pt-4 sm:pt-0"
         style={{
           maxWidth: "356px",
-          maxHeight: "356px",
+          maxHeight: "550px",
         }}
       >
         <img src={"/seeds/site-plan-no-1.png"} alt={"Site Plan No.1"} />
       </div>
-      <div className="pt-4 sm:pt-0 sm:pl-4">
+      <div className="pb-4 sm:pl-4">
         <h3 className="font-bold">Site Plan No.1</h3>
         <p className="pb-4">
           We built simple rectangles on 4’ increments. We also define a central
