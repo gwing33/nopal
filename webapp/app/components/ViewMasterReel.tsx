@@ -12,7 +12,7 @@ export function ViewMasterReel({ reel }: ViewMasterReelProps) {
   const bodyHtml = useMarkdown(body);
   const gridRows = (images?.length || 0) > 2 ? "grid-rows-2" : "grid-rows-1";
   return (
-    <div className="pb-4 uncooked-view-master-reel">
+    <div className="pb-4 view-master-reel">
       <div className="flex flex-col sm:flex-row">
         <div
           className={"flex-shrink-0 grid grid-cols-2 gap-2 " + gridRows}

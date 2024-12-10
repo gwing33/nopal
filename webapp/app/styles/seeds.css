@@ -36,3 +36,108 @@
     transform: rotate(10deg);
   }
 }
+
+.base-floor-plan-graphic {
+  @apply flex-shrink-0;
+  @apply flex;
+  @apply justify-end;
+
+  width: 100%;
+}
+.base-floor-plan-shell {
+  border: 3px solid var(--purple);
+  position: relative;
+  background: white;
+  @media (prefers-color-scheme: dark) {
+    background: var(--purple);
+    border-color: var(--yellow);
+  }
+}
+
+.base-floor-plan-mech {
+  @apply flex;
+  @apply items-center;
+  @apply justify-center;
+  border: 3px solid var(--purple);
+  padding: 4px 8px;
+  position: absolute;
+  top: 45%;
+  right: -3px;
+  @media (prefers-color-scheme: dark) {
+    border-color: var(--yellow);
+  }
+}
+
+.base-floor-plan-sqft {
+  position: absolute;
+  bottom: 0;
+  left: 4px;
+}
+
+.base-size-link {
+  position: relative;
+  padding: 8px;
+  cursor: pointer;
+  > span {
+    position: relative;
+    z-index: 10;
+    display: inline-block;
+    padding: 0 4px;
+    background: white;
+    @media (prefers-color-scheme: dark) {
+      background: var(--purple);
+    }
+  }
+  .line {
+    z-index: 5;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+  }
+  &.active .line {
+    border-left: 1px solid var(--purple);
+    @media (prefers-color-scheme: dark) {
+      border-left-color: var(--yellow);
+    }
+  }
+}
+
+.base-height {
+  position: relative;
+  padding-left: 8px;
+  > .line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-left: 1px solid var(--purple);
+    @media (prefers-color-scheme: dark) {
+      border-left-color: var(--yellow);
+    }
+  }
+  .base-size-link .line {
+    border-left: 0;
+    left: 0;
+    right: 0;
+    bottom: 50%;
+  }
+  .base-size-link.active .line {
+    border-bottom: 1px solid var(--purple);
+    @media (prefers-color-scheme: dark) {
+      border-bottom-color: var(--yellow);
+    }
+  }
+}
+.base-width {
+  position: relative;
+  padding-top: 8px;
+  > .line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-bottom: 1px solid var(--purple);
+    @media (prefers-color-scheme: dark) {
+      border-bottom-color: var(--yellow);
+    }
+  }
+}

@@ -13,7 +13,7 @@ export function Print({ print }: PrintProps) {
     print;
   const bodyHtml = useMarkdown(body);
   return (
-    <div className="pb-4 uncooked-print">
+    <div className="pb-4 print">
       <div className="flex flex-col sm:flex-row">
         <div
           className="flex-shrink-0"

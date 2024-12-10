@@ -8,11 +8,11 @@ import { formatDate } from "../util/formatDate";
 import { useMarkdown } from "../hooks/useMarkdown";
 
 import homeStyles from "../styles/home.css?url";
-import uncookedStyles from "../styles/uncooked.css?url";
+import projectStyles from "../styles/project.css?url";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: homeStyles },
-  { rel: "stylesheet", href: uncookedStyles },
+  { rel: "stylesheet", href: projectStyles },
 ];
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
