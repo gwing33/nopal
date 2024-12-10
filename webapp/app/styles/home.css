@@ -3,7 +3,7 @@
   background: url("/app/images/home/ocotillo.svg") bottom left 30px no-repeat,
     url("/app/images/home/pricklyPear.svg") bottom 10px left no-repeat,
     url("/app/images/home/home.svg") bottom right -20px no-repeat,
-    url("/app/images/home/ground.svg") bottom left / 50% no-repeat,
+    url("/app/images/home/ground.svg") bottom -1px left / 50% no-repeat,
     url("/app/images/home/backRocks.svg") bottom -25px right 180px no-repeat;
 
   @media (prefers-color-scheme: dark) {

@@ -17,8 +17,8 @@ import faviconSafari from "./images/favicon/safari-pinned-tab.svg";
 import favicon from "./images/favicon/favicon.ico";
 import "./tailwind.css";
 import { ReactNode } from "react";
-import { getClientHints, type ClientHints } from "./util/client-hints";
-import { getPublicUrl } from "./util/public-url";
+import { getClientHints, type ClientHints } from "./util/getClientHints";
+import { getPublicUrl } from "./util/getPublicUrl";
 
 export const links: LinksFunction = () => [
   // Favicon
