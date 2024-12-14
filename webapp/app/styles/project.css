@@ -1,34 +1,17 @@
-.uncooked-container {
-  @apply container;
-  @apply mx-auto;
-  @apply max-w-screen-sm;
-  @apply font-mono;
-  position: relative;
-  z-index: 2;
-}
-
-.uncooked-link {
-  a {
-    color: var(--green);
-    &:hover {
-      text-decoration: underline;
-    }
-    @media (prefers-color-scheme: dark) {
-      color: var(--green-light);
-    }
-  }
-}
-
 .uncooked-markdown {
   h1,
   h2,
-  h3,
+  h3 {
+    @apply font-bold;
+    @apply pt-6;
+    @apply pb-6;
+  }
+
   h4,
   h5,
   h6 {
     @apply font-bold;
     @apply pt-6;
-    @apply pb-6;
   }
   p {
     @apply pb-4;
@@ -84,11 +67,19 @@
       transform: translateX(-20%);
     }
   }
+  ul {
+    li {
+      &:before {
+        content: "- ";
+        text-indent: 0px;
+      }
+    }
+  }
 }
 
 /* Print Styles */
-.uncooked-print img,
-.uncooked-view-master-reel img {
+.print img,
+.view-master-reel img {
   @apply aspect-square;
   object-fit: cover;
 }

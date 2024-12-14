@@ -1,25 +1,26 @@
 import { LinksFunction } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
-import { Layout, Footer } from "../components/layout";
+import { useLoaderData } from "@remix-run/react";
+import { Layout } from "../components/Layout";
+import { Footer } from "../components/Footer";
 import uncookedLightImg from "../images/uncooked/uncooked-light.svg";
 import uncookedDarkImg from "../images/uncooked/uncooked-dark.svg";
-import { getUncookedIngredients } from "../data/uncooked";
-import type { Ingredients, Ingredient, IngredientType } from "../data/uncooked";
-import { formatDate } from "../util/date";
+import { getProjects } from "../data/getProjects";
 import { useSchemePref } from "../hooks/useSchemePref";
-import { useMarkdown } from "../hooks/useMarkdown";
-import { useState, useCallback, SyntheticEvent, ReactNode } from "react";
+import { useState, useCallback, SyntheticEvent } from "react";
+import { Print } from "../components/Print";
+import { ViewMasterReel } from "../components/ViewMasterReel";
+import { NewspaperClipping } from "../components/NewspaperClipping";
 
 import homeStyles from "../styles/home.css?url";
-import uncookedStyles from "../styles/uncooked.css?url";
+import projectStyles from "../styles/project.css?url";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: homeStyles },
-  { rel: "stylesheet", href: uncookedStyles },
+  { rel: "stylesheet", href: projectStyles },
 ];
 
 export const loader = async () => {
-  return getUncookedIngredients();
+  return getProjects();
 };
 
 const DISPLAY_LIMIT = 10;
@@ -36,23 +37,24 @@ export default function Uncooked() {
     },
     [limit]
   );
-  const showLoadMore = data?.ingredients.length > limit;
+  const showLoadMore = data?.projects.length > limit;
 
   return (
     <Layout>
       <div className="pr-4 pl-4 scene1">
-        <div className="uncooked-container pb-10">
+        <div className="simple-container pb-10">
           <img
             src={isDark ? uncookedDarkImg : uncookedLightImg}
             alt="uncooked"
             className="md:-ml-20 pb-16"
           />
-          {(data?.ingredients || []).map((i, idx) => {
+          {(data?.projects || []).map((i, idx) => {
             if (idx < limit) {
               switch (i.type) {
                 case "newspaper-clipping":
                   return <NewspaperClipping key={i.id} clipping={i} />;
                 case "print":
+                case "presentation":
                   return <Print key={i.id} print={i} />;
                 case "view-master-reel":
                   return <ViewMasterReel key={i.id} reel={i} />;
@@ -85,158 +87,4 @@ export default function Uncooked() {
       </Footer>
     </Layout>
   );
-}
-
-type PrintProps = {
-  print: Ingredient;
-};
-function Print({ print }: PrintProps) {
-  const { title, type, author, date, body, id, instagramId } = print;
-  const bodyHtml = useMarkdown(body);
-  return (
-    <div className="pb-4 uncooked-print">
-      <div className="flex flex-col sm:flex-row">
-        <div
-          className="flex-shrink-0"
-          style={{
-            maxWidth: "356px",
-            maxHeight: "356px",
-          }}
-        >
-          <img src={`/uncooked/${id}.jpg`} alt={title} />
-        </div>
-        <div className="pt-4 sm:pt-0 sm:pl-4">
-          <h3 className="font-bold">{title}</h3>
-          <div className="pb-4">
-            by: {author}, {formatDate(new Date(date))}
-          </div>
-          {bodyHtml}
-          <UncookedLink instagramId={instagramId}>
-            {formatUncookedIdToText(id, type)}
-          </UncookedLink>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-type ViewMasterReelProps = {
-  reel: Ingredient;
-};
-function ViewMasterReel({ reel }: ViewMasterReelProps) {
-  const { title, type, author, date, body, id, instagramId, images } = reel;
-  const bodyHtml = useMarkdown(body);
-  const gridRows = (images?.length || 0) > 2 ? "grid-rows-2" : "grid-rows-1";
-  return (
-    <div className="pb-4 uncooked-view-master-reel">
-      <div className="flex flex-col sm:flex-row">
-        <div
-          className={"flex-shrink-0 grid grid-cols-2 gap-2 " + gridRows}
-          style={{
-            maxWidth: "356px",
-            maxHeight: "356px",
-          }}
-        >
-          {images?.map((img, idx) => (
-            <div
-              key={img}
-              className="flex-shrink-0"
-              style={{
-                maxWidth: "174px",
-                maxHeight: "174px",
-              }}
-            >
-              <img
-                src={`/uncooked/${img}.jpg`}
-                alt={`${title} slide ${idx + 1}`}
-              />
-            </div>
-          ))}
-        </div>
-        <div className="pt-4 sm:pt-0 sm:pl-4">
-          <h3 className="font-bold">{title}</h3>
-          <div className="pb-4">
-            by: {author}, {formatDate(new Date(date))}
-          </div>
-          {bodyHtml}
-          <UncookedLink instagramId={instagramId}>
-            {formatUncookedIdToText(id, type)}
-          </UncookedLink>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-type NewspaperClippingProps = {
-  clipping: Ingredient;
-};
-function NewspaperClipping({ clipping }: NewspaperClippingProps) {
-  const { title, type, author, date, body, id, instagramId } = clipping;
-  const bodyHtml = useMarkdown(body);
-  return (
-    <div className="pb-8">
-      <h3 className="font-bold">{title}</h3>
-      <div className="pb-4">
-        by: {author}, {formatDate(new Date(date))}
-      </div>
-      {bodyHtml}
-      <UncookedLink to={`/uncooked/${id}`}>
-        {formatUncookedIdToText(id, type)}
-      </UncookedLink>
-    </div>
-  );
-}
-
-function UncookedLink({
-  instagramId,
-  to,
-  children,
-}: {
-  to?: string;
-  instagramId?: string;
-  children: React.ReactNode;
-}) {
-  const Container = ({ children }: { children: ReactNode }) => (
-    <div className="uncooked-link pb-12 sm:pb-0">{children}</div>
-  );
-  if (instagramId) {
-    return (
-      <Container>
-        <a href={`https://www.instagram.com/p/${instagramId}`} target="_blank">
-          {children}
-        </a>
-      </Container>
-    );
-  }
-  if (to) {
-    return (
-      <Container>
-        <Link to={to} className="uncooked-link">
-          {children}
-        </Link>
-      </Container>
-    );
-  }
-  return <Container>{children} coming soon.</Container>;
-}
-
-function formatUncookedIdToText(id: string, type: IngredientType): string {
-  const parts = id.split("-");
-  const lastPart = parts[parts.length - 1];
-  return `${getTextByIngredientType(type)} No.${lastPart}`;
-}
-
-function getTextByIngredientType(type: IngredientType) {
-  switch (type) {
-    case "newspaper-clipping":
-      return "Newspaper Clipping";
-    case "betamax":
-      return "Betamax";
-    case "print":
-      return "Print";
-    case "view-master-reel":
-      return "View-Master Reel";
-  }
-  return "";
 }

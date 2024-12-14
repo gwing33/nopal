@@ -27,6 +27,27 @@ body {
   }
 }
 
+/* Simple Container */
+.simple-container {
+  @apply container;
+  @apply mx-auto;
+  @apply max-w-screen-sm;
+  @apply font-mono;
+  position: relative;
+  z-index: 2;
+}
+
+/* Link */
+.link {
+  color: var(--green);
+  &:hover {
+    text-decoration: underline;
+  }
+  @media (prefers-color-scheme: dark) {
+    color: var(--green-light);
+  }
+}
+
 /* Buttons */
 .btn {
   @apply rounded-lg;
