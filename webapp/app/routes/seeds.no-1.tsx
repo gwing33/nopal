@@ -59,7 +59,7 @@ export default function SeedNo1() {
                 title: "Understanding",
                 author: "Austin Trautman",
                 body: "We are all about understanding the built environment and how it can foster experiences.",
-                date: "2024-12-06T12:00:00-07:00",
+                date: "2024-12-11T12:00:00-07:00",
                 customImage: "/seeds/presentation-no.1.png",
                 externalHref: "https://www.youtube.com/watch?v=WPiKfiCSGks",
               }}
@@ -92,11 +92,13 @@ function BaseFloorPlan() {
       <div className="pb-8 sm:pl-4">
         <h3 className="font-bold">Floor Plan Base</h3>
         <p className="pb-4">
-          Due to the lot size and constraints we developed this layout to focus
-          on utilizing as much of the lot while preserving nature.
+          We build simple rectangles on 4’ increments. We also define a central
+          mechanical space, you could think of this as a heart. It pumps in
+          fresh filtered air and maintains temperature.
         </p>
         <p>
-          The entrance is a core space in any home and it should be welcoming.
+          The remainder of the space is open to explore room sizes, locations
+          and where you enter and exit.
         </p>
       </div>
       <div
@@ -185,13 +187,11 @@ function SitePlanNo1() {
       <div className="pb-4 sm:pl-4">
         <h3 className="font-bold">Site Plan No.1</h3>
         <p className="pb-4">
-          We built simple rectangles on 4’ increments. We also define a central
-          mechanical space, you could think of this as a heart. It pumps in
-          fresh filtered air and maintains temperature.
+          Due to the lot size and constraints we developed this layout to focus
+          on utilizing as much of the lot while preserving nature.
         </p>
         <p>
-          The remainder of the space is open to explore room sizes and locations
-          and where you enter and exit.
+          The entrance is a core space in any home and it should be welcoming.
         </p>
       </div>
     </div>
