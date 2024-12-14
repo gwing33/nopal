@@ -26,8 +26,8 @@ export default function Seeds() {
           <div className="varn-line" />
         </div>
         <Seed
-          title="Varn"
-          scientificName="(lanam horreum)"
+          title="Coming soon"
+          scientificName=""
           no={2}
           desc="Experiences yet to be discovered."
         />

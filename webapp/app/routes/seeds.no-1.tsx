@@ -2,6 +2,7 @@ import { LinksFunction } from "@remix-run/node";
 import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
 import { useSchemePref } from "../hooks/useSchemePref";
+import { useMarkdown } from "../hooks/useMarkdown";
 import { Print } from "../components/Print";
 
 import seedNo1LightImg from "../images/seeds/seed-no-1-light.svg";
@@ -60,16 +61,18 @@ export default function SeedNo1() {
                 body: "We are all about understanding the built environment and how it can foster experiences.",
                 date: "2024-12-06T12:00:00-07:00",
                 customImage: "/seeds/presentation-no.1.png",
-                externalHref: "https://www.google.com",
+                externalHref: "https://www.youtube.com/watch?v=WPiKfiCSGks",
               }}
             />
           </div>
           <BaseFloorPlan />
           <SitePlanNo1 />
+          <Details />
         </div>
       </div>
-      <Footer title="Suggestions?">
-        We are always looking to add more to our collection.
+      <Footer title="Seed curious?">
+        Every seed is nurtured into something unique, reach out to learn what
+        yours mine grow into.
       </Footer>
     </Layout>
   );
@@ -193,4 +196,82 @@ function SitePlanNo1() {
       </div>
     </div>
   );
+}
+
+function Details() {
+  const html = useMarkdown(`# Specifications
+
+*All Nopal buildings use our Baselayer System. Details coming soon...*
+
+
+##### Flooring Details
+- Polished Concrete
+- Radiant Cooled & Heated
+- Vapor barrier
+- Insulated Perimeter
+
+##### Medium Timber Framing
+- Lower Thermal Bridging
+- Air tight envelope
+- Vaulted ceilings
+- 4' Exterior Overhangs
+
+##### Wall Insulation
+- 3" of wool (Havelock)
+- 3" of wood fiber (TimberHP)
+- R22
+
+##### Ceiling Insulation
+- 6" of wool (Havelock)
+- 6" of wood fiber (TimerHP)
+- R44
+
+##### Interior Finishes
+- Plywood Walls
+- Felt Ceilings
+- Nopal Doors
+
+##### Exterior Finishes
+- Hardwood walls
+- Deck
+- Standing seam metal roof
+
+##### Mechanical
+- Hot & cold water R32 exterior heat pump
+- Radiant heating and cooling
+- No forced air heating and cooling
+- Hyrdronic-based dehumidification
+- MERV 15 whole house filtration
+- 24/7 balanced fresh air every room (Zehnder ERV)
+- unlimited hot water
+
+##### Air & Moisture Control
+- water-tight, breathable envelope
+- passive house level air sealing
+- balanced ventilation
+- sheep's wool to buffer moisture
+- breathable wood finishes
+
+##### Chemical Resistance
+- No drywall or paint
+- no foam
+- no carpet
+- VOC-absorbing materials (like wool)
+- polished concrete floors
+- natural materials
+
+##### Lighting
+- all low voltage lighting
+- low EMF lighting
+- dynamic lighting day to night
+- reduced overhead evening lighting
+- orientation-first glazing placement
+
+##### Nature
+- outside designed as another room
+- connection to outside
+- natural materials
+- lush, native plants
+- access to outdoor recreation`);
+  return <div className="uncooked-markdown mt-12">{html}</div>;
 }

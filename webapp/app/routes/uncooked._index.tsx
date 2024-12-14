@@ -54,6 +54,7 @@ export default function Uncooked() {
                 case "newspaper-clipping":
                   return <NewspaperClipping key={i.id} clipping={i} />;
                 case "print":
+                case "presentation":
                   return <Print key={i.id} print={i} />;
                 case "view-master-reel":
                   return <ViewMasterReel key={i.id} reel={i} />;

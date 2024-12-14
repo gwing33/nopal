@@ -1,13 +1,17 @@
 .uncooked-markdown {
   h1,
   h2,
-  h3,
+  h3 {
+    @apply font-bold;
+    @apply pt-6;
+    @apply pb-6;
+  }
+
   h4,
   h5,
   h6 {
     @apply font-bold;
     @apply pt-6;
-    @apply pb-6;
   }
   p {
     @apply pb-4;
@@ -61,6 +65,14 @@
     span {
       top: -28px;
       transform: translateX(-20%);
+    }
+  }
+  ul {
+    li {
+      &:before {
+        content: "- ";
+        text-indent: 0px;
+      }
     }
   }
 }

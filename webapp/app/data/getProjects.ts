@@ -27,6 +27,16 @@ function getInstagramUrl(id: string): string {
 const data: Projects = {
   projects: [
     {
+      id: "presentation-no-1",
+      type: "presentation",
+      title: "Understanding",
+      author: "Austin Trautman",
+      body: "We are all about understanding the built environment and how it can foster experiences.",
+      date: "2024-12-06T12:00:00-07:00",
+      customImage: "/seeds/presentation-no.1.png",
+      externalHref: "https://www.youtube.com/watch?v=WPiKfiCSGks",
+    },
+    {
       id: "view-master-reel-no-2",
       type: "view-master-reel",
       title: "Currently, real open.",
