@@ -54,9 +54,13 @@ function Seed({
         <span className="ml-2">{scientificName}</span>
       </div>
       <p>{desc}</p>
-      <Link to={`/seeds/no-${no}`} className="link">
-        Seed No.{no}
-      </Link>
+      {no == 1 ? (
+        <Link to={`/seeds/no-${no}`} className="link">
+          Seed No.{no}
+        </Link>
+      ) : (
+        <span>Seed No.{no}</span>
+      )}
     </div>
   );
 }
