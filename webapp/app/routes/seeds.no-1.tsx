@@ -72,7 +72,7 @@ export default function SeedNo1() {
       </div>
       <Footer title="Seed curious?">
         Every seed is nurtured into something unique, reach out to learn what
-        yours mine grow into.
+        yours may grow into.
       </Footer>
     </Layout>
   );
