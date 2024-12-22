@@ -1,3 +1,6 @@
+import { getDb } from "./db.server";
+import { jsonify } from "surrealdb";
+
 export type ArtMedium =
   | "newspaper-clipping"
   | "print"
@@ -210,6 +213,21 @@ Welcome to Nopal, where we focus on building healthy and sustainable homes.`,
   ],
 };
 
-export function getProjects(): Projects {
-  return data;
+export async function getProjects(): Promise<Projects | undefined> {
+  // return data;
+  const db = await getDb();
+  if (!db) {
+    console.error("Database not initialized");
+    return undefined;
+  }
+
+  try {
+    const projects = await db.select<Project>("uncooked");
+    return projects ? { projects: jsonify(projects) } : undefined;
+  } catch (err) {
+    console.error("Failed to get projects:", err);
+    return undefined;
+  } finally {
+    await db.close();
+  }
 }
