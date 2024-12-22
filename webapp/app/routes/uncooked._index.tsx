@@ -4,7 +4,7 @@ import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
 import uncookedLightImg from "../images/uncooked/uncooked-light.svg";
 import uncookedDarkImg from "../images/uncooked/uncooked-dark.svg";
-import { getProjects } from "../data/getProjects";
+import { getProjects } from "../data/getProjects.server";
 import { useSchemePref } from "../hooks/useSchemePref";
 import { useState, useCallback, SyntheticEvent } from "react";
 import { Print } from "../components/Print";

@@ -1,4 +1,4 @@
-import type { Project } from "../data/getProjects";
+import type { Project } from "../data/getProjects.server";
 import { useMarkdown } from "../hooks/useMarkdown";
 import { formatDate } from "../util/formatDate";
 import { formatArtMediumIdToText } from "../util/formatArtMediumIdToText";
@@ -8,7 +8,7 @@ type NewspaperClippingProps = {
   clipping: Project;
 };
 export function NewspaperClipping({ clipping }: NewspaperClippingProps) {
-  const { title, type, author, date, body, id, externalHref } = clipping;
+  const { title, type, author, date, body, id } = clipping;
   const bodyHtml = useMarkdown(body);
   return (
     <div className="pb-8">

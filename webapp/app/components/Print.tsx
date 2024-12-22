@@ -1,16 +1,29 @@
-import type { Project } from "../data/getProjects";
+import type { Project } from "../data/getProjects.server";
 import { useMarkdown } from "../hooks/useMarkdown";
 import { formatDate } from "../util/formatDate";
 import { formatArtMediumIdToText } from "../util/formatArtMediumIdToText";
 import { ProjectLink } from "./ProjectLink";
+import { getInstagramUrl } from "../util/getInstagramUrl";
+import { getRecordId } from "../util/getRecordId";
 
 type PrintProps = {
   print: Project;
 };
 
 export function Print({ print }: PrintProps) {
-  const { title, type, author, date, body, id, externalHref, customImage } =
-    print;
+  const {
+    title,
+    type,
+    author,
+    date,
+    body,
+    externalHref,
+    instagramId,
+    customImage,
+  } = print;
+  const { id } = getRecordId(print.id);
+
+  const href = instagramId ? getInstagramUrl(instagramId) : externalHref;
   const bodyHtml = useMarkdown(body);
   return (
     <div className="pb-4 print">
@@ -30,7 +43,7 @@ export function Print({ print }: PrintProps) {
             by: {author}, {formatDate(new Date(date))}
           </div>
           {bodyHtml}
-          <ProjectLink externalHref={externalHref}>
+          <ProjectLink externalHref={href}>
             {formatArtMediumIdToText(id, type)}
           </ProjectLink>
         </div>

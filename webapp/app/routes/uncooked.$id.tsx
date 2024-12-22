@@ -1,7 +1,7 @@
 import { LoaderFunctionArgs, LinksFunction } from "@remix-run/node";
 import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
-import { getProjects } from "../data/getProjects";
+import { getProjects } from "../data/getProjects.server";
 import { readPost } from "../util/readpost.server";
 import { NavLink, useLoaderData } from "@remix-run/react";
 import { formatDate } from "../util/formatDate";
@@ -18,7 +18,8 @@ export const links: LinksFunction = () => [
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const id = params.id;
   if (id) {
-    const ingrediant = getProjects().projects.find((p) => p.id === id);
+    const projects = await getProjects();
+    const ingrediant = projects?.projects.find((p) => p.id === id);
     if (ingrediant?.type == "newspaper-clipping") {
       const body = await readPost(ingrediant.id + ".md");
       return { ingrediant, body };
