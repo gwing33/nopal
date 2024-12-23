@@ -54,7 +54,8 @@ export default function SeedNo1() {
           <div className="mt-16">
             <Print
               print={{
-                id: "uncooked:⟨presentation-no-1⟩",
+                _id: "uncooked:⟨presentation-no-1⟩",
+                id: { tb: "uncooked", id: "presentation-no-1" },
                 type: "presentation",
                 title: "Understanding",
                 author: "Austin Trautman",
