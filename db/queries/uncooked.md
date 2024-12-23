@@ -34,17 +34,17 @@ Took me a bit to find this in surrealist, but eventually got there.
 ```
 DEFINE TABLE uncooked TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
 
-DEFINE FIELD author ON uncooked TYPE string PERMISSIONS FULL;
-DEFINE FIELD body ON uncooked TYPE string PERMISSIONS FULL;
-DEFINE FIELD customImage ON uncooked TYPE option<string> PERMISSIONS FULL;
-DEFINE FIELD date ON uncooked TYPE datetime PERMISSIONS FULL;
-DEFINE FIELD externalUrl ON uncooked TYPE option<string> PERMISSIONS FULL;
 DEFINE FIELD id ON uncooked TYPE string READONLY PERMISSIONS FULL;
+DEFINE FIELD type ON uncooked TYPE option<'newspaper-clipping' | 'print' | 'betamax' | 'view-master-reel' | 'presentation'> PERMISSIONS FULL;
+DEFINE FIELD author ON uncooked TYPE string PERMISSIONS FULL;
+DEFINE FIELD title ON uncooked TYPE string PERMISSIONS FULL;
+DEFINE FIELD body ON uncooked TYPE string PERMISSIONS FULL;
+DEFINE FIELD date ON uncooked TYPE datetime PERMISSIONS FULL;
 DEFINE FIELD images ON uncooked TYPE option<array<string>> PERMISSIONS FULL;
 DEFINE FIELD images[*] ON uncooked TYPE string PERMISSIONS FULL;
+DEFINE FIELD customImage ON uncooked TYPE option<string> PERMISSIONS FULL;
+DEFINE FIELD externalUrl ON uncooked TYPE option<string> PERMISSIONS FULL;
 DEFINE FIELD instagramId ON uncooked TYPE option<string> PERMISSIONS FULL;
-DEFINE FIELD title ON uncooked TYPE string PERMISSIONS FULL;
-DEFINE FIELD type ON uncooked TYPE option<'newspaper-clipping' | 'print' | 'betamax' | 'view-master-reel' | 'presentation'> PERMISSIONS FULL;
 
 DEFINE INDEX id ON uncooked FIELDS id;
 ```
