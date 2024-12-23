@@ -8,7 +8,8 @@ type NewspaperClippingProps = {
   clipping: Uncooked;
 };
 export function NewspaperClipping({ clipping }: NewspaperClippingProps) {
-  const { title, type, author, date, body, id } = clipping;
+  const { title, type, author, date, body } = clipping;
+  const { id } = clipping.id;
   const bodyHtml = useMarkdown(body);
   return (
     <div className="pb-8">
@@ -18,7 +19,7 @@ export function NewspaperClipping({ clipping }: NewspaperClippingProps) {
       </div>
       {bodyHtml}
       <UncookedLink to={`/uncooked/${id}`}>
-        {formatArtMediumIdToText(id.id, type)}
+        {formatArtMediumIdToText(id, type)}
       </UncookedLink>
     </div>
   );

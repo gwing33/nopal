@@ -16,13 +16,13 @@ export function Print({ print }: PrintProps) {
     author,
     date,
     body,
-    externalHref,
+    externalUrl,
     instagramId,
     customImage,
   } = print;
   const { id } = print.id;
 
-  const href = instagramId ? getInstagramUrl(instagramId) : externalHref;
+  const href = instagramId ? getInstagramUrl(instagramId) : externalUrl;
   const bodyHtml = useMarkdown(body);
   return (
     <div className="pb-4 print">
@@ -42,7 +42,7 @@ export function Print({ print }: PrintProps) {
             by: {author}, {formatDate(new Date(date))}
           </div>
           {bodyHtml}
-          <UncookedLink externalHref={href}>
+          <UncookedLink externalUrl={href}>
             {formatArtMediumIdToText(id, type)}
           </UncookedLink>
         </div>

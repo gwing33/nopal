@@ -20,7 +20,7 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
   if (id) {
     const uncooked = await getUncookedById(id);
     if (uncooked?.type == "newspaper-clipping") {
-      const body = await readPost(uncooked.id + ".md");
+      const body = await readPost(id + ".md");
       return { uncooked, body };
     }
   }

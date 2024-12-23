@@ -65,7 +65,7 @@ INSERT INTO uncooked
     body: "We are all about understanding the built environment and how it can foster experiences.",
     date: d"2024-12-11T12:00:00-07:00",
     customImage: "/seeds/presentation-no.1.png",
-    externalHref: "https://www.youtube.com/watch?v=WPiKfiCSGks",
+    externalUrl: "https://www.youtube.com/watch?v=WPiKfiCSGks",
   },
   {
     id: "view-master-reel-no-3",

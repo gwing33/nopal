@@ -21,6 +21,14 @@ export type Collection<T> = {
 
 const DEFAULT_LIMIT = 5;
 
+export function formatRecord<T extends Data>(data: T) {
+  return {
+    ...data,
+    _id: data.id.toString(),
+    id: { tb: data.id.tb, id: data.id.id },
+  };
+}
+
 // Helps keep collection response consistent, handles extra pagination.
 export function formatCollection<T extends Data>(
   data: T[] = [],
@@ -40,11 +48,7 @@ export function formatCollection<T extends Data>(
       if (i >= limit) {
         return acc;
       }
-      return acc.concat({
-        ...d,
-        _id: d.id.toString(),
-        id: { tb: d.id.tb, id: d.id.id },
-      });
+      return acc.concat(formatRecord(d));
     }, []),
   };
 }
@@ -87,7 +91,7 @@ export async function select<T extends Data>(
 
   try {
     const result = await db.select<T>(id);
-    return result || undefined;
+    return result ? formatRecord(result) : undefined;
   } catch (err) {
     console.error("Failed to get data:", err);
   } finally {

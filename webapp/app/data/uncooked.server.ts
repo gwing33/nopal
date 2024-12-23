@@ -20,15 +20,17 @@ export type Uncooked = Data & {
   author: string;
   date: string;
   body: string;
-  externalHref?: string;
+  externalUrl?: string;
   instagramId?: string;
   customImage?: string;
   images?: string[];
 };
 
+export type AllUncooked = Collection<Uncooked>;
+
 export async function getAllUncooked(
   options: AllQueryOptions = {}
-): Promise<Collection<Uncooked>> {
+): Promise<AllUncooked> {
   return query(
     `SELECT * FROM uncooked ORDER BY ${
       options.order || "date"
