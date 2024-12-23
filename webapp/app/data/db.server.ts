@@ -13,8 +13,7 @@ interface DbConfig {
 const DEFAULT_CONFIG: DbConfig = {
   url: process.env.DATABASE_URL || "http://localhost:8080/rpc",
   namespace: "nopal",
-  database: "staging",
-  // database: process.env.NODE_ENV == "production" ? "prod" : "staging",
+  database: process.env.NODE_ENV == "production" ? "prod" : "staging",
   auth: {
     username: process.env.DATABASE_USERNAME || "",
     password: process.env.DATABASE_PASSWORD || "",
@@ -30,7 +29,6 @@ export async function getDb(
     await db.connect(config.url);
     await db.signin({
       namespace: config.namespace,
-      database: config.database,
       ...config.auth,
     });
     await db.use({ namespace: config.namespace, database: config.database });
