@@ -1,4 +1,4 @@
-import type { ArtMedium } from "../data/getProjects";
+import type { ArtMedium } from "../data/uncooked.server";
 
 export function formatArtMediumIdToText(id: string, type: ArtMedium): string {
   const parts = id.split("-");

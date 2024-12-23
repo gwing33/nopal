@@ -1,16 +1,28 @@
-import type { Project } from "../data/getProjects";
+import type { Uncooked } from "../data/uncooked.server";
 import { useMarkdown } from "../hooks/useMarkdown";
 import { formatDate } from "../util/formatDate";
 import { formatArtMediumIdToText } from "../util/formatArtMediumIdToText";
-import { ProjectLink } from "./ProjectLink";
+import { UncookedLink } from "./UncookedLink";
+import { getInstagramUrl } from "../util/getInstagramUrl";
 
 type PrintProps = {
-  print: Project;
+  print: Uncooked;
 };
 
 export function Print({ print }: PrintProps) {
-  const { title, type, author, date, body, id, externalHref, customImage } =
-    print;
+  const {
+    title,
+    type,
+    author,
+    date,
+    body,
+    externalUrl,
+    instagramId,
+    customImage,
+  } = print;
+  const { id } = print.id;
+
+  const href = instagramId ? getInstagramUrl(instagramId) : externalUrl;
   const bodyHtml = useMarkdown(body);
   return (
     <div className="pb-4 print">
@@ -30,9 +42,9 @@ export function Print({ print }: PrintProps) {
             by: {author}, {formatDate(new Date(date))}
           </div>
           {bodyHtml}
-          <ProjectLink externalHref={externalHref}>
+          <UncookedLink externalUrl={href}>
             {formatArtMediumIdToText(id, type)}
-          </ProjectLink>
+          </UncookedLink>
         </div>
       </div>
     </div>

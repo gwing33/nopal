@@ -18,12 +18,14 @@
     "@remix-run/express": "^2.13.1",
     "@remix-run/node": "^2.13.1",
     "@remix-run/react": "^2.13.1",
+    "@surrealdb/node": "^1.0.0-beta.3",
     "cross-env": "^7.0.3",
     "express": "^4.19.2",
     "isbot": "^4.4.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "showdown": "^2.1.0"
+    "showdown": "^2.1.0",
+    "surrealdb": "^1.1.0"
   },
   "devDependencies": {
     "@flydotio/dockerfile": "^0.5.8",

@@ -1,14 +1,15 @@
-import type { Project } from "../data/getProjects";
+import type { Uncooked } from "../data/uncooked.server";
 import { useMarkdown } from "../hooks/useMarkdown";
 import { formatDate } from "../util/formatDate";
 import { formatArtMediumIdToText } from "../util/formatArtMediumIdToText";
-import { ProjectLink } from "./ProjectLink";
+import { UncookedLink } from "./UncookedLink";
 
 type NewspaperClippingProps = {
-  clipping: Project;
+  clipping: Uncooked;
 };
 export function NewspaperClipping({ clipping }: NewspaperClippingProps) {
-  const { title, type, author, date, body, id, externalHref } = clipping;
+  const { title, type, author, date, body } = clipping;
+  const { id } = clipping.id;
   const bodyHtml = useMarkdown(body);
   return (
     <div className="pb-8">
@@ -17,9 +18,9 @@ export function NewspaperClipping({ clipping }: NewspaperClippingProps) {
         by: {author}, {formatDate(new Date(date))}
       </div>
       {bodyHtml}
-      <ProjectLink to={`/uncooked/${id}`}>
+      <UncookedLink to={`/uncooked/${id}`}>
         {formatArtMediumIdToText(id, type)}
-      </ProjectLink>
+      </UncookedLink>
     </div>
   );
 }

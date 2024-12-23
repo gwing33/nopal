@@ -1,9 +1,11 @@
 import { LinksFunction } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
 import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
 import { useSchemePref } from "../hooks/useSchemePref";
 import { useMarkdown } from "../hooks/useMarkdown";
 import { Print } from "../components/Print";
+import { getUncookedById } from "../data/uncooked.server";
 
 import seedNo1LightImg from "../images/seeds/seed-no-1-light.svg";
 import seedNo1DarkImg from "../images/seeds/seed-no-1-dark.svg";
@@ -19,9 +21,15 @@ export const links: LinksFunction = () => [
   { rel: "stylesheet", href: seedsStyles },
 ];
 
+export const loader = async () => {
+  return getUncookedById("presentation-no-1");
+};
+
 export default function SeedNo1() {
   const schemePref = useSchemePref();
   const isDark = schemePref === "dark";
+  const data = useLoaderData<typeof loader>();
+
   return (
     <Layout>
       <div className="pr-4 pl-4 scene1">
@@ -52,18 +60,7 @@ export default function SeedNo1() {
             <p>-Gerald, Austin, James</p>
           </div>
           <div className="mt-16">
-            <Print
-              print={{
-                id: "presentation-no-1",
-                type: "presentation",
-                title: "Understanding",
-                author: "Austin Trautman",
-                body: "We are all about understanding the built environment and how it can foster experiences.",
-                date: "2024-12-11T12:00:00-07:00",
-                customImage: "/seeds/presentation-no.1.png",
-                externalHref: "https://www.youtube.com/watch?v=WPiKfiCSGks",
-              }}
-            />
+            <Print print={data} />
           </div>
           <BaseFloorPlan />
           <SitePlanNo1 />

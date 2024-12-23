@@ -1,19 +1,19 @@
 import { ReactNode } from "react";
 import { Link } from "@remix-run/react";
 
-export function ProjectLink({
-  externalHref,
+export function UncookedLink({
+  externalUrl,
   to,
   children,
 }: {
-  externalHref?: string;
+  externalUrl?: string;
   to?: string;
   children: React.ReactNode;
 }) {
-  if (externalHref) {
+  if (externalUrl) {
     return (
       <Container>
-        <a href={externalHref} target="_blank">
+        <a href={externalUrl} target="_blank">
           {children}
         </a>
       </Container>
