@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link } from "@remix-run/react";
 
-export function ProjectLink({
+export function UncookedLink({
   externalHref,
   to,
   children,

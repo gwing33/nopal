@@ -1,18 +1,17 @@
-import type { Project } from "../data/getProjects.server";
+import type { Uncooked } from "../data/uncooked.server";
 import { useMarkdown } from "../hooks/useMarkdown";
 import { formatDate } from "../util/formatDate";
 import { formatArtMediumIdToText } from "../util/formatArtMediumIdToText";
-import { ProjectLink } from "./ProjectLink";
+import { UncookedLink } from "./UncookedLink";
 import { getInstagramUrl } from "../util/getInstagramUrl";
-import { getRecordId } from "../util/getRecordId";
 
 type ViewMasterReelProps = {
-  reel: Project;
+  reel: Uncooked;
 };
 export function ViewMasterReel({ reel }: ViewMasterReelProps) {
   const { title, type, author, date, body, externalHref, instagramId, images } =
     reel;
-  const { id } = getRecordId(reel.id);
+  const { id } = reel.id;
   const bodyHtml = useMarkdown(body);
   const gridRows = (images?.length || 0) > 2 ? "grid-rows-2" : "grid-rows-1";
   const href = instagramId ? getInstagramUrl(instagramId) : externalHref;
@@ -48,9 +47,9 @@ export function ViewMasterReel({ reel }: ViewMasterReelProps) {
             by: {author}, {formatDate(new Date(date))}
           </div>
           {bodyHtml}
-          <ProjectLink externalHref={href}>
+          <UncookedLink externalHref={href}>
             {formatArtMediumIdToText(id, type)}
-          </ProjectLink>
+          </UncookedLink>
         </div>
       </div>
     </div>

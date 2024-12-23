@@ -1,13 +1,12 @@
-import type { Project } from "../data/getProjects.server";
+import type { Uncooked } from "../data/uncooked.server";
 import { useMarkdown } from "../hooks/useMarkdown";
 import { formatDate } from "../util/formatDate";
 import { formatArtMediumIdToText } from "../util/formatArtMediumIdToText";
-import { ProjectLink } from "./ProjectLink";
+import { UncookedLink } from "./UncookedLink";
 import { getInstagramUrl } from "../util/getInstagramUrl";
-import { getRecordId } from "../util/getRecordId";
 
 type PrintProps = {
-  print: Project;
+  print: Uncooked;
 };
 
 export function Print({ print }: PrintProps) {
@@ -21,7 +20,7 @@ export function Print({ print }: PrintProps) {
     instagramId,
     customImage,
   } = print;
-  const { id } = getRecordId(print.id);
+  const { id } = print.id;
 
   const href = instagramId ? getInstagramUrl(instagramId) : externalHref;
   const bodyHtml = useMarkdown(body);
@@ -43,9 +42,9 @@ export function Print({ print }: PrintProps) {
             by: {author}, {formatDate(new Date(date))}
           </div>
           {bodyHtml}
-          <ProjectLink externalHref={href}>
+          <UncookedLink externalHref={href}>
             {formatArtMediumIdToText(id, type)}
-          </ProjectLink>
+          </UncookedLink>
         </div>
       </div>
     </div>
