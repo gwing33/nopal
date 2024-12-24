@@ -1,4 +1,4 @@
-# Note No.1
+# Captians Log No.1
 
 ## Capitian Speaking.
 There is a lot to do here. We need to start making things dynamic.
