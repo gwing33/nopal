@@ -8,7 +8,10 @@
 - body:string
 - date:datetime
 - images:array<string>?
+- customImage:string?
 - externalUrl:string?
+- instagramId:string?
+  - This is the ID of the Instagram post.
 
 
 ## ID Thoughts
@@ -42,7 +45,9 @@ DEFINE FIELD body ON uncooked TYPE string PERMISSIONS FULL;
 DEFINE FIELD date ON uncooked TYPE datetime PERMISSIONS FULL;
 DEFINE FIELD images ON uncooked TYPE option<array<string>> PERMISSIONS FULL;
 DEFINE FIELD images[*] ON uncooked TYPE string PERMISSIONS FULL;
+DEFINE FIELD customImage ON uncooked TYPE option<string> PERMISSIONS FULL;
 DEFINE FIELD externalUrl ON uncooked TYPE option<string> PERMISSIONS FULL;
+DEFINE FIELD instagramId ON uncooked TYPE option<string> PERMISSIONS FULL;
 
 DEFINE INDEX id ON uncooked FIELDS id;
 ```

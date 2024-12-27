@@ -21,8 +21,6 @@ export type Uncooked = Data & {
   date: string;
   body: string;
   externalUrl?: string;
-  instagramId?: string;
-  customImage?: string;
   images?: string[];
 };
 
