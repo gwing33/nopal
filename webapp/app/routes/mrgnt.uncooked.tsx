@@ -65,40 +65,52 @@ export default function MrgntUncookedManage() {
           value={data.body}
           onChange={(e) => setData({ ...data, body: e.target.value })}
         />
-        {data.images.map((image, i) => (
-          <Input
-            key={image.id}
-            label={
-              "Image " +
-              (i > 0
-                ? Array.from(Array(i).keys()).reduce((acc) => acc + "o", "To")
-                : "")
-            }
-            name="image"
-            value={image.value}
-            onChange={(e) => {
-              const newImgs = [...data.images].map((i) => {
-                return i.id == image.id
-                  ? { id: image.id, value: e.target.value }
-                  : i;
-              });
-              setData({ ...data, images: newImgs });
-            }}
-          />
-        ))}
-        <a
-          className="link"
-          href="#new-image"
-          onClick={(e) => {
-            e.preventDefault();
-            setData({
-              ...data,
-              images: data.images.concat({ id: uniqueId("image"), value: "" }),
-            });
-          }}
-        >
-          +Image
-        </a>
+        <div>
+          {data.images.map((image, i) => (
+            <div className={i > 0 ? "mt-4" : ""}>
+              <Input
+                key={image.id}
+                label={
+                  "Image " +
+                  (i > 0
+                    ? Array.from(Array(i).keys()).reduce(
+                        (acc) => acc + "o",
+                        "To"
+                      )
+                    : "")
+                }
+                name="image"
+                value={image.value}
+                onChange={(e) => {
+                  const newImgs = [...data.images].map((i) => {
+                    return i.id == image.id
+                      ? { id: image.id, value: e.target.value }
+                      : i;
+                  });
+                  setData({ ...data, images: newImgs });
+                }}
+              />
+            </div>
+          ))}
+          {data.images.length < 4 && (
+            <a
+              className="link mt-2 inline-block"
+              href="#new-image"
+              onClick={(e) => {
+                e.preventDefault();
+                setData({
+                  ...data,
+                  images: data.images.concat({
+                    id: uniqueId("image"),
+                    value: "",
+                  }),
+                });
+              }}
+            >
+              +Image
+            </a>
+          )}
+        </div>
         <Input
           name="externalUrl"
           label="Link URL"
