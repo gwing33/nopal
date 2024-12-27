@@ -53,7 +53,7 @@ export function formatCollection<T extends Data>(
   };
 }
 
-export async function query<T extends Data>(
+export async function queryCollection<T extends Data>(
   query: string,
   params: Record<string, any> = {},
   options: AllQueryOptions = {}
@@ -80,9 +80,34 @@ export async function query<T extends Data>(
   return formatCollection();
 }
 
+export async function query<T extends unknown[]>(
+  query: string,
+  params: Record<string, any> = {}
+) {
+  const db = await getDb();
+  if (!db) {
+    console.error("Database not initialized");
+    return [];
+  }
+
+  try {
+    const result = await db.query<T>(query, params);
+    return result;
+  } catch (err) {
+    console.error("Failed to get data:", err);
+  } finally {
+    await db.close();
+  }
+  return [];
+}
+
 export async function select<T extends Data>(
-  id: RecordId
-): Promise<T | undefined> {
+  thing: RecordId
+): Promise<T | undefined>;
+export async function select<T extends Data>(
+  thing: string
+): Promise<Collection<T> | undefined>;
+export async function select<T extends Data>(thing: RecordId | string) {
   const db = await getDb();
   if (!db) {
     console.error("Database not initialized");
@@ -90,8 +115,14 @@ export async function select<T extends Data>(
   }
 
   try {
-    const result = await db.select<T>(id);
-    return result ? formatRecord(result) : undefined;
+    const result = await db.select<T>(thing);
+    if (!result) {
+      return undefined;
+    }
+    if (Array.isArray(result)) {
+      return formatCollection<T>(result, { limit: result.length });
+    }
+    return formatRecord<T>(result);
   } catch (err) {
     console.error("Failed to get data:", err);
   } finally {

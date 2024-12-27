@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "../components/Input";
 import { Autocomplete } from "../components/Autocomplete";
-import { redirect, ActionFunctionArgs } from "@remix-run/node";
-import { Form } from "@remix-run/react";
-
-let _uniqueId = 0;
-function uniqueId(prefix: string = "") {
-  _uniqueId++;
-  return prefix + uniqueId;
-}
+import {
+  json,
+  redirect,
+  ActionFunctionArgs,
+  LoaderFunctionArgs,
+} from "@remix-run/node";
+import { Form, useLoaderData } from "@remix-run/react";
+import { authenticator } from "../modules/auth/auth.server";
+import { uniqueId } from "../util/uniqueId";
 
 const types = [
   "newspaper-clipping",
@@ -17,6 +18,13 @@ const types = [
   "view-master-reel",
   "presentation",
 ];
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const user = await authenticator.isAuthenticated(request, {
+    failureRedirect: "/mrgnt/login",
+  });
+  return json({ user });
+}
 
 export async function action({ request }: ActionFunctionArgs) {
   const body = await request.formData();
@@ -33,6 +41,10 @@ export default function MrgntUncookedManage() {
     images: [{ id: uniqueId("image"), value: "" }],
     externalUrl: "",
   });
+
+  // useEffect(() => {
+  //   setData({ ...data, images: [] });
+  // }, []);
 
   return (
     <div>
@@ -67,9 +79,8 @@ export default function MrgntUncookedManage() {
         />
         <div>
           {data.images.map((image, i) => (
-            <div className={i > 0 ? "mt-4" : ""}>
+            <div key={image.id} className={i > 0 ? "mt-4" : ""}>
               <Input
-                key={image.id}
                 label={
                   "Image " +
                   (i > 0

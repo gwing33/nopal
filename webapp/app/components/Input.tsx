@@ -4,10 +4,11 @@ type InputProps = {
   type?: "text" | "textarea" | "dropdown";
   label: string;
   name: string;
-  value: string;
-  onChange: (
+  value?: string;
+  onChange?: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
+  required?: boolean;
   onFocus?: FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
   onBlur?: FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
 };
@@ -22,6 +23,7 @@ export function Input(props: InputProps) {
     onFocus: props.onFocus,
     onBlur: props.onBlur,
     autoComplete: "off",
+    required: props.required,
   };
 
   return (

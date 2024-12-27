@@ -3,7 +3,7 @@ import {
   Data,
   AllQueryOptions,
   Collection,
-  query,
+  queryCollection,
   select,
 } from "./generic.server";
 
@@ -29,7 +29,7 @@ export type AllUncooked = Collection<Uncooked>;
 export async function getAllUncooked(
   options: AllQueryOptions = {}
 ): Promise<AllUncooked> {
-  return query(
+  return queryCollection(
     `SELECT * FROM uncooked ORDER BY ${
       options.order || "date"
     } DESC LIMIT $limit START AT $start;`,
