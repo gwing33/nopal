@@ -3,6 +3,42 @@ body {
   @apply p-4;
 }
 
+input,
+textarea {
+  @apply rounded;
+  padding: 8px !important;
+  background: white;
+  border: 1px solid #baa9c0;
+  outline: none;
+  @media (prefers-color-scheme: dark) {
+    background: var(--purple);
+  }
+}
+
+.autocomplete {
+  position: relative;
+  .options {
+    border-color: #baa9c0;
+    background: white;
+    @media (prefers-color-scheme: dark) {
+      background: var(--purple);
+    }
+  }
+  .option {
+    border-radius: 4px;
+    background: white;
+    @media (prefers-color-scheme: dark) {
+      background: var(--purple);
+    }
+    &.highlight {
+      background: var(--yellow);
+      @media (prefers-color-scheme: dark) {
+        background: var(--dark-farground);
+      }
+    }
+  }
+}
+
 .mdid {
   font-size: 22px;
 }

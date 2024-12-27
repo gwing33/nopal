@@ -1,3 +1,5 @@
+import { FocusEventHandler } from "react";
+
 type InputProps = {
   type?: "text" | "textarea" | "dropdown";
   label: string;
@@ -6,32 +8,39 @@ type InputProps = {
   onChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
-  placeholder?: string;
+  onFocus?: FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
+  onBlur?: FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
 };
 
 export function Input(props: InputProps) {
   const { type = "text", name, value } = props;
+
+  const commonProps = {
+    value,
+    name,
+    onChange: props.onChange,
+    onFocus: props.onFocus,
+    onBlur: props.onBlur,
+    autoComplete: "off",
+  };
+
   return (
     <div className="flex flex-col">
-      <label htmlFor={name}>{props.label}</label>
+      <label className="text-sm" htmlFor={name}>
+        {props.label}
+      </label>
       {type == "textarea" ? (
         <textarea
-          style={{ borderColor: "#BAA9C0", minHeight: "130px" }}
-          className="border rounded p-2"
-          value={value}
-          onChange={props.onChange}
-          name={name}
-          placeholder={props.placeholder}
+          style={{
+            minHeight: "130px",
+          }}
+          {...commonProps}
         />
       ) : (
         <input
-          style={{ borderColor: "#BAA9C0", maxHeight: "40px" }}
-          className="border rounded p-2"
-          value={value}
-          onChange={props.onChange}
-          name={name}
+          style={{ maxHeight: "40px" }}
           type={type || "text"}
-          placeholder={props.placeholder}
+          {...commonProps}
         />
       )}
     </div>

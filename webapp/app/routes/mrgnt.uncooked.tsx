@@ -1,5 +1,6 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { Input } from "../components/Input";
+import { Autocomplete } from "../components/Autocomplete";
 import { redirect, ActionFunctionArgs } from "@remix-run/node";
 import { Form } from "@remix-run/react";
 
@@ -37,19 +38,19 @@ export default function MrgntUncookedManage() {
     <div>
       <h1 className="font-bold mb-4"># New Uncooked Thought</h1>
       <Form method="post" className="w-72 flex flex-col gap-4">
-        <Input
+        <Autocomplete
           label="Type"
           name="type"
           value={data.type}
-          onChange={(e) => setData({ ...data, type: e.target.value })}
-          placeholder="Presentation"
+          onChange={(type) => setData({ ...data, type })}
+          options={types}
         />
-        <Input
+        <Autocomplete
           label="Author"
           name="author"
           value={data.author}
-          onChange={(e) => setData({ ...data, author: e.target.value })}
-          placeholder="Austin"
+          onChange={(author) => setData({ ...data, author })}
+          options={["Austin", "Gerald", "James"]}
         />
         <Input
           label="Title"
@@ -83,7 +84,6 @@ export default function MrgntUncookedManage() {
               });
               setData({ ...data, images: newImgs });
             }}
-            placeholder="e.g. /image.jpg"
           />
         ))}
         <a
@@ -101,12 +101,11 @@ export default function MrgntUncookedManage() {
         </a>
         <Input
           name="externalUrl"
-          label="InstagramID or URL"
+          label="Link URL"
           value={data.externalUrl}
           onChange={(e) => {
             setData({ ...data, externalUrl: e.target.value });
           }}
-          placeholder="CJQYJ1zg7z or https://google.com"
         />
         <div>
           <button className="btn-secondary" type="submit">
