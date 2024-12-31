@@ -13,6 +13,7 @@ type AutocompleteProps<T extends string | OptionObject> = {
   value: string;
   onChange: (val: T) => void;
   options: T[];
+  required?: boolean;
 };
 
 export function Autocomplete<T extends string | OptionObject>({
@@ -62,6 +63,7 @@ export function Autocomplete<T extends string | OptionObject>({
       <Input
         label={props.label}
         name={props.name}
+        required={props.required}
         value={searchVal}
         onChange={(e) => {
           setSearch(e.target.value);

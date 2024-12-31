@@ -1,4 +1,10 @@
-import { useEffect, useState } from "react";
+export const handle = {
+  meta: {
+    title: "New Uncooked Thought",
+  },
+};
+
+import { useState } from "react";
 import { Input } from "../components/Input";
 import { Autocomplete } from "../components/Autocomplete";
 import {
@@ -7,7 +13,7 @@ import {
   ActionFunctionArgs,
   LoaderFunctionArgs,
 } from "@remix-run/node";
-import { Form, useLoaderData } from "@remix-run/react";
+import { Form, useLoaderData, useActionData } from "@remix-run/react";
 import { authenticator } from "../modules/auth/auth.server";
 import { uniqueId } from "../util/uniqueId";
 
@@ -27,24 +33,47 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-  const body = await request.formData();
-  console.log(body);
-  return redirect("/mrgnt");
+  const formData = await request.formData();
+
+  const data = {
+    type: formData.get("type")?.toString(),
+    author: formData.get("author")?.toString(),
+    title: formData.get("title")?.toString(),
+    body: formData.get("body")?.toString(),
+    images: formData.getAll("image").map((i) => i.toString()),
+    externalUrl: formData.get("externalUrl")?.toString(),
+  };
+  return json({ error: "TODO: Implement Save", ...data });
+
+  try {
+    // Add submission logic here
+    // return redirect("/mrgnt");
+  } catch (error) {
+    return json({ error: "Failed to create uncooked thought", ...data });
+  }
 }
 
 export default function MrgntUncookedManage() {
+  const actionData = useActionData<typeof action>();
   const [data, setData] = useState({
-    type: "",
-    author: "",
-    title: "",
-    body: "",
-    images: [{ id: uniqueId("image"), value: "" }],
-    externalUrl: "",
+    type: actionData?.type || "",
+    author: actionData?.author || "",
+    title: actionData?.title || "",
+    body: actionData?.body || "",
+    images: (actionData?.images || [""]).map((i) => ({
+      id: uniqueId("image"),
+      value: i,
+    })),
   });
 
-  // useEffect(() => {
-  //   setData({ ...data, images: [] });
-  // }, []);
+  const isFormValid = () => {
+    return (
+      data.type.trim() !== "" &&
+      data.author.trim() !== "" &&
+      data.title.trim() !== "" &&
+      data.body.trim() !== ""
+    );
+  };
 
   return (
     <div>
@@ -67,14 +96,16 @@ export default function MrgntUncookedManage() {
         <Input
           label="Title"
           name="title"
-          value={data.title}
+          required
+          value={data?.title || ""}
           onChange={(e) => setData({ ...data, title: e.target.value })}
         />
         <Input
           label="Markdown Body"
           name="body"
           type="textarea"
-          value={data.body}
+          required
+          value={data?.body || ""}
           onChange={(e) => setData({ ...data, body: e.target.value })}
         />
         <div>
@@ -125,17 +156,25 @@ export default function MrgntUncookedManage() {
         <Input
           name="externalUrl"
           label="Link URL"
-          value={data.externalUrl}
-          onChange={(e) => {
-            setData({ ...data, externalUrl: e.target.value });
-          }}
+          defaultValue={actionData?.externalUrl || ""}
         />
         <div>
-          <button className="btn-secondary" type="submit">
+          <button
+            className="btn-secondary"
+            type="submit"
+            disabled={!isFormValid()}
+            style={{
+              opacity: isFormValid() ? 1 : 0.5,
+              cursor: isFormValid() ? "pointer" : "not-allowed",
+            }}
+          >
             Bake
           </button>
         </div>
       </Form>
+      {actionData?.error && (
+        <div className="text-red-500 mt-2">{actionData.error}</div>
+      )}
     </div>
   );
 }

@@ -5,6 +5,7 @@ type InputProps = {
   label: string;
   name: string;
   value?: string;
+  defaultValue?: string;
   onChange?: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
@@ -14,9 +15,10 @@ type InputProps = {
 };
 
 export function Input(props: InputProps) {
-  const { type = "text", name, value } = props;
+  const { type = "text", name, defaultValue, value } = props;
 
   const commonProps = {
+    defaultValue,
     value,
     name,
     onChange: props.onChange,
