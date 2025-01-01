@@ -37,3 +37,30 @@ REMOVE FIELD instagramId ON uncooked;
 -- Lastly update the uncooked table
 Update uncooked;
 ```
+
+# Uncooked No.2.1: Swap string id for integer id
+The ID was a poorly thought out approach on my part. Migrating this to add a `type_id`
+```
+-- Add type_id column
+DEFINE FIELD type_id ON uncooked TYPE int PERMISSIONS FULL;
+
+-- Create function to grab ID out of record.id
+DEFINE FUNCTION fn::parseUncookedRecordId($name: string) {
+     $split = string::split($name, '-');
+    RETURN type::int($split[array::len($split) - 1]);
+};
+
+-- Test function
+SELECT id, fn::parseUncookedRecordId(record::id(id)) as type_id FROM uncooked;
+
+-- Update type_id columns
+FOR $record IN (SELECT id, fn::parseUncookedRecordId(record::id(id)) as type_id FROM uncooked) {
+    UPDATE $record.id SET type_id = $record.type_id;
+};
+
+-- Remove function
+REMOVE FUNCTION fn::parseUncookedRecordId;
+
+-- Create types index
+DEFINE INDEX types ON uncooked FIELDS type, type_id UNIQUE;
+```

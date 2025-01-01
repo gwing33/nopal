@@ -1,9 +1,3 @@
-export const handle = {
-  meta: {
-    title: "New Uncooked Thought",
-  },
-};
-
 import { useState } from "react";
 import { Input } from "../components/Input";
 import { Autocomplete } from "../components/Autocomplete";
@@ -13,9 +7,15 @@ import {
   ActionFunctionArgs,
   LoaderFunctionArgs,
 } from "@remix-run/node";
-import { Form, useLoaderData, useActionData } from "@remix-run/react";
+import { Form, useActionData } from "@remix-run/react";
 import { authenticator } from "../modules/auth/auth.server";
 import { uniqueId } from "../util/uniqueId";
+import {
+  createUncooked,
+  ArtMedium,
+  CreateUncookedParams,
+} from "../data/uncooked.server";
+import { CreateBatchOptions } from "resend";
 
 const types = [
   "newspaper-clipping",
@@ -35,19 +35,32 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
 
-  const data = {
-    type: formData.get("type")?.toString(),
-    author: formData.get("author")?.toString(),
-    title: formData.get("title")?.toString(),
-    body: formData.get("body")?.toString(),
-    images: formData.getAll("image").map((i) => i.toString()),
+  const type = formData.get("type")?.toString() as ArtMedium;
+  const author = formData.get("author")?.toString() || "";
+  const title = formData.get("title")?.toString() || "";
+  const body = formData.get("body")?.toString() || "";
+
+  const data: CreateUncookedParams = {
+    type,
+    author,
+    title,
+    body,
+    images: formData
+      .getAll("image")
+      .map((i) => i.toString())
+      .filter((i) => !i),
     externalUrl: formData.get("externalUrl")?.toString(),
   };
-  return json({ error: "TODO: Implement Save", ...data });
+
+  if (!data.type || !data.author || !data.title || !data.body) {
+    return json({ error: "Missing fields", ...data });
+  }
+
+  const resp = await createUncooked(data);
 
   try {
     // Add submission logic here
-    // return redirect("/mrgnt");
+    return redirect("/mrgnt");
   } catch (error) {
     return json({ error: "Failed to create uncooked thought", ...data });
   }
