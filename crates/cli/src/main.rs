@@ -36,8 +36,8 @@ fn main() {
 }
 
 // These are the calibration values for the load cell
-const COMPRESSION_1000_LBS: f64 = -1.9870;
-const TENSION_1000_LBS: f64 = 1.9857;
+const COMPRESSION_10000_LBS: f64 = -1.9870;
+const TENSION_10000_LBS: f64 = 1.9857;
 
 fn read_serial_port(port_name: &str) -> Result<(), Box<dyn std::error::Error>> {
     // List available ports
@@ -83,10 +83,10 @@ fn read_serial_port(port_name: &str) -> Result<(), Box<dyn std::error::Error>> {
                                 match value.parse::<f64>() {
                                     Ok(number) => {
                                         let force = if number < 0.0 {
-                                            let f = number * (1000.0 / COMPRESSION_1000_LBS);
+                                            let f = number * (10000.0 / COMPRESSION_10000_LBS);
                                             f
                                         } else {
-                                            let f = number * (1000.0 / TENSION_1000_LBS);
+                                            let f = number * (10000.0 / TENSION_10000_LBS);
                                             f
                                         };
                                         // number now contains the parsed float value
