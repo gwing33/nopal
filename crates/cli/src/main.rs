@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand}; // Args, ValueEnum
 use jiff;
-use serialport::{SerialPort, SerialPortType};
+use serialport::SerialPortType;
 use std::fs::File;
 use std::io::Write;
 use std::io::{self, Read};
@@ -35,6 +35,10 @@ fn main() {
     }
 }
 
+// These are the calibration values for the load cell
+const COMPRESSION_1000_LBS: f64 = -1.9870;
+const TENSION_1000_LBS: f64 = 1.9857;
+
 fn read_serial_port(port_name: &str) -> Result<(), Box<dyn std::error::Error>> {
     // List available ports
     let ports = serialport::available_ports()?;
@@ -62,7 +66,7 @@ fn read_serial_port(port_name: &str) -> Result<(), Box<dyn std::error::Error>> {
             let now = jiff::Timestamp::now();
             let filename = format!(
                 "./data/load_cell_data_{}.txt",
-                now.strftime("%Y-%m-%d-%H:%M").to_string()
+                now.strftime("%Y-%m-%d_%H:%M").to_string()
             );
             let mut file = File::create(&filename)?;
             let mut serial_buf: Vec<u8> = vec![0; 1000];
@@ -73,9 +77,32 @@ fn read_serial_port(port_name: &str) -> Result<(), Box<dyn std::error::Error>> {
                 match port.read(serial_buf.as_mut_slice()) {
                     Ok(t) => {
                         let data = String::from_utf8_lossy(&serial_buf[..t]);
-                        file.write_all(data.as_bytes())?;
-                        file.flush()?;
-                        print!("{}", data);
+
+                        for line in data.lines() {
+                            if let Some(value) = line.trim().strip_suffix("mV/V") {
+                                match value.parse::<f64>() {
+                                    Ok(number) => {
+                                        let force = if number < 0.0 {
+                                            let f = number * (1000.0 / COMPRESSION_1000_LBS);
+                                            f
+                                        } else {
+                                            let f = number * (1000.0 / TENSION_1000_LBS);
+                                            f
+                                        };
+                                        // number now contains the parsed float value
+                                        println!("Force, number: {}, {}", force, number);
+
+                                        // Still write the original data to file
+                                        file.write_all(force.to_string().as_bytes())?;
+                                        file.write_all(b"\n")?;
+                                        file.flush()?;
+                                    }
+                                    Err(e) => {
+                                        eprintln!("Error parsing number: {}", e);
+                                    }
+                                }
+                            }
+                        }
                     }
                     Err(ref e) if e.kind() == io::ErrorKind::TimedOut => continue,
                     Err(e) => {
