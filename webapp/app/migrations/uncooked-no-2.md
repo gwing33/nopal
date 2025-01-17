@@ -23,13 +23,6 @@ FOR $record IN (SELECT id, customImage, images FROM uncooked where customImage !
     UPDATE $record.id SET images = [$record.customImage];
 }
 
--- Create images for other posts
-FOR $record IN (SELECT id, type, images FROM uncooked WHERE images == NONE AND type != 'newspaper-clipping') {
-    UPDATE $record.id SET images = [
-        string::concat('/uncooked/', meta::id(id), '.jpg')
-    ];
-}
-
 -- Remove the customImage field
 REMOVE FIELD customImage FROM uncooked;
 
