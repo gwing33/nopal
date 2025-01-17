@@ -15,21 +15,35 @@ export default function Mrgnt() {
           <div className="notions-box">
             <ul>
               <li>
-                <Link className="link" to="/mrgnt/uncooked">
+                <Link to="/mrgnt/uncooked?type=presentation" className="link">
                   +Presentation
                 </Link>
               </li>
               <li>
-                <a className="link text-nowrap">+Newpaper Clippings</a>
+                <Link
+                  to="/mrgnt/uncooked?type=newspaper-clipping"
+                  className="link text-nowrap"
+                >
+                  +Newpaper Clippings
+                </Link>
               </li>
               <li>
-                <a className="link">+Print</a>
+                <Link to="/mrgnt/uncooked?type=print" className="link">
+                  +Print
+                </Link>
               </li>
               <li>
-                <a className="link">+View-Master Reel</a>
+                <Link
+                  to="/mrgnt/uncooked?type=view-master-reel"
+                  className="link"
+                >
+                  +View-Master Reel
+                </Link>
               </li>
               <li>
-                <a className="link">+Betamax</a>
+                <Link to="/mrgnt/uncooked?type=betamax" className="link">
+                  +Betamax
+                </Link>
               </li>
             </ul>
           </div>

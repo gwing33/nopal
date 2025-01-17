@@ -30,7 +30,8 @@ textarea {
     @media (prefers-color-scheme: dark) {
       background: var(--purple);
     }
-    &.highlight {
+    &.highlight,
+    &:hover {
       background: var(--yellow);
       @media (prefers-color-scheme: dark) {
         background: var(--dark-farground);

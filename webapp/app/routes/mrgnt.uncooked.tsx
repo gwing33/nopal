@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "../components/Input";
 import { Autocomplete } from "../components/Autocomplete";
 import {
@@ -7,7 +7,12 @@ import {
   ActionFunctionArgs,
   LoaderFunctionArgs,
 } from "@remix-run/node";
-import { Form, useActionData } from "@remix-run/react";
+import {
+  Form,
+  useActionData,
+  useNavigation,
+  useSearchParams,
+} from "@remix-run/react";
 import { authenticator } from "../modules/auth/auth.server";
 import { uniqueId } from "../util/uniqueId";
 import {
@@ -16,6 +21,7 @@ import {
   CreateUncookedParams,
 } from "../data/uncooked.server";
 import { CreateBatchOptions } from "resend";
+import { log } from "console";
 
 const types = [
   "newspaper-clipping",
@@ -67,6 +73,9 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function MrgntUncookedManage() {
+  const navigation = useNavigation();
+  const [params] = useSearchParams();
+  const _type = params.get("type");
   const actionData = useActionData<typeof action>();
   const [data, setData] = useState({
     type: actionData?.type || "",
@@ -78,6 +87,11 @@ export default function MrgntUncookedManage() {
       value: i,
     })),
   });
+  useEffect(() => {
+    if (_type && data.type != _type && types.includes(_type)) {
+      setData({ ...data, type: _type });
+    }
+  }, [_type]);
 
   const isFormValid = () => {
     return (
@@ -87,6 +101,7 @@ export default function MrgntUncookedManage() {
       data.body.trim() !== ""
     );
   };
+  const disabled = navigation.state === "submitting" || !isFormValid();
 
   return (
     <div>
@@ -175,10 +190,10 @@ export default function MrgntUncookedManage() {
           <button
             className="btn-secondary"
             type="submit"
-            disabled={!isFormValid()}
+            disabled={disabled}
             style={{
-              opacity: isFormValid() ? 1 : 0.5,
-              cursor: isFormValid() ? "pointer" : "not-allowed",
+              opacity: disabled ? 0.5 : 1,
+              cursor: disabled ? "not-allowed" : "pointer",
             }}
           >
             Bake

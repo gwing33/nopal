@@ -1,4 +1,4 @@
-# nopal
+# Nopal
 
 We are a company focused on building homes for humans. Everything we do is open source and transparent. We look to learn and share all our information.
 

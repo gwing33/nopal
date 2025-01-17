@@ -28,6 +28,9 @@ export function Autocomplete<T extends string | OptionObject>({
     _setSearch(val);
     setShow(true);
   };
+  useEffect(() => {
+    _setSearch(props.value);
+  }, [props.value]);
   const isExactMatch = useMemo(() => {
     return options.some((option) => {
       return (
