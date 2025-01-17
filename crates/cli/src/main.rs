@@ -65,11 +65,13 @@ fn read_serial_port(port_name: &str) -> Result<(), Box<dyn std::error::Error>> {
 
             let now = jiff::Timestamp::now();
             let filename = format!(
-                "./data/load_cell_data_{}.txt",
+                "./data/load_cell_data_{}.csv",
                 now.strftime("%Y-%m-%d_%H:%M").to_string()
             );
             let mut file = File::create(&filename)?;
             let mut serial_buf: Vec<u8> = vec![0; 1000];
+
+            file.write_all(b"Force(lbs),Distance(in)\n")?;
 
             println!("Recording data (Ctrl+C to stop)...");
 
@@ -80,26 +82,48 @@ fn read_serial_port(port_name: &str) -> Result<(), Box<dyn std::error::Error>> {
 
                         for line in data.lines() {
                             if let Some(value) = line.trim().strip_suffix("mV/V") {
-                                match value.parse::<f64>() {
-                                    Ok(number) => {
-                                        let force = if number < 0.0 {
-                                            let f = number * (10000.0 / COMPRESSION_10000_LBS);
-                                            f
-                                        } else {
-                                            let f = number * (10000.0 / TENSION_10000_LBS);
-                                            f
-                                        };
-                                        // number now contains the parsed float value
-                                        println!("Force, number: {}, {}", force, number);
+                                if let Ok(number) = value.parse::<f64>() {
+                                    let force = if number < 0.0 {
+                                        let f = number * (10000.0 / COMPRESSION_10000_LBS);
+                                        f
+                                    } else {
+                                        let f = number * (10000.0 / TENSION_10000_LBS);
+                                        f
+                                    };
 
-                                        // Still write the original data to file
-                                        file.write_all(force.to_string().as_bytes())?;
-                                        file.write_all(b"\n")?;
-                                        file.flush()?;
+                                    println!("Force: {} lbs", force);
+                                    println!("Enter distance (in): ");
+
+                                    let mut distance = String::new();
+                                    io::stdin().read_line(&mut distance)?;
+                                    let distance = fraction_to_float(distance.trim());
+                                    if let Err(e) = distance {
+                                        eprintln!("Error parsing distance: {}", e);
+                                        continue;
                                     }
-                                    Err(e) => {
-                                        eprintln!("Error parsing number: {}", e);
-                                    }
+                                    let distance = distance.unwrap();
+
+                                    let timestamp = jiff::Timestamp::now();
+
+                                    // Write both force and distance to file
+                                    file.write_all(
+                                        format!(
+                                            "{},{},{}\n",
+                                            force,
+                                            distance,
+                                            timestamp.to_string()
+                                        )
+                                        .as_bytes(),
+                                    )?;
+                                    file.flush()?;
+
+                                    println!(
+                                        "Recorded: Force = {} lbs, Distance = {} in, Time = {}",
+                                        force,
+                                        distance,
+                                        timestamp.to_string()
+                                    );
+                                    println!("");
                                 }
                             }
                         }
@@ -119,4 +143,41 @@ fn read_serial_port(port_name: &str) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
+}
+
+fn fraction_to_float(fraction_str: &str) -> Result<f64, Box<dyn std::error::Error>> {
+    // Split the string by whitespace
+    let parts: Vec<&str> = fraction_str.trim().split_whitespace().collect();
+
+    let mut result = 0.0;
+
+    match parts.len() {
+        // Just a fraction like "1/2"
+        1 => {
+            if parts[0].contains('/') {
+                let frac_parts: Vec<&str> = parts[0].split('/').collect();
+                if frac_parts.len() == 2 {
+                    let numerator: f64 = frac_parts[0].parse()?;
+                    let denominator: f64 = frac_parts[1].parse()?;
+                    result = numerator / denominator;
+                }
+            } else {
+                // Just a whole number
+                result = parts[0].parse()?;
+            }
+        }
+        // Whole number and fraction like "1 1/2"
+        2 => {
+            let whole: f64 = parts[0].parse()?;
+            let frac_parts: Vec<&str> = parts[1].split('/').collect();
+            if frac_parts.len() == 2 {
+                let numerator: f64 = frac_parts[0].parse()?;
+                let denominator: f64 = frac_parts[1].parse()?;
+                result = whole + (numerator / denominator);
+            }
+        }
+        _ => return Err("Invalid fraction format".into()),
+    }
+
+    Ok(result)
 }
