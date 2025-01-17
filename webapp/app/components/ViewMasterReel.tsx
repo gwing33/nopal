@@ -3,18 +3,15 @@ import { useMarkdown } from "../hooks/useMarkdown";
 import { formatDate } from "../util/formatDate";
 import { formatArtMediumIdToText } from "../util/formatArtMediumIdToText";
 import { UncookedLink } from "./UncookedLink";
-import { getInstagramUrl } from "../util/getInstagramUrl";
 
 type ViewMasterReelProps = {
   reel: Uncooked;
 };
 export function ViewMasterReel({ reel }: ViewMasterReelProps) {
-  const { title, type, author, date, body, externalUrl, instagramId, images } =
-    reel;
+  const { title, type, author, date, body, externalUrl, images } = reel;
   const { id } = reel.id;
   const bodyHtml = useMarkdown(body);
   const gridRows = (images?.length || 0) > 2 ? "grid-rows-2" : "grid-rows-1";
-  const href = instagramId ? getInstagramUrl(instagramId) : externalUrl;
   return (
     <div className="pb-4 view-master-reel">
       <div className="flex flex-col sm:flex-row">
@@ -47,7 +44,7 @@ export function ViewMasterReel({ reel }: ViewMasterReelProps) {
             by: {author}, {formatDate(new Date(date))}
           </div>
           {bodyHtml}
-          <UncookedLink externalUrl={href}>
+          <UncookedLink externalUrl={externalUrl}>
             {formatArtMediumIdToText(id, type)}
           </UncookedLink>
         </div>

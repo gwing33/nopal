@@ -1,4 +1,4 @@
-import { LinksFunction } from "@remix-run/node";
+import { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
@@ -21,7 +21,7 @@ export const links: LinksFunction = () => [
 
 const DISPLAY_LIMIT = 10;
 
-export const loader = async (remixContext) => {
+export const loader = async (remixContext: LoaderFunctionArgs) => {
   const url = new URL(remixContext.request.url);
   const start = Number(url.searchParams.get("start")) || 0;
   return getAllUncooked({ limit: DISPLAY_LIMIT, start });
