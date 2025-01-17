@@ -1,0 +1,10 @@
+# Users No.2: Create
+
+```
+DEFINE TABLE users TYPE ANY SCHEMALESS PERMISSIONS NONE;
+
+DEFINE FIELD email ON users TYPE string PERMISSIONS FULL;
+DEFINE FIELD name ON users TYPE string PERMISSIONS FULL;
+
+DEFINE INDEX email ON users FIELDS email;
+```
