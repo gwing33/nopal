@@ -53,10 +53,12 @@ fn read_serial_port_interactive(port_name: &str) -> Result<(), Box<dyn std::erro
 
             let now = jiff::Timestamp::now();
             let filename = format!(
-                "./data/load_cell_data_{}.txt",
+                "./data/load_cell_data_{}.csv",
                 now.strftime("%Y-%m-%d_%H:%M").to_string()
             );
             let mut file = File::create(&filename)?;
+            // Add header in
+            writeln!(file, "Distance (in),Force (lbs)")?;
 
             loop {
                 println!("Enter distance (or 'q' to quit): ");
