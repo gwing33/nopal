@@ -28,7 +28,7 @@ fn main() {
         }
         Command::RecordLoadCell {} => {
             println!("Recording load cell info");
-            if let Err(e) = read_serial_port("DK0HR7JK") {
+            if let Err(e) = read_serial_port_interactive("DK0HR7JK") {
                 eprintln!("Error: {}", e);
             }
         }
@@ -39,110 +39,96 @@ fn main() {
 const COMPRESSION_10000_LBS: f64 = -1.9870;
 const TENSION_10000_LBS: f64 = 1.9857;
 
-fn read_serial_port(port_name: &str) -> Result<(), Box<dyn std::error::Error>> {
-    // List available ports
+fn read_serial_port_interactive(port_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    // Find and open the serial port
     let ports = serialport::available_ports()?;
-    let mut port: Option<&serialport::SerialPortInfo> = None;
-
-    // Find and print available ports
-    println!("Available ports:");
-    for p in &ports {
-        if p.port_name.contains(port_name) {
-            port = Some(p);
-        }
-    }
+    let port = ports.iter().find(|p| p.port_name.contains(port_name));
 
     match port {
         Some(p) => {
-            println!("{}", p.port_name);
-            if let SerialPortType::UsbPort(info) = &p.port_type {
-                println!("  VID:{:04x} PID:{:04x}", info.vid, info.pid);
-            }
-
+            println!("Connected to {}", p.port_name);
             let mut port = serialport::new(p.port_name.clone(), 2_000_000)
                 .timeout(Duration::from_millis(10))
                 .open()?;
 
             let now = jiff::Timestamp::now();
             let filename = format!(
-                "./data/load_cell_data_{}.csv",
+                "./data/load_cell_data_{}.txt",
                 now.strftime("%Y-%m-%d_%H:%M").to_string()
             );
             let mut file = File::create(&filename)?;
-            let mut serial_buf: Vec<u8> = vec![0; 1000];
-
-            file.write_all(b"Force(lbs),Distance(in)\n")?;
-
-            println!("Recording data (Ctrl+C to stop)...");
 
             loop {
-                match port.read(serial_buf.as_mut_slice()) {
-                    Ok(t) => {
-                        let data = String::from_utf8_lossy(&serial_buf[..t]);
+                println!("Enter distance (or 'q' to quit): ");
+                let mut input = String::new();
+                io::stdin().read_line(&mut input)?;
 
-                        for line in data.lines() {
-                            if let Some(value) = line.trim().strip_suffix("mV/V") {
-                                if let Ok(number) = value.parse::<f64>() {
-                                    let force = if number < 0.0 {
-                                        let f = number * (10000.0 / COMPRESSION_10000_LBS);
-                                        f
-                                    } else {
-                                        let f = number * (10000.0 / TENSION_10000_LBS);
-                                        f
-                                    };
+                let input = input.trim();
+                if input.to_lowercase().eq("q") {
+                    break;
+                }
+                let distance = fraction_to_float(input);
+                if let Err(e) = distance {
+                    println!("Invalid distance: {}", e);
+                    continue;
+                }
+                let distance = distance.unwrap();
 
-                                    println!("Force: {} lbs", force);
-                                    println!("Enter distance (in): ");
-
-                                    let mut distance = String::new();
-                                    io::stdin().read_line(&mut distance)?;
-                                    let distance = fraction_to_float(distance.trim());
-                                    if let Err(e) = distance {
-                                        eprintln!("Error parsing distance: {}", e);
-                                        continue;
-                                    }
-                                    let distance = distance.unwrap();
-
-                                    let timestamp = jiff::Timestamp::now();
-
-                                    // Write both force and distance to file
-                                    file.write_all(
-                                        format!(
-                                            "{},{},{}\n",
-                                            force,
-                                            distance,
-                                            timestamp.to_string()
-                                        )
-                                        .as_bytes(),
-                                    )?;
-                                    file.flush()?;
-
-                                    println!(
-                                        "Recorded: Force = {} lbs, Distance = {} in, Time = {}",
-                                        force,
-                                        distance,
-                                        timestamp.to_string()
-                                    );
-                                    println!("");
-                                }
-                            }
-                        }
+                // Read the latest value from the serial port
+                match read_single_measurement(&mut port) {
+                    Ok((force, raw_value)) => {
+                        println!(
+                            "Distance: {}, Force: {}, Raw: {}",
+                            distance, force, raw_value
+                        );
+                        // Write to file: distance,force
+                        writeln!(file, "{},{}", distance, force)?;
+                        file.flush()?;
                     }
-                    Err(ref e) if e.kind() == io::ErrorKind::TimedOut => continue,
                     Err(e) => {
-                        eprintln!("Error: {}", e);
-                        break;
+                        println!("Error reading measurement: {}", e);
                     }
                 }
             }
         }
         None => {
             eprintln!("Error: Port not found");
-            return Ok(());
         }
     }
 
     Ok(())
+}
+
+fn read_single_measurement(
+    port: &mut Box<dyn serialport::SerialPort>,
+) -> Result<(f64, f64), Box<dyn std::error::Error>> {
+    let mut serial_buf: Vec<u8> = vec![0; 1000];
+
+    // Try to get a valid measurement for up to 1 second
+    let start = std::time::Instant::now();
+    while start.elapsed() < Duration::from_secs(1) {
+        match port.read(serial_buf.as_mut_slice()) {
+            Ok(t) => {
+                let data = String::from_utf8_lossy(&serial_buf[..t]);
+                for line in data.lines() {
+                    if let Some(value) = line.trim().strip_suffix("mV/V") {
+                        if let Ok(number) = value.parse::<f64>() {
+                            let force = if number < 0.0 {
+                                number * (10000.0 / COMPRESSION_10000_LBS)
+                            } else {
+                                number * (10000.0 / TENSION_10000_LBS)
+                            };
+                            return Ok((force, number));
+                        }
+                    }
+                }
+            }
+            Err(ref e) if e.kind() == io::ErrorKind::TimedOut => continue,
+            Err(e) => return Err(Box::new(e)),
+        }
+    }
+
+    Err("Timeout waiting for measurement".into())
 }
 
 fn fraction_to_float(fraction_str: &str) -> Result<f64, Box<dyn std::error::Error>> {
