@@ -18,6 +18,7 @@ $ npm run dev
 # Nopal CLI
 $ cd ./crates
 $ cargo run --package cli test
+$ cargo run --package cli record-load-cell
 
 # Nopal API
 $ cd ./crates
