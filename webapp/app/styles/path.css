@@ -1,0 +1,30 @@
+.svgTextMono {
+  @apply font-mono;
+  fill: var(--purple);
+  font-size: 20px;
+  @media (prefers-color-scheme: dark) {
+    fill: white;
+  }
+}
+.svgTextHand {
+  @apply font-hand;
+  fill: var(--red);
+  font-size: 22px;
+  @media (prefers-color-scheme: dark) {
+    fill: var(--red-light);
+  }
+}
+
+.svgRect {
+  fill: white;
+  @media (prefers-color-scheme: dark) {
+    fill: var(--purple);
+  }
+}
+
+.svgArrow {
+  stroke: var(--red);
+  @media (prefers-color-scheme: dark) {
+    stroke: var(--red-light);
+  }
+}

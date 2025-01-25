@@ -57,6 +57,9 @@ export function Layout({ children }: { children?: ReactNode }) {
             <NavLink to="/uncooked" className="p-2">
               Uncooked
             </NavLink>
+            <NavLink to="/path" className="p-2">
+              Path
+            </NavLink>
           </nav>
           {isDark ? (
             <img className="moon" src={moon} alt="moon" />

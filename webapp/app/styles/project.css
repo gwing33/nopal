@@ -2,9 +2,10 @@
   h1,
   h2,
   h3 {
+    font-size: 20px;
     @apply font-bold;
     @apply pt-6;
-    @apply pb-6;
+    @apply pb-2;
   }
 
   h4,
@@ -13,7 +14,8 @@
     @apply font-bold;
     @apply pt-6;
   }
-  p {
+  p,
+  ul {
     @apply pb-4;
   }
   b,
@@ -37,6 +39,19 @@
     color: var(--red);
     @media (prefers-color-scheme: dark) {
       color: var(--red-light);
+    }
+  }
+  blockquote {
+    position: relative;
+    &::before {
+      content: "";
+      width: 4px;
+      border-radius: 2px;
+      background: var(--green);
+      position: absolute;
+      top: 0;
+      bottom: 16px;
+      left: -16px;
     }
   }
   .uncooked-thought,
