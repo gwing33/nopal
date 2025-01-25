@@ -81,8 +81,8 @@ function NopalBusinessCycle() {
         fill="white"
       />
       <path
-        fill-rule="evenodd"
-        clip-rule="evenodd"
+        fillRule="evenodd"
+        clipRule="evenodd"
         d="M274.34 169.646C287.578 169.646 298.31 158.914 298.31 145.676C298.31 132.437 287.578 121.705 274.34 121.705C261.101 121.705 250.369 132.437 250.369 145.676C250.369 158.914 261.101 169.646 274.34 169.646ZM274.34 158.366C281.349 158.366 287.03 152.684 287.03 145.675C287.03 138.667 281.349 132.985 274.34 132.985C267.331 132.985 261.65 138.667 261.65 145.675C261.65 152.684 267.331 158.366 274.34 158.366Z"
         fill="#F9F2DC"
       />
@@ -123,32 +123,32 @@ function NopalBusinessCycle() {
         d="M112.051 183.603L98.9247 175.015L90.7111 187.568C89.749 189.039 91.0148 190.946 92.7435 190.631L111.314 187.244C113.092 186.92 113.562 184.592 112.051 183.603Z"
         className="svgArrow"
       />
-      <text xml:space="preserve" className="svgTextMono">
+      <text xmlSpace="preserve" className="svgTextMono">
         <tspan x="374" y="159.898">
           Atomic Teams
         </tspan>
       </text>
-      <text xml:space="preserve" className="svgTextMono">
+      <text xmlSpace="preserve" className="svgTextMono">
         <tspan x="194" y="300.898">
           Baselayer
         </tspan>
       </text>
-      <text xml:space="preserve" className="svgTextMono">
+      <text xmlSpace="preserve" className="svgTextMono">
         <tspan x="0" y="159.898">
           Home {"&"} ADU
         </tspan>
       </text>
-      <text xml:space="preserve" className="svgTextMono">
+      <text xmlSpace="preserve" className="svgTextMono">
         <tspan x="72" y="18.8984">
           Education, Classes {"&"} Consulting
         </tspan>
       </text>
-      <text xml:space="preserve" className="svgTextHand">
+      <text xmlSpace="preserve" className="svgTextHand">
         <tspan x="33" y="370">
           Multifamily
         </tspan>
       </text>
-      <text xml:space="preserve" className="svgTextHand">
+      <text xmlSpace="preserve" className="svgTextHand">
         <tspan x="362" y="370">
           Warehousing / Prefab
         </tspan>
