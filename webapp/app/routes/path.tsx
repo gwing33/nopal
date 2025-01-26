@@ -16,36 +16,37 @@ export const links: LinksFunction = () => [
 const topBody = `# Preparing
 All journeys require preparation and a north star.
 
-> We focus on inspiring humanity to live better by building healthy homes that are inspired by nature.
+> We enable humans to live better lives through a healthy home, inspired by nature.
 
 ## A Fragmented Understanding
-The industry has fragmented our understanding of the way we construct buildings. The few people that do understand the wholistic view aren’t doing the work and are distracted by rules & regulations or meetings & appointments.
+Our industry has splintered into fragmented understanding. The few people that see the whole aren’t doing the hands on work, separated by regulations and meetings.
 
-Building a high performance home significantly exceeds code requirements. Going beyond high performance into sustainability, durability and resilience only adds to the complex spiderweb of things you need to know.
+Bolting on high performance has become a common path to achieve more resilient and healthy buildings.  While the results can be positive, the added complexity leads to increased cost, complication and uncertainty.
 
 ## A Path Finder
-At Nopal we focus on providing solutions to this fragmentation.
+At Nopal, we focus on bringing these fragments into a clear whole, through a complete system.
 
 - Material science helps us navigate the rules & regulations.
-- Atomic teams work in a bottom up approach which enable a level of craftsmanship and apprenticeship.
-- Smaller projects like ADUs & Homes offer quicker feedback loops.
+- Atomic teams work in a bottom up approach, enabling craftsmanship and apprenticeship.
+- Smaller projects like ADUs & single-family homes offer quicker feedback loops.
 
-This is being put into practice on our first home build starting in March/April of 2025.`;
+This foundation will go into practice with our first full-system home build starting in Spring of 2025.`;
 
 const bottomBody = `## What we need now
-Investors or buyers for builds #2-10.
+Investors or on-contract buyers for builds #2-10.
 
-These first 10 builds enable us to develope the following:
-- Refine our education and community approach
-- Grow the Team
-- Scale up our Baselayer system
-- Start warehousing and prefab operations
-- Improve our project management software
+These first 10 builds enable us to:
+
+- Refine our education and community approach.
+- Grow the Team.
+- Scale up our Baselayer system.
+- Start warehousing and prefab operations.
+- Improve our project management software.
 
 ## The Future is Multi
-Based on our research, about 40 people per acre make the ideal density for thriving communities.
+Based on our research, about 12-20 homes per acre is the optimal American city density for thriving communities.
 
-Multifamily or larger units that embody this are projects we want to grow into. Developing our atomic teams and building approach takes time and we don’t intend on rushing this. After our first 10 homes we will be looking to jump into this market with unparalleled confidence.`;
+We plan to scale to multifamily projects designed around human scale clusters and built with our Atomic Teams.  Developing our systems and team approach takes time.  We are pursuing slow and deliberate growth to build a lasting future.  After our first 10 homes we look to immerse ourselves into the multifamily market with confidence.`;
 
 export default function PathPage() {
   const topBodyHtml = useMarkdown(topBody);
