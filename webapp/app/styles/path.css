@@ -1,30 +1,169 @@
-.svgTextMono {
+.path-page {
+  position: relative;
+  @apply container;
+  @apply mx-auto;
+  @apply max-w-screen-sm;
   @apply font-mono;
-  fill: var(--purple);
-  font-size: 20px;
-  @media (prefers-color-scheme: dark) {
-    fill: white;
-  }
-}
-.svgTextHand {
-  @apply font-hand;
-  fill: var(--red);
-  font-size: 22px;
-  @media (prefers-color-scheme: dark) {
-    fill: var(--red-light);
-  }
 }
 
-.svgRect {
-  fill: white;
-  @media (prefers-color-scheme: dark) {
+.path-hour-glass {
+  position: absolute;
+  top: 0;
+  bottom: -50px;
+  left: -150px;
+  z-index: 1;
+  .sand {
+    position: absolute;
+    top: 60px;
+    bottom: 60px;
+    left: 100px;
+    width: 5px;
+    background-image: radial-gradient(
+      ellipse at 2px 50%,
+      var(--foreground) 40%,
+      transparent 40%
+    );
+    background-size: 10px 32px;
+    background-repeat: space;
+    @media (prefers-color-scheme: dark) {
+      background-image: radial-gradient(
+        ellipse at 2px 50%,
+        var(--dark-foreground) 40%,
+        transparent 40%
+      );
+    }
+  }
+  .graphic-bottom {
+    position: absolute;
+    bottom: 0;
+  }
+  .cacti-six {
+    height: 69px;
+    width: 55px;
+    bottom: 4px;
+    position: absolute;
+    transform: rotate(-15deg);
+    left: 5px;
+  }
+  .svg-primary {
+    fill: var(--foreground);
+    @media (prefers-color-scheme: dark) {
+      fill: var(--dark-foreground);
+    }
+  }
+  .svg-secondary {
+    fill: var(--midground);
+    @media (prefers-color-scheme: dark) {
+      fill: var(--dark-midground);
+    }
+  }
+
+  .svg-text-primary {
+    fill: var(--red);
+    @media (prefers-color-scheme: dark) {
+      fill: var(--red-light);
+    }
+  }
+  .svg-text-secondary {
     fill: var(--purple);
+    @media (prefers-color-scheme: dark) {
+      fill: white;
+    }
   }
 }
 
-.svgArrow {
-  stroke: var(--red);
+.cacti-one,
+.cacti-two,
+.cacti-three,
+.cacti-four,
+.cacti-five {
+  position: absolute;
+  bottom: 8px;
+  .svg-primary {
+    fill: var(--foreground);
+    @media (prefers-color-scheme: dark) {
+      fill: var(--dark-foreground);
+    }
+  }
+}
+
+.cacti-one-heading {
+  position: relative;
+  .cacti-one {
+    left: -42px;
+  }
+}
+.cacti-two-heading {
+  position: relative;
+  .cacti-two {
+    left: -47px;
+  }
+}
+.cacti-three-heading {
+  position: relative;
+  .cacti-three {
+    left: -47px;
+  }
+}
+.cacti-four-heading {
+  position: relative;
+  .cacti-four {
+    left: -72px;
+  }
+}
+.cacti-five-heading {
+  position: relative;
+  .cacti-five {
+    left: -78px;
+  }
+}
+
+.faq {
+  a {
+    color: var(--purple);
+    &:hover {
+      color: var(--green);
+      text-decoration: underline;
+    }
+    @media (prefers-color-scheme: dark) {
+      color: white;
+      &:hover {
+        color: var(--green-light);
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+.right-arrow .svg-primary,
+.back-arrow .svg-primary {
+  stroke: var(--green);
   @media (prefers-color-scheme: dark) {
-    stroke: var(--red-light);
+    stroke: var(--green-light);
+  }
+}
+
+.nopal-business-cycle {
+  .svg-text-mono {
+    @apply font-mono;
+    fill: var(--purple);
+    font-size: 20px;
+    @media (prefers-color-scheme: dark) {
+      fill: white;
+    }
+  }
+  .svg-text-hand {
+    @apply font-hand;
+    fill: var(--red);
+    font-size: 22px;
+    @media (prefers-color-scheme: dark) {
+      fill: var(--red-light);
+    }
+  }
+  .svg-arrow {
+    stroke: var(--red);
+    @media (prefers-color-scheme: dark) {
+      stroke: var(--red-light);
+    }
   }
 }

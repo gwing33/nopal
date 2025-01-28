@@ -50,7 +50,7 @@
   background: white;
   @media (prefers-color-scheme: dark) {
     background: var(--purple);
-    border-color: var(--yellow);
+    border-color: var(--farground);
   }
 }
 
@@ -64,7 +64,7 @@
   top: 45%;
   right: -3px;
   @media (prefers-color-scheme: dark) {
-    border-color: var(--yellow);
+    border-color: var(--farground);
   }
 }
 
@@ -98,7 +98,7 @@
   &.active .line {
     border-left: 1px solid var(--purple);
     @media (prefers-color-scheme: dark) {
-      border-left-color: var(--yellow);
+      border-left-color: var(--farground);
     }
   }
 }
@@ -112,7 +112,7 @@
     bottom: 0;
     border-left: 1px solid var(--purple);
     @media (prefers-color-scheme: dark) {
-      border-left-color: var(--yellow);
+      border-left-color: var(--farground);
     }
   }
   .base-size-link .line {
@@ -124,7 +124,7 @@
   .base-size-link.active .line {
     border-bottom: 1px solid var(--purple);
     @media (prefers-color-scheme: dark) {
-      border-bottom-color: var(--yellow);
+      border-bottom-color: var(--farground);
     }
   }
 }
@@ -137,7 +137,7 @@
     right: 0;
     border-bottom: 1px solid var(--purple);
     @media (prefers-color-scheme: dark) {
-      border-bottom-color: var(--yellow);
+      border-bottom-color: var(--farground);
     }
   }
 }

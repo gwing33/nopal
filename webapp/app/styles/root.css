@@ -2,7 +2,8 @@
   /* TODO: At some point create a more offical color spread, e.g. purple-100 to purple-900 */
   --purple: #3f2b46;
   --purple-light: #7f5b8b;
-  --yellow: #fff9f1;
+  --yellow: #ffeaa4;
+  --yellow-light: #fcf0c4;
   --green: #5da06d;
   --green-light: #86cb97;
   --red: #a63b31;
@@ -136,7 +137,7 @@ body {
   border-radius: 4px;
   &:hover,
   &:focus {
-    background-color: var(--yellow);
+    background-color: var(--farground);
     @media (prefers-color-scheme: dark) {
       background-color: var(--dark-midground);
     }
@@ -151,7 +152,7 @@ body {
   background-color: var(--purple);
   margin: 4px 0;
   @media (prefers-color-scheme: dark) {
-    background-color: var(--yellow);
+    background-color: var(--farground);
   }
 }
 

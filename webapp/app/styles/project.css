@@ -42,7 +42,11 @@
     }
   }
   blockquote {
+    @apply pb-4;
+    margin-left: 16px;
     position: relative;
+    font-style: italic;
+
     &::before {
       content: "";
       width: 4px;
