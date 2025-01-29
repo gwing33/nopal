@@ -167,3 +167,12 @@
     }
   }
 }
+
+.cost-chart {
+  .svg-text-primary {
+    fill: var(--purple);
+    @media (prefers-color-scheme: dark) {
+      fill: white;
+    }
+  }
+}

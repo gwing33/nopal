@@ -1,5 +1,5 @@
 import { AudioFormat } from "../components/AudioFormat";
-import costChart from "../images/path/cost-chart.svg";
+import { CostChart } from "../svg/path/CostChart";
 import { BackArrow } from "../svg/arrows/BackArrow";
 
 export default function PathFAQPage() {
@@ -21,8 +21,7 @@ export default function PathFAQPage() {
           So to help answer this question, we’ll examine a few types of homes
           we’ve seen built.
         </p>
-        <img src={costChart} alt="Cost Comparison Chart" />
-
+        <CostChart />
         <h2>Code Minimum House</h2>
         <p>
           This house is built as cheap and fast as possible. Often these barely
