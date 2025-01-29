@@ -1,6 +1,13 @@
 import { AudioFormat } from "../components/AudioFormat";
 import { CostChart } from "../svg/path/CostChart";
 import { BackArrow } from "../svg/arrows/BackArrow";
+import {
+  CactiOne,
+  CactiTwo,
+  CactiThree,
+  CactiFour,
+  CactiFive,
+} from "../svg/path/cacti";
 
 export default function PathFAQPage() {
   return (
@@ -22,7 +29,10 @@ export default function PathFAQPage() {
           we’ve seen built.
         </p>
         <CostChart />
-        <h2>Code Minimum House</h2>
+        <h2 className="cacti-one-heading">
+          <CactiOne />
+          Code Minimum House
+        </h2>
         <p>
           This house is built as cheap and fast as possible. Often these barely
           meet code. So how do we rank this type of home?
@@ -41,7 +51,10 @@ export default function PathFAQPage() {
           going to depend on the current weather.
         </p>
 
-        <h2>Bolt-on High Performance House</h2>
+        <h2 className="cacti-two-heading">
+          <CactiTwo />
+          Bolt-on High Performance House
+        </h2>
         <p>
           This house is built using traditional methods. You could mistake it
           for a code minimum on first glance. They opt for spray foam and miss
@@ -60,7 +73,10 @@ export default function PathFAQPage() {
           <b>Health:</b> Bad. Foam is toxic and flammable.
         </p>
 
-        <h2>Nopal Home</h2>
+        <h2 className="cacti-three-heading">
+          <CactiThree />
+          Nopal Home
+        </h2>
         <p>
           Because we use <a>our baselayer</a> that seeks to use off-the-shelf
           part that are human movable, it ends up being remarkably cost
@@ -78,7 +94,10 @@ export default function PathFAQPage() {
           to natural materials.
         </p>
 
-        <h3>Lonjevity</h3>
+        <h3 className="cacti-four-heading">
+          <CactiFour />
+          Lonjevity
+        </h3>
         <p>
           Nopal homes are built to stay performant with minimal maintenance for
           70+ years. Repairing the home is possible with minimal effort and

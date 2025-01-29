@@ -1,3 +1,21 @@
+@media screen and (max-width: 640px) {
+  .path-page {
+    padding-bottom: 500px;
+  }
+  .path-hour-glass {
+    left: -100px !important;
+    margin-bottom: 500px;
+    .cacti-six {
+      bottom: 0 !important;
+      left: 190px !important;
+      transform: rotate(15deg) !important;
+    }
+  }
+  .uncooked-markdown {
+    margin-left: 50px;
+  }
+}
+
 .path-page {
   position: relative;
   @apply container;
@@ -40,10 +58,10 @@
   .cacti-six {
     height: 69px;
     width: 55px;
+    left: 5px;
     bottom: 4px;
     position: absolute;
     transform: rotate(-15deg);
-    left: 5px;
   }
   .svg-primary {
     fill: var(--foreground);
