@@ -114,9 +114,12 @@ export default function PathPage() {
             <Link to="/path/faq-3">{">"} What are Atomic Teams?</Link>
           </p>
           <p>
-            <Link to="/path/faq-3">
+            <Link to="/path/faq-4">
               {">"} What about Community {"&"} Curiosity?
             </Link>
+          </p>
+          <p>
+            <Link to="/path/faq-5">{">"} How quickly can we scale?</Link>
           </p>
         </div>
       </div>
