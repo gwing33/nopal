@@ -33,7 +33,7 @@ export const NopalBusinessCycle = () => (
     />
     <text xmlSpace="preserve" className="svg-text-mono">
       <tspan x="181" y="16.8984">
-        Atomic Teams
+        <Link to="/path/faq-3">Atomic Teams</Link>
       </tspan>
     </text>
     <text xmlSpace="preserve" className="svg-text-mono">

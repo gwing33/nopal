@@ -49,8 +49,8 @@ export default function PathPage() {
         <ul>
           <li>Material science helps us navigate the rules & regulations</li>
           <li>
-            Atomic teams work in a bottom up approach, enabling craftsmanship
-            and apprenticeship
+            <Link to="/path/faq-3">Atomic teams</Link> work in a bottom up
+            approach, enabling craftsmanship and apprenticeship
           </li>
           <li>
             Smaller projects like ADUs & single-family homes offer quicker
@@ -88,7 +88,8 @@ export default function PathPage() {
         </p>
         <p>
           We plan to scale to multifamily projects designed around human scale
-          clusters and built with our Atomic Teams. Developing our systems and
+          clusters and built by one of our{" "}
+          <Link to="/path/faq-3">Atomic teams</Link>. Developing our systems and
           team approach takes time. We are pursuing slow and deliberate growth
           to build a lasting future. After our first 10 homes we look to immerse
           ourselves into the multifamily market with confidence.
