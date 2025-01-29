@@ -106,6 +106,9 @@ export default function PathPage() {
           <p>
             <Link to="/path/faq-2">{">"} What is this "Baselayer"?</Link>
           </p>
+          <p>
+            <Link to="/path/faq-3">{">"} What are Atomic Teams?</Link>
+          </p>
         </div>
       </div>
     </>

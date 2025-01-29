@@ -206,7 +206,8 @@
 .cacti-two,
 .cacti-three,
 .cacti-four,
-.cacti-five {
+.cacti-five,
+.cacti-six {
   position: absolute;
   bottom: 8px;
   .svg-primary {
@@ -244,6 +245,12 @@
 .cacti-five-heading {
   position: relative;
   .cacti-five {
+    left: -78px;
+  }
+}
+.cacti-six-heading {
+  position: relative;
+  .cacti-six {
     left: -78px;
   }
 }
