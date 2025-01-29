@@ -1,13 +1,8 @@
 import { AudioFormat } from "../components/AudioFormat";
 import { CostChart } from "../svg/path/CostChart";
 import { BackArrow } from "../svg/arrows/BackArrow";
-import {
-  CactiOne,
-  CactiTwo,
-  CactiThree,
-  CactiFour,
-  CactiFive,
-} from "../svg/path/cacti";
+import { CactiOne, CactiTwo, CactiThree, CactiFour } from "../svg/path/cacti";
+import { Annotation } from "../components/Annotation";
 
 export default function PathFAQPage() {
   return (
@@ -37,6 +32,7 @@ export default function PathFAQPage() {
           This house is built as cheap and fast as possible. Often these barely
           meet code. So how do we rank this type of home?
         </p>
+        <Annotation>We think we can close the gap on cost.</Annotation>
         <p>
           <b>Build Cost:</b> Good. Out of all the homes we’re comparing this one
           is the cheapest.
@@ -55,6 +51,10 @@ export default function PathFAQPage() {
           <CactiTwo />
           Bolt-on High Performance House
         </h2>
+        <Annotation>
+          We’ve consulted on many builds like this. We see the same mistakes on
+          repeat.
+        </Annotation>
         <p>
           This house is built using traditional methods. You could mistake it
           for a code minimum on first glance. They opt for spray foam and miss
@@ -69,6 +69,7 @@ export default function PathFAQPage() {
           need major repairs every ~20 years, each time degrading the
           performance.
         </p>
+        <Annotation>Seriously, foam is bad.</Annotation>
         <p>
           <b>Health:</b> Bad. Foam is toxic and flammable.
         </p>
@@ -77,6 +78,9 @@ export default function PathFAQPage() {
           <CactiThree />
           Nopal Home
         </h2>
+        <Annotation>
+          This is our assumption we are validating in Spring 2025
+        </Annotation>
         <p>
           Because we use <a>our baselayer</a> that seeks to use off-the-shelf
           part that are human movable, it ends up being remarkably cost

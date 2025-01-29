@@ -16,6 +16,55 @@
   }
 }
 
+.annotation {
+  @apply font-hand;
+  @apply text-lg;
+  position: absolute;
+  color: var(--red);
+  display: flex;
+  justify-content: start;
+  right: -200px;
+  margin-top: -24px;
+  width: 248px;
+  padding-right: 8px;
+
+  .annot-container {
+    display: flex;
+    gap: 8px;
+    max-width: 50%;
+    @media screen and (max-width: 640px) {
+      max-width: 100%;
+    }
+  }
+
+  svg {
+    flex-shrink: 0;
+    @media screen and (max-width: 640px) {
+      transform: rotate(-25deg);
+      margin-top: 16px;
+      margin-bottom: 4px;
+    }
+  }
+
+  .svg-primary {
+    stroke: var(--red);
+    @media (prefers-color-scheme: dark) {
+      stroke: var(--red-light);
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    color: var(--red-light);
+  }
+  @media screen and (max-width: 1060px) {
+    position: relative;
+    margin: 0;
+    right: unset;
+    width: unset;
+    justify-content: end;
+  }
+}
+
 .path-page {
   position: relative;
   @apply container;

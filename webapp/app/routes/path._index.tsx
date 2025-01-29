@@ -7,12 +7,14 @@ import {
   CactiFour,
   CactiFive,
 } from "../svg/path/cacti";
+import { Annotation } from "../components/Annotation";
 
 export default function PathPage() {
   return (
     <>
       <div className="pt-16 uncooked-markdown">
         <p>All journeys require preparation and a north star.</p>
+        <Annotation>Our DNA</Annotation>
         <blockquote>
           We focus on inspiring humanity to live better by building healthy
           homes that are inspired by nature.
