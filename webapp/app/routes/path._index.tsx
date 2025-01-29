@@ -8,6 +8,7 @@ import {
   CactiFive,
 } from "../svg/path/cacti";
 import { Annotation } from "../components/Annotation";
+import { Link } from "@remix-run/react";
 
 export default function PathPage() {
   return (
@@ -71,7 +72,9 @@ export default function PathPage() {
         <ul>
           <li>Refine our education and community approach</li>
           <li>Grow the Team</li>
-          <li>Level up our Baselayer system</li>
+          <li>
+            Level up <Link to="/path/faq-2">our Baselayer</Link> system
+          </li>
           <li>Start warehousing and prefab operations</li>
           <li>Improve our project management software</li>
         </ul>
@@ -96,9 +99,12 @@ export default function PathPage() {
         </h3>
         <div className="z-10 relative pb-8 faq">
           <p>
-            <a href="/path/faq-1">
+            <Link to="/path/faq-1">
               {">"} How much more does it cost to build this way?
-            </a>
+            </Link>
+          </p>
+          <p>
+            <Link to="/path/faq-2">{">"} What is this "Baselayer"?</Link>
           </p>
         </div>
       </div>

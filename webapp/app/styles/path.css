@@ -19,6 +19,7 @@
 .annotation {
   @apply font-hand;
   @apply text-lg;
+  line-height: 20px;
   position: absolute;
   color: var(--red);
   display: flex;
@@ -64,6 +65,65 @@
     right: unset;
     width: unset;
     justify-content: end;
+  }
+}
+
+.annotation-left {
+  @apply font-hand;
+  @apply text-lg;
+  line-height: 20px;
+  position: absolute;
+  color: var(--red);
+  display: flex;
+  justify-content: end;
+  left: -200px;
+  margin-top: -4px;
+  width: 248px;
+  padding-left: 8px;
+  z-index: 10;
+
+  .annot-container {
+    display: flex;
+    gap: 8px;
+    flex-direction: row-reverse;
+    @media screen and (max-width: 1060px) {
+      max-width: 70%;
+      flex-direction: row;
+    }
+    @media screen and (max-width: 640px) {
+      max-width: 90%;
+    }
+  }
+
+  svg {
+    transform: scale(-1, 1);
+    flex-shrink: 0;
+    @media screen and (max-width: 1060px) {
+      transform: unset;
+    }
+    @media screen and (max-width: 640px) {
+      transform: rotate(-25deg);
+      margin-top: 16px;
+      margin-bottom: 4px;
+    }
+  }
+
+  .svg-primary {
+    stroke: var(--red);
+    @media (prefers-color-scheme: dark) {
+      stroke: var(--red-light);
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    color: var(--red-light);
+  }
+  @media screen and (max-width: 1060px) {
+    position: relative;
+    margin: 0;
+    left: unset;
+    width: unset;
+    justify-content: start;
   }
 }
 

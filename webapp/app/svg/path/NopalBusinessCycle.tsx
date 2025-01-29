@@ -1,3 +1,5 @@
+import { Link } from "@remix-run/react";
+
 export const NopalBusinessCycle = () => (
   <svg
     viewBox="0 0 508 390"
@@ -36,7 +38,7 @@ export const NopalBusinessCycle = () => (
     </text>
     <text xmlSpace="preserve" className="svg-text-mono">
       <tspan x="197" y="365.326">
-        Baselayer
+        <Link to="/path/faq-2">Baselayer</Link>
       </tspan>
     </text>
     <text xmlSpace="preserve" className="svg-text-hand">

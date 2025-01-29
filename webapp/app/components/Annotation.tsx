@@ -1,8 +1,14 @@
 import { DownLeftArrow } from "../svg/arrows/DownLeftArrow";
 
-export function Annotation({ children }: { children: React.ReactNode }) {
+export function Annotation({
+  children,
+  left,
+}: {
+  children: React.ReactNode;
+  left?: boolean;
+}) {
   return (
-    <div className="annotation">
+    <div className={left ? "annotation-left" : "annotation"}>
       <div className="annot-container">
         <DownLeftArrow /> {children}
       </div>
