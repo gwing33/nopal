@@ -20,7 +20,7 @@ export default function PathPage() {
           homes that are inspired by nature.
         </blockquote>
         <p>
-          <AudioFormat />
+          <AudioFormat href="https://www.loom.com/share/da73086bc05c485daf6ee36f81b6c1f1" />
         </p>
 
         <h2 className="cacti-one-heading">
@@ -80,14 +80,15 @@ export default function PathPage() {
           The Future is Multi
         </h3>
         <p>
-          Based on our research, about 40 people per acre make the ideal density
-          for thriving communities.
+          Based on our research, about 12-20 homes per acre is the optimal
+          American city density for thriving communities.
         </p>
         <p>
-          Multifamily or larger units that embody this are projects we want to
-          grow into. Developing our atomic teams and building approach takes
-          time and we don’t intend on rushing this. After our first 10 homes we
-          will be looking to jump into this market with unparalleled confidence.
+          We plan to scale to multifamily projects designed around human scale
+          clusters and built with our Atomic Teams. Developing our systems and
+          team approach takes time. We are pursuing slow and deliberate growth
+          to build a lasting future. After our first 10 homes we look to immerse
+          ourselves into the multifamily market with confidence.
         </p>
         <h3 id="faq" className="cacti-five-heading">
           <CactiFive />

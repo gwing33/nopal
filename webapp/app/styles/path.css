@@ -31,9 +31,11 @@
   .annot-container {
     display: flex;
     gap: 8px;
-    max-width: 50%;
+    @media screen and (max-width: 1060px) {
+      max-width: 70%;
+    }
     @media screen and (max-width: 640px) {
-      max-width: 100%;
+      max-width: 90%;
     }
   }
 
@@ -74,6 +76,7 @@
 }
 
 .path-hour-glass {
+  pointer-events: none;
   position: absolute;
   top: 0;
   bottom: -50px;
