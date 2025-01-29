@@ -121,6 +121,16 @@ export default function PathPage() {
           <p>
             <Link to="/path/faq-5">{">"} How quickly can we scale?</Link>
           </p>
+          <p>
+            <Link to="/path/faq-6">
+              {">"} What type of Investor are you looking for?
+            </Link>
+          </p>
+          <p>
+            <Link to="/path/faq-7">
+              {">"} How does a Nopal build fair against fire?
+            </Link>
+          </p>
         </div>
       </div>
     </>
