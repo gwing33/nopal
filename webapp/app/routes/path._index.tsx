@@ -71,7 +71,7 @@ export default function PathPage() {
         <ul>
           <li>Refine our education and community approach</li>
           <li>Grow the Team</li>
-          <li>Scale up our Baselayer system</li>
+          <li>Level up our Baselayer system</li>
           <li>Start warehousing and prefab operations</li>
           <li>Improve our project management software</li>
         </ul>

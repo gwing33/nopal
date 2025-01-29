@@ -82,9 +82,13 @@ export default function PathFAQPage() {
           This is our assumption we are validating in Spring 2025
         </Annotation>
         <p>
-          Because we use <a>our baselayer</a> that seeks to use off-the-shelf
-          part that are human movable, it ends up being remarkably cost
-          effective while punching above the passive house standard.
+          Because we use{" "}
+          <a href="https://www.youtube.com/watch?v=WPiKfiCSGks" target="_blank">
+            our baselayer
+          </a>{" "}
+          that seeks to use off-the-shelf part that are human movable, it ends
+          up being remarkably cost effective while punching above the passive
+          house standard.
         </p>
         <p>
           <b>Build Cost:</b> Okay. We aren’t the Code minimum but we are
@@ -106,7 +110,9 @@ export default function PathFAQPage() {
           Nopal homes are built to stay performant with minimal maintenance for
           70+ years. Repairing the home is possible with minimal effort and
           waste compared to the other types listed because of{" "}
-          <a>our baselayer</a>
+          <a href="https://www.youtube.com/watch?v=WPiKfiCSGks" target="_blank">
+            our baselayer
+          </a>
         </p>
         <p>
           Bolt-on high performance and code minimum homes have more serious
