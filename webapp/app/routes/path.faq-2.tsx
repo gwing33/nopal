@@ -27,6 +27,14 @@ export default function PathFaqTwo() {
         You can think of the baselayer as a fully functioning building with no
         finishes.
       </p>
+
+      <Annotation>Posts undergoing load testing.</Annotation>
+      <img
+        style={{ width: "100%" }}
+        src="/path/mtf-testing.jpg"
+        alt="Load testing our prefabricated posts"
+      />
+
       <Annotation left>
         Not too big and not too small, it's juuust right.
       </Annotation>
@@ -45,22 +53,24 @@ export default function PathFaqTwo() {
         ways.
       </p>
       <p>
-        We decided to take the parts we liked and then optimize it for
-        performance, precision and cost.
+        We decided to take the parts we liked and optimize it for performance,
+        precision and cost.
       </p>
       <ul>
         <li>
-          Wooden joints similar to timber framing offer a more resilient build
+          Timber framing's <b>wood joints</b> offer a more resilient build
         </li>
         <li>
-          Off-the-shelf materials used for stick framing keep the cost down
+          Stick framing is cheap by using <b>Off-the-shelf materials</b>
         </li>
-        <li>Pole building framing's approach enables large open spaces</li>
+        <li>
+          Pole building framing sets the stage for <b>performance</b>
+        </li>
       </ul>
       <p>
-        To make this all performant, we reduced the thermal bridging to under
-        5%. For comparison advanced stick framing is 15% with regular stick
-        framing sometimes getting as high as 30%.
+        By combining these aspects, we reduced the thermal bridging to under 5%.
+        For comparison advanced stick framing is 15% with regular stick framing
+        sometimes getting as high as 30%.
       </p>
       <p>
         Our prefab posts can be built off site or onsite with minimal tooling
@@ -70,7 +80,7 @@ export default function PathFaqTwo() {
       <p>
         Because of how we orient the posts, we don't need to drill for wires
         wires or plumbing either. This means our walls need little modification
-        once everything is framed.
+        once framing is done.
       </p>
 
       <h2 className="cacti-two-heading">
@@ -80,16 +90,25 @@ export default function PathFaqTwo() {
       <p>We use 3 types of insulation:</p>
       <ol>
         <li>
-          TimberHP's wood fiber insulation offers great r-value but because it's
-          density, it manages temperature fluctuations much better than foam.
+          <a href="https://www.timberhp.com/" target="_blank">
+            TimberHP's wood fiber insulation
+          </a>{" "}
+          offers great r-value but because it's density, it manages temperature
+          fluctuations much better than foam.
         </li>
         <li>
-          Havelock's sheep's wool: This is a great product for keeping the air
-          clean while also functioning as a humidity buffer.
+          <a target="_blank" href="https://havelockwool.com/">
+            Havelock's sheep's wool
+          </a>
+          : This is a great product for keeping the air clean while also
+          functioning as a humidity buffer.
         </li>
         <li>
-          Rockwool is used just for fire blocking. We use just what we need to
-          and no more.
+          <a target="_blank" href="https://www.rockwool.com/north-america/">
+            Rockwool
+          </a>{" "}
+          is used just for fire blocking. We use just what we need to and no
+          more.
         </li>
       </ol>
       <p>
@@ -130,9 +149,12 @@ export default function PathFaqTwo() {
         increases the comfort in the home.
       </p>
       <p>
-        We also use the best ERV on the market, Zehnder. It's going to
-        continuously bring in fresh air while filtering and dehumidifying if
-        needed.
+        We also use the best ERV on the market,{" "}
+        <a href="https://zehnderamerica.com/" target="_blank">
+          Zehnder
+        </a>
+        . It's going to continuously bring in fresh air while filtering and
+        dehumidifying if needed.
       </p>
 
       <h3 className="cacti-five-heading">

@@ -16,7 +16,8 @@
   }
   p,
   ul,
-  ol {
+  ol,
+  img {
     @apply pb-4;
   }
   b,
