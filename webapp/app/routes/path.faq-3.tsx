@@ -9,9 +9,8 @@ import {
   CactiFive,
   CactiSix,
 } from "../svg/path/cacti";
-import { Annotation } from "../components/Annotation";
 
-export default function PathFaqTwo() {
+export default function PathFaqThree() {
   return (
     <div className="pt-16 uncooked-markdown">
       <h1 className="italic">{">"} What are Atomic Teams?</h1>
@@ -19,6 +18,9 @@ export default function PathFaqTwo() {
         Atomic Teams is our take on a bottom up, empowering approach to
         returning to the craft-built buildings of our past....but with comfort
         and function that feels like it must be from the future.
+      </p>
+      <p>
+        <AudioFormat />
       </p>
 
       <h2 className="cacti-one-heading">

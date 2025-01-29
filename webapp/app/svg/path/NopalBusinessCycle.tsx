@@ -58,7 +58,7 @@ export const NopalBusinessCycle = () => (
     </text>
     <text xmlSpace="preserve" className="svg-text-mono">
       <tspan x="380" y="191.223">
-        Community
+        <Link to="/path/faq-4">Community</Link>
       </tspan>
     </text>
     <circle cx="247.787" cy="182.863" r="103.787" fill="#5DA06D" />

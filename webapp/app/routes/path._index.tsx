@@ -70,7 +70,10 @@ export default function PathPage() {
 
         <p>These first 10 builds enable us to:</p>
         <ul>
-          <li>Refine our education and community approach</li>
+          <li>
+            Refine our education and <Link to="/path/faq-4">community</Link>{" "}
+            approach
+          </li>
           <li>Grow the Team</li>
           <li>
             Level up <Link to="/path/faq-2">our Baselayer</Link> system
@@ -109,6 +112,11 @@ export default function PathPage() {
           </p>
           <p>
             <Link to="/path/faq-3">{">"} What are Atomic Teams?</Link>
+          </p>
+          <p>
+            <Link to="/path/faq-3">
+              {">"} What about Community {"&"} Curiosity?
+            </Link>
           </p>
         </div>
       </div>
