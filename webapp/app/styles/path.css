@@ -281,7 +281,8 @@
 }
 
 .nopal-business-cycle {
-  .svg-text-mono {
+  .svg-text-mono,
+  .svg-text-mono a {
     @apply font-mono;
     fill: var(--purple);
     font-size: 20px;
