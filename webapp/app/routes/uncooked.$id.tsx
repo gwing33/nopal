@@ -35,7 +35,9 @@ export default function UncookedItem() {
       <div className="pr-4 pl-4 scene1">
         <div className="simple-container mt-8">
           <div className="mb-6">
-            <h1 className="font-bold">{uncooked.title}</h1>
+            <h1 className="font-bold" style={{ fontSize: "20px" }}>
+              {uncooked.title}
+            </h1>
             <div>
               by: {uncooked.author}, {formatDate(new Date(uncooked.date))}
             </div>
