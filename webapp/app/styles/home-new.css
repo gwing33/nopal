@@ -1,0 +1,500 @@
+/**
+ * Some general page styles
+ */
+html {
+  box-sizing: border-box;
+  font-size: 20px;
+  line-height: 32px !important;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-mono);
+  margin: 0 auto;
+}
+
+svg {
+  .svg-red {
+    stroke: var(--red);
+    @media (prefers-color-scheme: dark) {
+      stroke: var(--red-light);
+    }
+  }
+  .svg-purple-fill {
+    fill: var(--purple);
+    @media (prefers-color-scheme: dark) {
+      fill: white;
+    }
+  }
+  .svg-purple-stroke {
+    stroke: var(--purple);
+    @media (prefers-color-scheme: dark) {
+      stroke: white;
+    }
+  }
+  .svg-midground {
+    fill: var(--midground);
+    @media (prefers-color-scheme: dark) {
+      fill: var(--dark-midground);
+    }
+  }
+}
+
+/**
+ * "New" annotations
+ */
+.newAnnotation {
+  color: var(--red);
+  font-family: var(--font-hand);
+  list-style-type: none;
+  @media (prefers-color-scheme: dark) {
+    color: var(--red-light);
+  }
+}
+
+.underline {
+  text-decoration: underline;
+}
+
+svg {
+  width: 100%;
+}
+
+/**
+ * Baselayer Info Styles
+ */
+#baselayerInfo {
+  display: grid;
+  justify-items: center;
+
+  .title {
+    font-size: 1.8rem;
+    margin-bottom: 0;
+    font-weight: 500;
+    line-height: 42.96px;
+    letter-spacing: 0;
+  }
+
+  .subtitle {
+    color: var(--purple-light);
+    font-size: 0.7rem;
+    margin-top: -0.5rem;
+    font-weight: 500;
+    line-height: 16.71px;
+    @media (prefers-color-scheme: dark) {
+      color: white;
+    }
+  }
+  del {
+    color: var(--purple-light);
+    @media (prefers-color-scheme: dark) {
+      color: white;
+    }
+  }
+  .info {
+    margin: 0 auto;
+    position: relative;
+    p {
+      width: 52ch;
+      position: relative;
+    }
+    div {
+      font-size: 1.5rem;
+      display: flex;
+      position: absolute;
+    }
+  }
+}
+
+#homeFinishes {
+  position: absolute;
+  display: flex;
+  gap: 8px;
+  top: -30px;
+  left: 90%;
+  font-size: 28px;
+
+  span {
+    min-width: max-content;
+  }
+  svg {
+    min-width: 50%;
+  }
+}
+
+#framedBuilding {
+  position: absolute;
+  display: flex;
+  align-items: baseline;
+  left: -260px;
+  top: 30%;
+  gap: 8px;
+  font-size: 28px;
+
+  span {
+    white-space: nowrap;
+  }
+  svg {
+    width: 15%;
+  }
+}
+
+#orCool {
+  flex-direction: column;
+  bottom: -36px;
+  left: 50px;
+
+  span:last-child {
+    margin-top: -15px;
+  }
+}
+
+#houseOutfitImages {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 0 100px;
+  justify-items: center;
+  position: relative;
+  padding: 50px 0;
+
+  .newAnnotation {
+    font-size: 1.5rem;
+  }
+}
+
+#outfit-svg {
+  margin-bottom: 70px;
+  margin-left: -70px;
+}
+
+#but-for-house {
+  position: absolute;
+  top: 160px;
+  left: 20%;
+
+  span:first-of-type {
+    font-family: var(--font-hand);
+  }
+  .arrow svg {
+    width: 60%;
+  }
+}
+
+.forHouse {
+  position: relative;
+  left: 2.5rem;
+  top: -1rem;
+  width: 12ch;
+  display: flex;
+}
+
+#manages {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  min-width: 15ch;
+  svg {
+    width: 35%;
+  }
+  ul {
+    margin: 0;
+    list-style-type: none;
+  }
+}
+
+#breathe-naturally {
+  position: relative;
+  grid-column: 2/3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  bottom: 70%;
+  right: 5%;
+
+  span {
+    margin-right: 1.5rem;
+    margin-bottom: -8px;
+  }
+}
+
+#element-layers {
+  display: grid;
+  grid-template-columns: min-content 1fr;
+  position: relative;
+
+  p {
+    max-width: 40ch;
+    padding: 1rem 0 1rem 1rem;
+  }
+  .arrow {
+    position: absolute;
+    top: 40%;
+    right: 70%;
+    width: 50%;
+  }
+}
+
+#the-layers {
+  position: relative;
+  height: 280px;
+  svg {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+  span {
+    position: relative;
+    display: flex;
+    min-width: max-content;
+  }
+}
+
+#exterior-layer {
+  right: -8%;
+  top: -10%;
+}
+
+#nopal-layer {
+  right: 140px;
+  top: 20%;
+}
+
+#interior-layer {
+  right: -60px;
+  top: 150px;
+}
+
+/**
+ * Exploding the Baselayer section
+ */
+#baselayerExplosion {
+  margin-top: 40px;
+  border-bottom: 3px solid var(--midground);
+  @media (prefers-color-scheme: dark) {
+    border-bottom-color: var(--dark-midground);
+  }
+  h2 {
+    color: var(--purple-light);
+    font-size: 1.5rem;
+    text-align: left;
+    font-weight: 400;
+    padding-bottom: 16px;
+  }
+  .bg {
+    background: var(--farground);
+    padding: 16px 0 40px;
+    @media (prefers-color-scheme: dark) {
+      background-color: var(--dark-farground);
+    }
+  }
+
+  ul {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-rows: repeat(4, 1fr);
+    justify-items: start;
+    justify-content: center;
+    grid-auto-flow: column;
+    gap: 0 2rem;
+    list-style-type: none;
+  }
+  li,
+  dd {
+    white-space: nowrap;
+    &::before {
+      content: "- ";
+      color: var(--purple);
+      @media (prefers-color-scheme: dark) {
+        color: white;
+      }
+    }
+  }
+}
+
+#carousel-of-parts {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  justify-content: center;
+  align-items: center;
+  padding: 50px 0;
+  gap: 3rem;
+
+  div {
+    width: 100%;
+  }
+}
+
+#framing svg {
+  width: 80%;
+}
+
+/* DO NOT USE list */
+#doNotUseSection {
+  margin-top: 40px;
+}
+
+#doNotUse {
+  color: var(--red);
+  border: 3px solid var(--red);
+  border-radius: 8px;
+  padding: 8px 16px;
+  line-height: 24px;
+  height: min-content;
+  transform: rotate(350deg);
+  position: absolute;
+  top: -48px;
+  left: -24px;
+  font-size: 20px;
+  text-align: center;
+  font-weight: 700;
+
+  @media (prefers-color-scheme: dark) {
+    color: var(--red-light);
+    border-color: var(--red-light);
+  }
+}
+
+#doNotUseList {
+  list-style-type: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(3, 1fr);
+  justify-content: center;
+
+  border: 2px dashed var(--red);
+  border-radius: 8px;
+  padding: 8px 32px;
+  position: relative;
+
+  @media (prefers-color-scheme: dark) {
+    border-color: var(--red-light);
+  }
+}
+
+/* WHAT WE DO SECTION */
+#whatWeDo {
+  display: grid;
+  position: relative;
+  max-width: 640px;
+  margin: 0 auto;
+  padding-top: 48px;
+
+  h2 {
+    font-weight: 400;
+    font-size: 28px;
+    color: var(--purple-light);
+    padding-bottom: 16px;
+  }
+
+  .arrow {
+    position: absolute;
+    top: -1px;
+    left: -240px;
+    svg {
+      width: 75%;
+    }
+  }
+}
+
+#whatWeAre {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  position: relative;
+}
+
+/* button styles */
+.baslayer-btn {
+  color: white;
+  background-color: var(--green);
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  width: 250px;
+  height: 50px;
+  font-style: italic;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--green-light);
+  }
+}
+
+#theDoingBit {
+  position: absolute;
+  bottom: 56px;
+  right: -200px;
+  display: flex;
+  width: auto;
+  width: 250px;
+
+  .newAnnotation {
+    white-space: nowrap;
+    max-width: 20ch;
+    padding: 4px;
+  }
+}
+
+#theSteps {
+  display: flex;
+  gap: 0 8px;
+  margin-top: 40px;
+
+  h3 {
+    margin-bottom: 0;
+  }
+
+  svg {
+    width: auto;
+  }
+
+  .bar {
+    height: 24px;
+    width: 100%;
+    background-color: var(--midground);
+    border-radius: 4px;
+    @media (prefers-color-scheme: dark) {
+      background-color: var(--dark-midground);
+    }
+  }
+
+  .newAnnotation {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 8px;
+  }
+}
+
+#discovery {
+  width: 33%;
+  .newAnnotation {
+    align-items: flex-start !important;
+  }
+}
+
+#designAndConsult {
+  width: 33%;
+  margin-top: 2rem;
+  h3 {
+    min-width: 16ch;
+  }
+}
+
+#permitAndBuild {
+  width: 33%;
+  margin-top: 4rem;
+}
