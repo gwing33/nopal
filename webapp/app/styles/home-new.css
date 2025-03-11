@@ -25,6 +25,12 @@ svg {
       stroke: var(--red-light);
     }
   }
+  .svg-red-fill {
+    fill: var(--red);
+    @media (prefers-color-scheme: dark) {
+      fill: var(--red-light);
+    }
+  }
   .svg-purple-fill {
     fill: var(--purple);
     @media (prefers-color-scheme: dark) {
@@ -43,14 +49,35 @@ svg {
       fill: var(--dark-midground);
     }
   }
+
+  .svg-yellow-fill {
+    fill: var(--yellow);
+    @media (prefers-color-scheme: dark) {
+      fill: var(--dark-foreground);
+    }
+  }
+
+  .svg-yellow-light-fill {
+    fill: var(--yellow-light);
+    @media (prefers-color-scheme: dark) {
+      fill: var(--dark-farground);
+    }
+  }
+
+  .svg-farground-fill {
+    fill: var(--farground);
+    @media (prefers-color-scheme: dark) {
+      fill: var(--dark-farground);
+    }
+  }
 }
 
 /**
  * "New" annotations
  */
 .newAnnotation {
+  @apply font-hand;
   color: var(--red);
-  font-family: var(--font-hand);
   list-style-type: none;
   @media (prefers-color-scheme: dark) {
     color: var(--red-light);
@@ -179,7 +206,7 @@ svg {
   left: 20%;
 
   span:first-of-type {
-    font-family: var(--font-hand);
+    @apply font-hand;
   }
   .arrow svg {
     width: 60%;
@@ -287,6 +314,9 @@ svg {
     text-align: left;
     font-weight: 400;
     padding-bottom: 16px;
+    @media (prefers-color-scheme: dark) {
+      color: white;
+    }
   }
   .bg {
     background: var(--farground);
