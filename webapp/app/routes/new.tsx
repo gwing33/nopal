@@ -32,28 +32,29 @@ function BaselayerInfo() {
         <p className="subtitle">noun</p>
         <p>
           a{" "}
-          <span>
+          <span className="annotation-root">
             <FramedBuildingAnnotation />
             <del>piece of clothing</del>
           </span>{" "}
           worn under your{" "}
-          <span>
+          <span className="annotation-root">
             <HomeFinishesAnnotation />
             <del>other clothes</del>
           </span>
           , made of <span className="newAnnotation">natural</span> material that
-          is designed to keep you warm and dry.
+          is designed to keep you warm
+          <span id="orCool" className="newAnnotation">
+            <span>^</span>
+            <span>(or cool)</span>
+          </span>
+          and dry.
         </p>
-        <div id="orCool" className="newAnnotation">
-          <span className="newAnnotation">^</span>
-          <span>(or cool)</span>
-        </div>
       </div>
-      <div id="houseOutfitImages">
-        <div id="outfit-svg">
+      <div id="mentalModel" className="simple-container">
+        <div id="outfitSvg">
           <LongJohns />
         </div>
-        <div id="but-for-house">
+        <div id="butForHouse">
           <span className="newAnnotation">but...</span>
           <div className="arrow">
             <svg
@@ -70,10 +71,11 @@ function BaselayerInfo() {
           </div>
           <span className="forHouse newAnnotation">for your house!</span>
         </div>
-        <div id="house-outfit">
+        <div id="houseOutfit">
           <LongJohnHouse />
         </div>
-        <div id="breathe-naturally" className="newAnnotation">
+        <div id="breatheNaturally" className="newAnnotation">
+          <span>Naturally breathes</span>
           <svg
             width="26"
             height="86"
@@ -87,7 +89,6 @@ function BaselayerInfo() {
               className="svg-red"
             />
           </svg>
-          <span>Naturally breathes</span>
         </div>
         <div id="manages" className="newAnnotation">
           <svg
@@ -103,19 +104,19 @@ function BaselayerInfo() {
           </svg>
           <span>Manages</span>
           <ul>
-            <li>- Temp</li>
-            <li>- Humidity</li>
-            <li>- CO2</li>
-            <li>- and more!</li>
+            <li>Temp</li>
+            <li>Humidity</li>
+            <li>CO2</li>
+            <li>and more!</li>
           </ul>
         </div>
       </div>
-      <div id="element-layers" className="simple-container">
-        <div id="the-layers" className="newAnnotation">
+      <div id="elementLayers" className="simple-container">
+        <div id="theLayers" className="newAnnotation">
           <FabricLayers />
-          <span id="exterior-layer">Element Resistant Exterior Layer</span>
-          <span id="nopal-layer">Nopal Baselayer</span>
-          <span id="interior-layer">Interior Comfort Layer</span>
+          <span id="exteriorLayer">Element Resistant Exterior Layer</span>
+          <span id="nopalLayer">Nopal Baselayer</span>
+          <span id="interiorLayer">Interior Comfort Layer</span>
           <svg
             className="arrow"
             viewBox="0 0 127 188"
@@ -316,7 +317,6 @@ function FramedBuildingAnnotation() {
 }
 
 function HomeFinishesAnnotation() {
-  // return null;
   return (
     <span id="homeFinishes">
       <svg viewBox="0 0 99 36" fill="none" xmlns="http://www.w3.org/2000/svg">
