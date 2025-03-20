@@ -16,7 +16,13 @@ import { useClickOutside } from "../hooks/useClickOutside";
 export function Layout({ children }: { children?: ReactNode }) {
   const schemePref = useSchemePref();
   const isDark = schemePref === "dark";
+
+  const ref = useRef<HTMLDivElement>(null);
+  const goodsRef = useRef<HTMLDivElement>(null);
+
   const [expanded, setExpanded] = useState(false);
+  const [showGoods, setShowGoods] = useState(false);
+
   const onMenuClick = useCallback(
     (e: SyntheticEvent) => {
       e?.preventDefault();
@@ -24,8 +30,24 @@ export function Layout({ children }: { children?: ReactNode }) {
     },
     [expanded]
   );
-  const ref = useRef<HTMLDivElement>(null);
-  useClickOutside(ref, () => setExpanded(false));
+  useClickOutside(ref, () => {
+    setExpanded(false);
+    setShowGoods(false);
+  });
+
+  const handleGoods = useCallback(
+    (e: SyntheticEvent<HTMLElement>) => {
+      if (!expanded) {
+        e.preventDefault();
+        setShowGoods(!showGoods);
+      }
+    },
+    [showGoods, expanded]
+  );
+  useClickOutside(goodsRef, () => {
+    setExpanded(false);
+    setShowGoods(false);
+  });
   return (
     <>
       <div className="header container mx-auto pl-4 pr-4">
@@ -49,8 +71,18 @@ export function Layout({ children }: { children?: ReactNode }) {
             style={expanded ? { display: "block" } : {}}
           >
             <div className="good-menu" tabIndex={0}>
-              <a className="main-nav-item p-2">Goods</a>
-              <div className="good-menu-container">
+              <NavLink
+                to="/goods"
+                onClick={handleGoods}
+                className="main-nav-item p-2"
+              >
+                Goods
+              </NavLink>
+              <div
+                ref={goodsRef}
+                className="good-menu-container"
+                style={{ display: !expanded && showGoods ? "flex" : "none" }}
+              >
                 <svg
                   width="26"
                   height="41"
