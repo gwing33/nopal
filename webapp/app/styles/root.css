@@ -200,26 +200,6 @@ body {
   .main-nav-item {
     cursor: pointer;
   }
-}
-.good-menu-container {
-  position: absolute;
-  top: 88px;
-  left: 0;
-  width: 100%;
-  display: none;
-  justify-content: center;
-
-  > svg {
-    position: absolute;
-    left: calc(50% - 136px);
-    top: -32px;
-    z-index: 4;
-    @media (prefers-color-scheme: dark) {
-      path {
-        stroke: white;
-      }
-    }
-  }
 
   ul {
     flex-wrap: wrap;
@@ -285,6 +265,26 @@ body {
     }
     @media (prefers-color-scheme: dark) {
       .good-arrow svg path {
+        stroke: white;
+      }
+    }
+  }
+}
+.good-menu-container {
+  position: absolute;
+  top: 88px;
+  left: 0;
+  width: 100%;
+  display: none;
+  justify-content: center;
+
+  > svg {
+    position: absolute;
+    left: calc(50% - 136px);
+    top: -32px;
+    z-index: 4;
+    @media (prefers-color-scheme: dark) {
+      path {
         stroke: white;
       }
     }
