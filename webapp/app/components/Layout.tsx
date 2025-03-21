@@ -82,7 +82,7 @@ export function Layout({ children }: { children?: ReactNode }) {
           >
             <div className="good-menu" tabIndex={0}>
               <NavLink
-                to="/goods"
+                to="/good/s"
                 onClick={handleGoods}
                 className="main-nav-item p-2"
               >
