@@ -1,0 +1,39 @@
+.build-recipe {
+  border-radius: 4px;
+  padding: 16px;
+  width: 50%;
+  flex-basis: ;
+
+  h4 {
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  dl {
+    font-size: 14px;
+    margin: 16px 0;
+  }
+}
+
+.discover-text {
+  position: relative;
+  > span {
+    @apply font-hand;
+    position: absolute;
+    display: none;
+    white-space: nowrap;
+    right: 72px;
+    top: 32px;
+    color: var(--red);
+    font-size: 20px;
+  }
+  &:hover {
+    > span {
+      display: block;
+    }
+  }
+}
+
+/* .discover-recipe path:first-child {
+  box-shadow: 0 2px 0px rgba(0, 0, 0, 0.1);
+} */

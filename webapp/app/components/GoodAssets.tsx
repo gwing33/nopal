@@ -2,7 +2,7 @@ import { Link } from "@remix-run/react";
 
 export function GoodBuildingLink() {
   return (
-    <Link to="/good/building">
+    <Link className="good-box" to="/good/building">
       <svg
         width="66"
         height="57"
@@ -41,7 +41,7 @@ export function GoodBuildingLink() {
 
 export function GoodConsultingLink() {
   return (
-    <Link to="/good/consulting">
+    <Link className="good-box" to="/good/consulting">
       <svg
         width="64"
         height="64"
@@ -120,7 +120,7 @@ export function GoodConsultingLink() {
 
 export function GoodArchitectureLink() {
   return (
-    <Link to="/good/architecture">
+    <Link className="good-box" to="/good/architecture">
       <svg
         width="74"
         height="65"

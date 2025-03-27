@@ -18,13 +18,13 @@ export default function Goods() {
               }}
             >
               <li>
+                <GoodArchitectureLink />
+              </li>
+              <li>
                 <GoodBuildingLink />
               </li>
               <li>
                 <GoodConsultingLink />
-              </li>
-              <li>
-                <GoodArchitectureLink />
               </li>
             </ul>
           </div>
