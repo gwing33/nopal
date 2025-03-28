@@ -17,7 +17,7 @@ export default function Index() {
   return (
     <Layout>
       <div className="scene1">
-        <div className="simple-container">
+        <div className="simple-container px-4">
           <div className="mt-16">
             <h1 className="purple-light-text text-4xl">Homes for Humans</h1>
             <p className="text-xl mt-4 mb-4">
@@ -29,11 +29,11 @@ export default function Index() {
             <h2 className="green-text text-3xl">
               The 5 Factors of Good Building
             </h2>
-            <div className="flex gap-8 mt-4 mb-4">
-              <div className="w-1/2">
+            <div className="flex gap-8 mt-4 mb-4 flex-col sm:flex-row mx-auto">
+              <div className="sm:w-1/2">
                 <FiveFactors />
               </div>
-              <div className="w-1/2 flex flex-col gap-4 text-xl">
+              <div className="sm:w-1/2 flex flex-col gap-4 text-xl">
                 <p>
                   We developed the 5 factors as a way for us to be accountable
                   for how we build.
