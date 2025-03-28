@@ -6,6 +6,7 @@ import {
   GoodButtonBuilding,
   GoodButtonConsulting,
 } from "../components/GoodAssets";
+import { FiveFactors } from "../components/FiveFactors";
 import { Link } from "@remix-run/react";
 
 import styles from "../styles/home.css?url";
@@ -18,36 +19,47 @@ export default function Index() {
       <div className="scene1">
         <div className="simple-container">
           <div className="mt-16">
-            <h1 className="text-4xl">Homes for Humans</h1>
+            <h1 className="purple-light-text text-4xl">Homes for Humans</h1>
             <p className="text-xl mt-4 mb-4">
               We start with natural ingredients and a thoughtful recipe to
               deliver a home that helps you focus on life.
             </p>
           </div>
           <div className="mt-16">
-            <h2 className="text-3xl">The 5 Factors of Good Building</h2>
-            <p className="text-xl mt-4 mb-4">
-              We developed the 5 factors as a way for us to be accountable for
-              how we build. Which factors are important to you?
-            </p>
-            <Link to="/good/building">Learn more</Link>
+            <h2 className="green-text text-3xl">
+              The 5 Factors of Good Building
+            </h2>
+            <div className="flex gap-8 mt-4 mb-4">
+              <div className="w-1/2">
+                <FiveFactors />
+              </div>
+              <div className="w-1/2 flex flex-col gap-4 text-xl">
+                <p>
+                  We developed the 5 factors as a way for us to be accountable
+                  for how we build.
+                </p>
+                <p>Which factors are important to you?</p>
+                <Link className="link" to="/good/building">
+                  Learn more
+                </Link>
+              </div>
+            </div>
           </div>
           <div className="mt-8">
             <Buildings />
           </div>
-          <div className="mt-16">
-            <h2 className="text-3xl">All Our Goods</h2>
-            <p className="text-xl mt-4 mb-4">
+          <div className="mt-16 pb-40">
+            <h2 className="purple-light-text text-3xl">All Our Goods</h2>
+            <p className="text-xl mt-4">
               We can design. We can build. We want to help you build healthier
               more sustainable homes.
             </p>
-            <div>
+            <div
+              style={{ maxWidth: "300px" }}
+              className="flex flex-col mt-8 gap-4"
+            >
               <GoodButtonArchitecture />
-            </div>
-            <div className="mt-2">
               <GoodButtonBuilding />
-            </div>
-            <div className="mt-2">
               <GoodButtonConsulting />
             </div>
           </div>

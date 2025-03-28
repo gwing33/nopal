@@ -211,10 +211,11 @@ function GoodButton({
 }) {
   return (
     <Link
-      className="good-box good-box-hover inline-flex cursor-pointer gap-2 items-center p-2"
+      className="text-nowrap good-box good-box-hover justify-between inline-flex items-center p-2"
       to={to}
     >
-      {children}
+      <span className="inline-flex items-center gap-2">{children}</span>{" "}
+      <GoodArrow />
     </Link>
   );
 }
