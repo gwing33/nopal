@@ -3,23 +3,23 @@ import { GoodProgress } from "./GoodProgress";
 
 export const factors = [
   {
-    title: "Comfort & Health",
+    title: "Health",
     color: "var(--green)",
   },
   {
-    title: "Efficiency & Renewables",
+    title: "Efficiency",
     color: "var(--green-light)",
   },
   {
-    title: "Durability & Resiliency",
+    title: "Longevity",
     color: "var(--pink)",
   },
   {
-    title: "Social Equity*",
+    title: "Social Equity",
     color: "var(--red-light)",
   },
   {
-    title: "Lifecycle Carbon",
+    title: "Carbon",
     color: "var(--red)",
   },
 ];
@@ -40,7 +40,6 @@ export function FiveFactors() {
           <GoodProgress color={color} percent={Math.random() * 100} />
         </div>
       ))}
-      <div className="text-xs">* and Embodied Injustice</div>
     </div>
   );
 }

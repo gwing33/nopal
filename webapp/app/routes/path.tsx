@@ -30,9 +30,7 @@ export default function PathPage() {
           <Outlet />
         </div>
       </div>
-      <Footer title="Want to join us?">
-        We can travel together on this venture down the path of the unknown.
-      </Footer>
+      <Footer />
     </Layout>
   );
 }

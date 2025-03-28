@@ -97,9 +97,7 @@ export default function Uncooked() {
           )}
         </div>
       </div>
-      <Footer title="Suggestions?">
-        We are always looking to add more to our collection.
-      </Footer>
+      <Footer />
     </Layout>
   );
 }

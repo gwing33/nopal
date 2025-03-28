@@ -50,9 +50,7 @@ export default function UncookedItem() {
           </div>
         </div>
       </div>
-      <Footer title="Want to learn more?">
-        Let us know what you think about this article.
-      </Footer>
+      <Footer />
     </Layout>
   );
 }
