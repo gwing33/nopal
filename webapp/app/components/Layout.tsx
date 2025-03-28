@@ -107,13 +107,13 @@ export function Layout({ children }: { children?: ReactNode }) {
                 </svg>
                 <ul>
                   <li>
+                    <GoodArchitectureLink />
+                  </li>
+                  <li>
                     <GoodBuildingLink />
                   </li>
                   <li>
                     <GoodConsultingLink />
-                  </li>
-                  <li>
-                    <GoodArchitectureLink />
                   </li>
                 </ul>
               </div>

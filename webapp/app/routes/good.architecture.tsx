@@ -19,15 +19,13 @@ export default function GoodArchitecture() {
           <p>
             An exciting alternative to the contemporary architecture process.
             Instead of being focused on art, and satisfying the ego of the
-            architect, our process is focused on achieving client goals. These
-            goals include healthy materials, low carbon high performance, and
-            simplified living through minimized maintenance.
+            architect.
           </p>
 
-          <ul>
-            <li>$36k+ for retrofits</li>
-            <li>$60k+ for ground up design</li>
-          </ul>
+          <div className="flex gap-4">
+            <div className="good-box p-4">$36k+ for retrofits</div>
+            <div className="good-box p-4">$60k+ for ground up design</div>
+          </div>
         </div>
       </div>
       <FooterDiscovery />

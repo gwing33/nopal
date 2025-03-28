@@ -33,7 +33,6 @@ body {
   @apply container;
   @apply mx-auto;
   @apply max-w-screen-sm;
-  @apply font-mono;
   position: relative;
   z-index: 2;
 }
@@ -76,9 +75,18 @@ body {
 .good-box {
   border: 1px solid var(--foreground);
   background: var(--farground);
+  border-radius: 4px;
   @media (prefers-color-scheme: dark) {
     border-color: var(--dark-foreground);
     background: var(--dark-farground);
+  }
+}
+
+.good-box-hover:hover {
+  border-color: var(--purple-light);
+  box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.05);
+  .good-arrow svg path {
+    stroke: var(--green);
   }
 }
 
@@ -390,13 +398,6 @@ body {
       padding-right: 16px;
     }
 
-    &:hover {
-      border-color: var(--purple-light);
-      box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.05);
-      .good-arrow svg path {
-        stroke: var(--green);
-      }
-    }
     @media (prefers-color-scheme: dark) {
       .good-arrow svg path {
         stroke: white;
