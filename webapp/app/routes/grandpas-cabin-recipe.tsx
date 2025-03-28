@@ -34,61 +34,76 @@ It seems like what this *fancy pants* **Nopal** company has done with **Medium T
 
 Sure it’s not perfect solution for all buildings, but for my cabin, it'll be a great solution!`;
 
-export default function About() {
+export default function GrandpasCabinRecipe() {
   const mdHtml = useMarkdown(md);
-  const widths = [32, 36, 40, 44, 48];
-  const lengths = [52, 56, 60, 64, 68];
-  const [width, setWidth] = useState(widths[1]);
-  const [length, setLength] = useState(lengths[1]);
 
   return (
     <Layout>
       <div className="scene1">
         <div className="simple-container uncooked-markdown">
           {mdHtml}
-          <h2>MTF Ingredients</h2>
-
           <div>
-            For a building that is{" "}
-            <TextDropdown label={width + "'"}>
-              <RenderNumberList list={widths} onClick={setWidth} />
-            </TextDropdown>{" "}
-            by{" "}
-            <TextDropdown label={length + "'"}>
-              <RenderNumberList list={lengths} onClick={setLength} />
-            </TextDropdown>
-            :
+            <em>
+              -With love,
+              <br />
+              Grandpa
+            </em>
           </div>
-
-          <ul className="mt-4">
-            <li>2x6 Lumber from local big box</li>
-            <li>2x4 Lumber "" "" "" ""</li>
-            <li>Glue</li>
-            <li>Nails</li>
-            <li>Screws</li>
-            <li>Clamps (for gluing)</li>
-            <li>Saw</li>
-            <li>Hammer</li>
-            <li>Drill</li>
-          </ul>
-          <h2>Instructions</h2>
-          <p>
-            <em>Posts</em> can be created offsite but it is optional. Like a
-            post-framed building, our posts are designed to bear the load of the
-            building at 4' on center while reducing the thermal bridging by 2.5x
-            of traditional framing.
-          </p>
-          <p>The tennons function as quick assembly points.</p>
-          <h4>Precut Spacers</h4>
-          <p>
-            There are 4 spacers for each section, all these can be precut to the
-            specified size.
-          </p>
-          <h3>Onsite Instructions</h3>
         </div>
       </div>
       <FooterDiscovery />
     </Layout>
+  );
+}
+
+function CabinRecipe() {
+  const widths = [32, 36, 40, 44, 48];
+  const lengths = [52, 56, 60, 64, 68];
+  const [width, setWidth] = useState(widths[1]);
+  const [length, setLength] = useState(lengths[1]);
+
+  return (
+    <>
+      <h2>MTF Ingredients</h2>
+
+      <div>
+        For a building that is{" "}
+        <TextDropdown label={width + "'"}>
+          <RenderNumberList list={widths} onClick={setWidth} />
+        </TextDropdown>{" "}
+        by{" "}
+        <TextDropdown label={length + "'"}>
+          <RenderNumberList list={lengths} onClick={setLength} />
+        </TextDropdown>
+        :
+      </div>
+
+      <ul className="mt-4">
+        <li>2x6 Lumber from local big box</li>
+        <li>2x4 Lumber "" "" "" ""</li>
+        <li>Glue</li>
+        <li>Nails</li>
+        <li>Screws</li>
+        <li>Clamps (for gluing)</li>
+        <li>Saw</li>
+        <li>Hammer</li>
+        <li>Drill</li>
+      </ul>
+      <h2>Instructions</h2>
+      <p>
+        <em>Posts</em> can be created offsite but it is optional. Like a
+        post-framed building, our posts are designed to bear the load of the
+        building at 4' on center while reducing the thermal bridging by 2.5x of
+        traditional framing.
+      </p>
+      <p>The tennons function as quick assembly points.</p>
+      <h4>Precut Spacers</h4>
+      <p>
+        There are 4 spacers for each section, all these can be precut to the
+        specified size.
+      </p>
+      <h3>Onsite Instructions</h3>
+    </>
   );
 }
 
