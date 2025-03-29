@@ -12,7 +12,7 @@ export default function About() {
   return (
     <Layout>
       <div className="scene1">
-        <div className="simple-container">
+        <div className="simple-container p-4">
           <h1 className="purple-light-text text-4xl">Who We Are</h1>
           <p className="text-xl mt-4 mb-4">
             Nature guides and inspires Nopal, from the materials we use and how
@@ -28,7 +28,7 @@ export default function About() {
             We've created the 5 factors of good building to guide us to be
             responsible stewards of the regenerative housing movement.
           </p>
-          <h2 className="green-text text-2xl mt-16">The Team</h2>
+          <h2 className="green-text text-2xl mt-16">Folks</h2>
           <Profile name="Austin Trautman" title="CEO">
             <p className="text-xl mt-4 mb-4">
               Sitting on a beach at the bottom of the Grand Canyon, 3 days from
