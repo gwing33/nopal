@@ -2,11 +2,9 @@ import { Link } from "@remix-run/react";
 import { Layout } from "../components/Layout";
 import projectStyles from "../styles/project.css?url";
 import goodsStyles from "../styles/goods.css?url";
-import homeStyles from "../styles/home.css?url";
 import { LinksFunction } from "@remix-run/node";
 import { FooterDiscovery } from "../components/Footer";
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: homeStyles },
   { rel: "stylesheet", href: projectStyles },
   { rel: "stylesheet", href: goodsStyles },
 ];
@@ -15,30 +13,31 @@ export default function GoodBuilding() {
   return (
     <Layout>
       <div className="scene1">
-        <div className="simple-container uncooked-markdown mt-20 md:mt-0 p-10 md:p-20">
-          <h1 className="text-4xl">The Good Building Cookbook</h1>
-          <p style={{ maxWidth: "480px" }} className="text-lg mt-4 mb-4">
+        <div className="simple-container mt-12 p-4">
+          <h1 className="purple-light-text text-4xl">
+            The Good Building Cookbook
+          </h1>
+          <p className="text-xl mt-4">
             Nature gives us the best ingredients. It also gives us hints as to
             how they should be used and this is where we start to define and
             create the recipe for any Nopal build.
           </p>
 
-          <h2>Nopal's Recipes</h2>
+          <h2 className="green-text text-3xl mt-12">Nopal's Recipes</h2>
 
-          <div className="flex gap-4 -ml-12 -mr-12">
+          <div className="flex gap-4 mt-4">
             <div className="build-recipe good-box">
-              <h4>Sunny Home Recipe</h4>
+              <h4 className="font-bold">Sunny Home Recipe</h4>
               <dl>
                 <dd>$500k+</dd>
                 <dd>1500-2500 sq/ft</dd>
                 <dd>Sonoran Desert</dd>
                 <dd>Remote Buildable.</dd>
               </dl>
-              <a>Current build</a>
             </div>
 
             <div className="build-recipe good-box">
-              <h4>Sunny ADU Recipe</h4>
+              <h4 className="font-bold">Sunny ADU Recipe</h4>
               <dl>
                 <dd>$200k+</dd>
                 <dd>250-1500 sq/ft</dd>
@@ -47,16 +46,16 @@ export default function GoodBuilding() {
               </dl>
             </div>
           </div>
-          <p style={{ maxWidth: "480px" }} className="text-lg mt-4 mb-4">
+          <p className="text-xl mt-4 mb-4">
             All our recipes are high performance and much more sustainable than
             the typical construction.
           </p>
 
-          <h2>Custom Recipes</h2>
+          <h2 className="green-text text-3xl mt-12">Custom Recipes</h2>
 
-          <div className="flex gap-4 -ml-12 -mr-12">
+          <div className="flex gap-4 mt-4">
             <div className="build-recipe good-box">
-              <h4>[Your Home Recipe]</h4>
+              <h4 className="font-bold">[Your Home Recipe]</h4>
               <dl>
                 <dd>$500k+</dd>
                 <dd>[Your Size] sq/ft</dd>
@@ -67,12 +66,10 @@ export default function GoodBuilding() {
             </div>
           </div>
 
-          <p className="mt-4">
+          <p className="text-xl mt-4 mb-4">
             Those wishes and dreams of yours are important and help us guide you
             to a home aligned closer to you.
           </p>
-        </div>
-        <div className="simple-container">
           <Link to="/contact" className="btn-primary">
             Contact Us
           </Link>

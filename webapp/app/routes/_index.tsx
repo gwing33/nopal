@@ -1,4 +1,3 @@
-import { LinksFunction } from "@remix-run/node";
 import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
 import {
@@ -8,10 +7,6 @@ import {
 } from "../components/GoodAssets";
 import { FiveFactors } from "../components/FiveFactors";
 import { Link } from "@remix-run/react";
-
-import styles from "../styles/home.css?url";
-
-export const links: LinksFunction = () => [{ rel: "stylesheet", href: styles }];
 
 export default function Index() {
   return (
@@ -35,8 +30,9 @@ export default function Index() {
               </div>
               <div className="sm:w-1/2 flex flex-col gap-4 text-xl">
                 <p>
-                  We developed the 5 factors as a way for us to be accountable
-                  for how we build.
+                  We developed the 5 factors as a tool to assess materials and
+                  building methods with a focus on bringing mental and physical
+                  comfort.
                 </p>
                 <p>Which factors are important to you?</p>
                 <Link className="link" to="/good/building">
@@ -51,8 +47,10 @@ export default function Index() {
           <div className="mt-16 pb-40">
             <h2 className="purple-light-text text-3xl">All Our Goods</h2>
             <p className="text-xl mt-4">
-              We can design. We can build. We want to help you build healthier
-              more sustainable homes.
+              We can help at all stages and scales of design and building.
+              Whether you are focused on an architectural masterpiece or a
+              humble remodel we are here to help you create an optimal space for
+              your life.
             </p>
             <div
               style={{ maxWidth: "300px" }}

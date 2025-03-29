@@ -4,13 +4,11 @@ import { FooterDiscovery } from "../components/Footer";
 import { useMarkdown } from "../hooks/useMarkdown";
 import { LinksFunction } from "@remix-run/node";
 import projectStyles from "../styles/project.css?url";
-import homeStyles from "../styles/home.css?url";
 import { TextDropdown } from "../components/Dropdown";
 import { N } from "vitest/dist/chunks/environment.LoooBwUu.js";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: projectStyles },
-  { rel: "stylesheet", href: homeStyles },
 ];
 
 const md = `# Grandpa's Framing Recipe

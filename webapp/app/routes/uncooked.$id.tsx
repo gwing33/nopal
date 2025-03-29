@@ -7,11 +7,9 @@ import { NavLink, useLoaderData } from "@remix-run/react";
 import { formatDate } from "../util/formatDate";
 import { useMarkdown } from "../hooks/useMarkdown";
 
-import homeStyles from "../styles/home.css?url";
 import projectStyles from "../styles/project.css?url";
 
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: homeStyles },
   { rel: "stylesheet", href: projectStyles },
 ];
 

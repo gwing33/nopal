@@ -11,11 +11,9 @@ import { Print } from "../components/Print";
 import { ViewMasterReel } from "../components/ViewMasterReel";
 import { NewspaperClipping } from "../components/NewspaperClipping";
 
-import homeStyles from "../styles/home.css?url";
 import projectStyles from "../styles/project.css?url";
 
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: homeStyles },
   { rel: "stylesheet", href: projectStyles },
 ];
 

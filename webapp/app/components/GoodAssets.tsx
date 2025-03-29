@@ -185,7 +185,7 @@ export function GoodArchitectureLink() {
   );
 }
 
-const GoodArrow = () => (
+export const GoodArrow = () => (
   <span className="good-arrow">
     <svg
       width="26"

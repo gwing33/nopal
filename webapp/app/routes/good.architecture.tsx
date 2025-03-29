@@ -1,11 +1,10 @@
 import { Layout } from "../components/Layout";
 import projectStyles from "../styles/project.css?url";
 import goodsStyles from "../styles/goods.css?url";
-import homeStyles from "../styles/home.css?url";
 import { LinksFunction } from "@remix-run/node";
 import { FooterDiscovery } from "../components/Footer";
+
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: homeStyles },
   { rel: "stylesheet", href: projectStyles },
   { rel: "stylesheet", href: goodsStyles },
 ];
