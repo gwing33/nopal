@@ -16,7 +16,6 @@ Cargo.lock
 # Javascript Ignores
 node_modules
 remix/build
-package-lock.json
 .cache/
 build/
 
