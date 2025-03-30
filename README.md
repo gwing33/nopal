@@ -11,8 +11,12 @@ Rust + SurrealDB for our logic and data.
 ### Helpful commands:
 
 ```
-# Run Remix:
-$ cd ./remix
+# Install Webapp Dependencies
+$ cd ./webapp
+$ npm install
+
+# Run webapp:
+$ cd ./webapp
 $ npm run dev
 
 # Nopal CLI
