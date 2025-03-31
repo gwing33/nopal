@@ -2,12 +2,10 @@ import { LinksFunction } from "@remix-run/node";
 import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
 
-import homeStyles from "../styles/home.css?url";
 import exploreStyles from "../styles/explore.css?url";
 import { NavLink } from "@remix-run/react";
 
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: homeStyles },
   { rel: "stylesheet", href: exploreStyles },
 ];
 

@@ -10,13 +10,11 @@ import { getUncookedById } from "../data/uncooked.server";
 import seedNo1LightImg from "../images/seeds/seed-no-1-light.svg";
 import seedNo1DarkImg from "../images/seeds/seed-no-1-dark.svg";
 
-import homeStyles from "../styles/home.css?url";
 import seedsStyles from "../styles/seeds.css?url";
 import projectStyles from "../styles/project.css?url";
 import { useState } from "react";
 
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: homeStyles },
   { rel: "stylesheet", href: projectStyles },
   { rel: "stylesheet", href: seedsStyles },
 ];
