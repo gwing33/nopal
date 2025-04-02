@@ -1,11 +1,9 @@
 import { Layout } from "../components/Layout";
-import projectStyles from "../styles/project.css?url";
 import goodsStyles from "../styles/goods.css?url";
 import { LinksFunction } from "@remix-run/node";
 import { FooterDiscovery } from "../components/Footer";
 
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: projectStyles },
   { rel: "stylesheet", href: goodsStyles },
 ];
 
@@ -13,12 +11,13 @@ export default function GoodArchitecture() {
   return (
     <Layout>
       <div className="scene1">
-        <div className="simple-container uncooked-markdown mt-20 md:mt-0 p-10 md:p-20">
-          <h1>Good Design & Architecture</h1>
-          <p>
-            An exciting alternative to the contemporary architecture process.
-            Instead of being focused on art, and satisfying the ego of the
-            architect.
+        <div className="simple-container mt-12 p-4">
+          <h1 className="purple-light-text text-4xl">
+            Good Design & Architecture
+          </h1>
+          <p className="text-xl mt-4">
+            We collaborate to create truly good homes: combining art, high
+            performance design, and the healthiest materials.
           </p>
 
           <div className="flex gap-4">

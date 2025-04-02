@@ -25,21 +25,27 @@ export const factors = [
 ];
 
 export function FiveFactors() {
-  // This is dumb, but it simply forces a re-render every 10 seconds
-  const [_update, setUpdate] = useState(new Date());
+  return (
+    <div className="five-factors">
+      {factors.map(({ title, color }, index) => (
+        <Factor key={index} title={title} color={color} />
+      ))}
+    </div>
+  );
+}
+
+function Factor({ title, color }: { title: string; color: string }) {
+  const [percent, setPercent] = useState(0);
   useEffect(() => {
-    const interval = setInterval(() => setUpdate(new Date()), 10000);
+    setPercent(Math.random() * 100);
+    const interval = setInterval(() => setPercent(Math.random() * 100), 10000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="five-factors">
-      {factors.map(({ title, color }, index) => (
-        <div key={index} className="factor">
-          <h6>{title}</h6>
-          <GoodProgress color={color} percent={Math.random() * 100} />
-        </div>
-      ))}
+    <div className="factor">
+      <h6>{title}</h6>
+      <GoodProgress color={color} percent={percent} />
     </div>
   );
 }
