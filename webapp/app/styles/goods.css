@@ -40,3 +40,13 @@
     }
   }
 }
+
+.included-box {
+  display: flex;
+  gap: 16px;
+  margin-top: 32px;
+
+  svg {
+    margin-top: 8px;
+  }
+}
