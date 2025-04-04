@@ -68,7 +68,7 @@ export default function GoodArchitecture() {
         </div>
 
         <div className="simple-container mt-12 p-4">
-          <h2 className="green-text text-3xl">Goodie Bags</h2>
+          <h2 className="green-text text-3xl">Goodies</h2>
           <div className="flex gap-4 mt-4">
             <div className="good-box p-4 font-mono" style={{ width: "292px" }}>
               <h3 className="font-bold text-3xl">Restorations</h3>
