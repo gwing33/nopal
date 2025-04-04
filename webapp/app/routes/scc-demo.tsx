@@ -11,7 +11,7 @@ export default function SCCDemo() {
           this demo wall. It showed a classic example of building science gone
           wrong and we asked to fix it.
         </p>
-        <img src="scc-demo/scc-demo-before.png" />
+        <img src="/scc-demo/scc-demo-before.png" />
         <p className="mt-12 italic text-lg">More information coming soon.</p>
       </div>
     </Layout>
