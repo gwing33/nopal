@@ -1,10 +1,4 @@
 .build-recipe {
-  @apply font-mono;
-  border-radius: 4px;
-  padding: 16px;
-  width: 50%;
-  flex-basis: ;
-
   h4 {
     margin-top: 0;
     padding-top: 0;
@@ -12,13 +6,21 @@
 
   dl {
     font-size: 14px;
-    margin: 16px 0;
     border-top: 1px solid var(--midground);
   }
 
   dd {
     border-bottom: 1px solid var(--midground);
     padding-block: 4px;
+  }
+  @media (prefers-color-scheme: dark) {
+    dl {
+      border-top: 1px solid var(--dark-midground);
+    }
+
+    dd {
+      border-bottom: 1px solid var(--dark-midground);
+    }
   }
 }
 
@@ -29,7 +31,7 @@
     display: none;
     white-space: nowrap;
     right: 72px;
-    top: 32px;
+    top: 0px;
     font-size: 20px;
   }
   &:hover {

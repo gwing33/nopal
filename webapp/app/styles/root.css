@@ -655,6 +655,21 @@ body {
       border-color: var(--foreground);
     }
   }
+  @media (prefers-color-scheme: dark) {
+    li {
+      border-color: var(--purple);
+      background-color: var(--dark-foreground);
+
+      &.active,
+      &.active:hover {
+        border-color: var(--green-light);
+        background-color: var(--green-light);
+      }
+      &:hover {
+        border-color: var(--dark-foreground);
+      }
+    }
+  }
 }
 .carousel-content {
   top: 0;

@@ -28,8 +28,8 @@ export default function About() {
             We've created the 5 factors of good building to guide us to be
             responsible stewards of the regenerative housing movement.
           </p>
-          <h2 className="green-text text-2xl mt-16">Folks</h2>
-          <Profile name="Austin Trautman" title="CEO">
+          <h2 className="green-text text-3xl mt-20">Folks</h2>
+          <Profile name="Austin Trautman" title="CEO" image="/about/austin.png">
             <p className="text-xl mt-4 mb-4">
               Sitting on a beach at the bottom of the Grand Canyon, 3 days from
               my last indoor meal, I had a realization. Magical things happen on
@@ -55,10 +55,20 @@ export default function About() {
               <em>“how do we bring the magic of nature into our homes?”</em>
             </p>
           </Profile>
-          <Profile name="James Werhanowicz" title="Architect & GC">
-            <p className="text-xl mt-4 mb-4">TODO</p>
+          <Profile
+            name="James Werhanowicz"
+            title="Architect & GC"
+            image="/about/james.png"
+          >
+            <p className="text-xl mt-4 mb-4">
+              Striving to deliver <em>Not Bad Architecture</em>™
+            </p>
           </Profile>
-          <Profile name="Gerald Leenerts" title="Systems Craftsman">
+          <Profile
+            name="Gerald Leenerts"
+            title="Systems Craftsman"
+            image="/about/gerald.png"
+          >
             <p className="text-xl mt-4 mb-4">
               Back on my Grandpa's farm, I fell in love with nature without
               knowing it. It wasn't a specific aspect but rather the collective.
@@ -84,7 +94,11 @@ export default function About() {
               </em>
             </p>
           </Profile>
-          <Profile name="Lucas Johnson" title="Chief Building Nerd">
+          <Profile
+            name="Lucas Johnson"
+            title="Chief Building Nerd"
+            image="/about/lucas.png"
+          >
             <p className="text-xl mt-4 mb-4">
               Laying in a hospital bed beneath synthetic light. I kept thinking
               how on earth am I expected to heal in a building this bad?
@@ -99,7 +113,7 @@ export default function About() {
               obvious that we needed to make buildings places centered around
               healing while minimizing their impact to people and the planet.
             </p>
-            <p className="text-xl mt-4 mb-4">
+            <p className="text-xl mt-4 mb-20">
               This core realization led me to spending the last two decades as a
               building scientist focused on creating the healthiest buildings
               with the lowest lifecycle carbon impact.
@@ -120,17 +134,24 @@ export default function About() {
 
 function Profile({
   name,
+  image,
   title,
   children,
 }: {
   name: string;
+  image: string;
   title: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="profile mt-8">
-      <h3 className="font-bold text-xl">{name}</h3>
-      <div className="purple-light-text">{title}</div>
+    <div className="profile mt-8 mb-20">
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end mb-8">
+        <img src={image} title={name} />
+        <div>
+          <h3 className="font-bold text-xl">{name}</h3>
+          <div className="purple-light-text">{title}</div>
+        </div>
+      </div>
       {children}
     </div>
   );

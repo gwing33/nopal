@@ -26,10 +26,10 @@ export default function GoodBuilding() {
 
           <h2 className="green-text text-3xl mt-12">Nopal's Recipes</h2>
 
-          <div className="flex gap-4 mt-4">
-            <div className="build-recipe good-box">
+          <div className="flex flex-col sm:flex-row gap-4 mt-4">
+            <div className="build-recipe basis-1/2 font-mono p-4 good-box">
               <h4 className="font-bold">Sunny Home Recipe</h4>
-              <dl>
+              <dl className="mt-4">
                 <dd>$500k+</dd>
                 <dd>1500-2500 sq/ft</dd>
                 <dd>Sonoran Desert</dd>
@@ -37,9 +37,9 @@ export default function GoodBuilding() {
               </dl>
             </div>
 
-            <div className="build-recipe good-box">
+            <div className="build-recipe basis-1/2 font-mono p-4 good-box">
               <h4 className="font-bold">Sunny ADU Recipe</h4>
-              <dl>
+              <dl className="mt-4">
                 <dd>$200k+</dd>
                 <dd>250-1500 sq/ft</dd>
                 <dd>Sonoran Desert</dd>
@@ -54,10 +54,10 @@ export default function GoodBuilding() {
 
           <h2 className="green-text text-3xl mt-12">Custom Recipes</h2>
 
-          <div className="flex gap-4 mt-4">
-            <div className="build-recipe good-box">
+          <div className="flex flex-col sm:flex-row gap-4 mt-4">
+            <div className="build-recipe basis-1/2 font-mono p-4 good-box">
               <h4 className="font-bold">[Your Home Recipe]</h4>
-              <dl>
+              <dl className="mt-4">
                 <dd>$500k+</dd>
                 <dd>[Your Size] sq/ft</dd>
                 <dd>[Your Location]</dd>
