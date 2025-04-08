@@ -4,6 +4,8 @@ import projectStyles from "../styles/project.css?url";
 import goodsStyles from "../styles/goods.css?url";
 import { LinksFunction } from "@remix-run/node";
 import { FooterDiscovery } from "../components/Footer";
+import { GoodButtonConsulting } from "../components/GoodAssets";
+
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: projectStyles },
   { rel: "stylesheet", href: goodsStyles },
@@ -70,9 +72,21 @@ export default function GoodBuilding() {
             Those wishes and dreams of yours are important and help us guide you
             to a home aligned closer to you.
           </p>
-          <Link to="/contact" className="btn-primary">
-            Contact Us
-          </Link>
+
+          <p className="text-lg italic purple-light-text mt-8">
+            Hint: We can collaborate with your team also!
+          </p>
+
+          <div className="flex gap-4 justify-center items-center mt-10">
+            <Link
+              className="btn-primary"
+              to="/contact"
+              style={{ paddingBlock: "8px", lineHeight: "30px" }}
+            >
+              Contact Us
+            </Link>
+            <GoodButtonConsulting />
+          </div>
         </div>
       </div>
       <FooterDiscovery

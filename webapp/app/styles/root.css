@@ -79,9 +79,17 @@ body {
   border: 1px solid var(--foreground);
   background: var(--farground);
   border-radius: 4px;
+  hr {
+    border-color: var(--foreground);
+    @media (prefers-color-scheme: dark) {
+    }
+  }
   @media (prefers-color-scheme: dark) {
     border-color: var(--dark-foreground);
     background: var(--dark-farground);
+    hr {
+      border-color: var(--dark-foreground);
+    }
   }
 }
 
@@ -523,6 +531,15 @@ body {
   }
 }
 
+/* Lists */
+.dash-list {
+  li:before,
+  dd:before {
+    content: "- ";
+    text-indent: 0px;
+  }
+}
+
 /* Scenes */
 .scene1 {
   min-height: 450px;
@@ -640,4 +657,26 @@ body {
 }
 .carousel-item {
   width: 100vw;
+}
+
+/* SVG */
+.foreground-fill {
+  fill: var(--foreground);
+  @media (prefers-color-scheme: dark) {
+    fill: var(--dark-foreground);
+  }
+}
+
+.midground-fill {
+  fill: var(--midground);
+  @media (prefers-color-scheme: dark) {
+    fill: var(--dark-midground);
+  }
+}
+
+.farground-fill {
+  fill: var(--farground);
+  @media (prefers-color-scheme: dark) {
+    fill: var(--dark-farground);
+  }
 }

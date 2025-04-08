@@ -73,10 +73,7 @@ export default function GoodArchitecture() {
             <div className="good-box p-4 font-mono" style={{ width: "292px" }}>
               <h3 className="font-bold text-3xl">Restorations</h3>
               <div className="purple-light-text">For Remodels & Retrofits</div>
-              <hr
-                className="my-4"
-                style={{ borderColor: "var(--foreground)" }}
-              />
+              <hr className="my-4" />
               <div className="font-bold text-3xl">$36k+</div>
               <div className="purple-light-text">Starting</div>
             </div>
@@ -95,16 +92,16 @@ export default function GoodArchitecture() {
             What's Included
           </h3>
           <IncludedBox
-            title="Good Materials"
-            desc="We help you select materials that work towards your goals."
-          >
-            {goodMaterialsSvg}
-          </IncludedBox>
-          <IncludedBox
             title="Health First"
             desc="From Physical to Mental, we explore how homes can improve your life."
           >
             {healthFirstSvg}
+          </IncludedBox>
+          <IncludedBox
+            title="Good Materials"
+            desc="We help you select materials that work towards your goals."
+          >
+            {goodMaterialsSvg}
           </IncludedBox>
           <IncludedBox
             title="Minimized Carbon"
@@ -124,7 +121,7 @@ export default function GoodArchitecture() {
           </p>
 
           <p className="text-lg italic purple-light-text mt-8">
-            Hint: We can also help build your home as well!
+            Hint: We can help build your home as well!
           </p>
 
           <div className="flex gap-4 justify-center items-center mt-10">

@@ -55,6 +55,9 @@ export default function About() {
               <em>“how do we bring the magic of nature into our homes?”</em>
             </p>
           </Profile>
+          <Profile name="James Werhanowicz" title="Architect & GC">
+            <p className="text-xl mt-4 mb-4">TODO</p>
+          </Profile>
           <Profile name="Gerald Leenerts" title="Systems Craftsman">
             <p className="text-xl mt-4 mb-4">
               Back on my Grandpa's farm, I fell in love with nature without
@@ -81,10 +84,27 @@ export default function About() {
               </em>
             </p>
           </Profile>
-          {/*
-            <Profile name="James Werhanowicz"></Profile>
-            <Profile name="Lucas Johnson"></Profile>
-          */}
+          <Profile name="Lucas Johnson" title="Chief Building Nerd">
+            <p className="text-xl mt-4 mb-4">
+              Laying in a hospital bed beneath synthetic light. I kept thinking
+              how on earth am I expected to heal in a building this bad?
+              Realizing I needed to drop my path to medical school to create
+              healthy buildings that are connected to nature.
+            </p>
+            <p className="text-xl mt-4 mb-4">
+              Suddenly I was deeply emerged in the Costa Rican wilderness on a
+              tropical biology study abroad program. Reconnecting to my
+              childhood roots digging in the dirt, camping, hiking, and playing
+              in nature. Feeling healthier than I had in years. It became
+              obvious that we needed to make buildings places centered around
+              healing while minimizing their impact to people and the planet.
+            </p>
+            <p className="text-xl mt-4 mb-4">
+              This core realization led me to spending the last two decades as a
+              building scientist focused on creating the healthiest buildings
+              with the lowest lifecycle carbon impact.
+            </p>
+          </Profile>
 
           <div className="mt-16">
             <Link to="/contact" className="btn-primary">
