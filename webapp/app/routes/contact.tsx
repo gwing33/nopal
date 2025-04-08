@@ -9,7 +9,7 @@ export default function Contact() {
         <div className="simple-container p-4 mt-16">
           <h1 className="purple-light-text text-4xl">Contact</h1>
 
-          <div className="flex gap-8 items-center text-xl mt-8">
+          <div className="flex gap-8 flex-col sm:flex-row items-start sm:items-center text-xl mt-8">
             <ButtonLink href="https://discord.gg/avFGzMNAXu">
               Join us on Discord
             </ButtonLink>
@@ -19,7 +19,7 @@ export default function Contact() {
             </a>
           </div>
           <h2 className="purple-light-text text-2xl mt-16">Social Medias</h2>
-          <div className="flex gap-2 mt-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-4">
             <ButtonLink href="https://www.instagram.com/nopal.build/">
               <InstagramLogo /> @nopal.build on Instagram
             </ButtonLink>
