@@ -1,26 +1,28 @@
-import { SyntheticEvent, useState } from "react";
+import { useState } from "react";
 import { Layout } from "../components/Layout";
 import { FooterDiscovery } from "../components/Footer";
 import { useMarkdown } from "../hooks/useMarkdown";
 import { LinksFunction } from "@remix-run/node";
-import projectStyles from "../styles/project.css?url";
+import markdownStyles from "../styles/markdown.css?url";
 import { TextDropdown } from "../components/Dropdown";
-import { N } from "vitest/dist/chunks/environment.LoooBwUu.js";
 
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: projectStyles },
+  { rel: "stylesheet", href: markdownStyles },
 ];
 
-const md = `# Grandpa's Framing Recipe
+const md = `# Grandpa's Cabin Recipe
 
 Back in my day, we had balloon framing. This had issues with fire since it was so easy for fire to travel from the wall to the roof. Eventually this leads to our modern stick framing approach you see on most sites.
 
+
+### Timber Framing
 Before that, many buildings were built with larger timbers that took more time and more people with specialized woodworking knowledge. While these building will last centuries, they were more costly to construct.
 
 In the 1930s, post-frame construction came onto the scene what was an ideal approach to large structures.
 
 Each of the modern day equivalents have improvements both to just the framing but how we make the buildings more performant and longer lasting.
 
+### MTF
 It seems like what this *fancy pants* **Nopal** company has done with **Medium Timber Framing** (MTF) is combine some of the best elements from each of these framing approaches:
 
 - Improves the health and structure of the building.
@@ -38,9 +40,9 @@ export default function GrandpasCabinRecipe() {
   return (
     <Layout>
       <div className="scene1">
-        <div className="simple-container uncooked-markdown">
+        <div className="simple-container markdown px-2 pt-8 pb-20">
           {mdHtml}
-          <div>
+          <div className="purple-light-text text-2xl">
             <em>
               -With love,
               <br />

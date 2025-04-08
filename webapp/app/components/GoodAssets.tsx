@@ -1,5 +1,20 @@
 import { Link } from "@remix-run/react";
 
+export function GoodContact({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex gap-4 flex-col sm:flex-row justify-center sm:items-center items-start mt-10">
+      <Link
+        className="btn-primary"
+        to="/contact"
+        style={{ paddingBlock: "8px", lineHeight: "30px" }}
+      >
+        Contact Us
+      </Link>
+      {children}
+    </div>
+  );
+}
+
 export function GoodBuildingLink() {
   return (
     <Link className="good-box good-box-hover" to="/good/building">

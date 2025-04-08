@@ -1,10 +1,9 @@
-import { Link } from "@remix-run/react";
 import { Layout } from "../components/Layout";
 import projectStyles from "../styles/project.css?url";
 import goodsStyles from "../styles/goods.css?url";
 import { LinksFunction } from "@remix-run/node";
 import { FooterDiscovery } from "../components/Footer";
-import { GoodButtonConsulting } from "../components/GoodAssets";
+import { GoodContact, GoodButtonConsulting } from "../components/GoodAssets";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: projectStyles },
@@ -77,16 +76,9 @@ export default function GoodBuilding() {
             Hint: We can collaborate with your team also!
           </p>
 
-          <div className="flex gap-4 justify-center items-center mt-10">
-            <Link
-              className="btn-primary"
-              to="/contact"
-              style={{ paddingBlock: "8px", lineHeight: "30px" }}
-            >
-              Contact Us
-            </Link>
+          <GoodContact>
             <GoodButtonConsulting />
-          </div>
+          </GoodContact>
         </div>
       </div>
       <FooterDiscovery
@@ -108,11 +100,11 @@ export default function GoodBuilding() {
           />
           <path
             d="M40 57C27.6 50.2 12 45 2 42.4998C15.5 31 22 13 34.5 1C38.1 5 57.3333 9.33333 66.5 12.5C61 28.5 47.5 44.5 40 57Z"
-            fill="#FFF9F1"
+            className="farground-fill"
           />
           <path
             d="M33 10C37.8333 11.1667 39.6 12.8 45 14M26.5 18C31.6667 20.8333 53 29.1 53 27.5M21 26C26.1667 28.8333 38.5 31 47.5 35.5M23 22.5C30 24.5 38.5 27.5 49.5 32M42.5 45.5L40 43.2273M14.5 35.5H18M18 35.5H31.5L40 43.2273M18 35.5L14.5 39.5M40 43.2273L37.5 48M2 42.4998C12 45 27.6 50.2 40 57C47.5 44.5 61 28.5 66.5 12.5C57.3333 9.33333 38.1 5 34.5 1C22 13 15.5 31 2 42.4998Z"
-            stroke="#E5D6C5"
+            className="foreground-stroke"
           />
         </svg>
       </FooterDiscovery>

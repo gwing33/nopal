@@ -1,5 +1,5 @@
 import { Link } from "@remix-run/react";
-import { GoodButtonArchitecture } from "../components/GoodAssets";
+import { GoodContact, GoodButtonArchitecture } from "../components/GoodAssets";
 import { Layout } from "../components/Layout";
 import goodsStyles from "../styles/goods.css?url";
 import { LinksFunction } from "@remix-run/node";
@@ -138,16 +138,10 @@ export default function GoodConsulting() {
           <p className="text-lg italic purple-light-text mt-8">
             Hint: We can also help build your home!
           </p>
-          <div className="flex gap-4 justify-center items-center mt-10 pb-8">
-            <Link
-              className="btn-primary"
-              to="/contact"
-              style={{ paddingBlock: "8px", lineHeight: "30px" }}
-            >
-              Contact Us
-            </Link>
+
+          <GoodContact>
             <GoodButtonArchitecture />
-          </div>
+          </GoodContact>
         </div>
       </div>
       <FooterDiscovery />

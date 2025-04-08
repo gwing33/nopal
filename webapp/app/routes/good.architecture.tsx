@@ -4,7 +4,7 @@ import { LinksFunction } from "@remix-run/node";
 import { FooterDiscovery } from "../components/Footer";
 import { Carousel } from "../components/Carousel";
 import { Link } from "@remix-run/react";
-import { GoodButtonBuilding } from "../components/GoodAssets";
+import { GoodContact, GoodButtonBuilding } from "../components/GoodAssets";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: goodsStyles },
@@ -124,16 +124,9 @@ export default function GoodArchitecture() {
             Hint: We can help build your home as well!
           </p>
 
-          <div className="flex gap-4 justify-center items-center mt-10">
-            <Link
-              className="btn-primary"
-              to="/contact"
-              style={{ paddingBlock: "8px", lineHeight: "30px" }}
-            >
-              Contact Us
-            </Link>
+          <GoodContact>
             <GoodButtonBuilding />
-          </div>
+          </GoodContact>
         </div>
       </div>
       <FooterDiscovery />

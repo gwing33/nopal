@@ -25,11 +25,9 @@ export function FooterBase({ children }: { children?: ReactNode }) {
       <div className="scene0-bg" />
       <div className="scene0-shadow-bg" />
       <div className="scene0-pricklyPearFruit" />
-      <div className="flex items-center justify-center h-full md:justify-end md:items-start">
+      <div className="flex justify-end">
         {children && (
-          <div className="scene0-content flex items-end justify-center flex-col p-10 lg:p-20">
-            {children}
-          </div>
+          <div className="scene0-content p-10 lg:p-20">{children}</div>
         )}
       </div>
       <div className="footer flex gap-2 p-8 pt-4 pb-4">
@@ -79,7 +77,7 @@ export function FooterDiscovery({
   return (
     <FooterBase>
       {label && to && children && (
-        <div className="discover-text">
+        <div className="discover-text red-text font-hand">
           <span>{label}</span>
           <Link to={to}>{children}</Link>
         </div>

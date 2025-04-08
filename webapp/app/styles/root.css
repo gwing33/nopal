@@ -61,6 +61,7 @@ body {
   background-color: var(--btn-color, var(--purple));
   padding: 16px 32px;
   color: white;
+  text-wrap: nowrap;
   @media (prefers-color-scheme: dark) {
     background-color: white;
     color: var(--btn-color, var(--purple));
@@ -531,6 +532,13 @@ body {
   }
 }
 
+.red-text {
+  color: var(--red);
+  @media (prefers-color-scheme: dark) {
+    color: var(--red-light);
+  }
+}
+
 /* Lists */
 .dash-list {
   li:before,
@@ -678,5 +686,26 @@ body {
   fill: var(--farground);
   @media (prefers-color-scheme: dark) {
     fill: var(--dark-farground);
+  }
+}
+
+.foreground-stroke {
+  stroke: var(--foreground);
+  @media (prefers-color-scheme: dark) {
+    stroke: var(--dark-foreground);
+  }
+}
+
+.midground-stroke {
+  stroke: var(--midground);
+  @media (prefers-color-scheme: dark) {
+    stroke: var(--dark-midground);
+  }
+}
+
+.farground-stroke {
+  stroke: var(--farground);
+  @media (prefers-color-scheme: dark) {
+    stroke: var(--dark-farground);
   }
 }
