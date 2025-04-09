@@ -54,10 +54,12 @@ export function Layout({ children }: { children?: ReactNode }) {
     },
     [showGoods, expanded]
   );
-  useClickOutside(goodsRef, () => {
+  const handleGoodItemClick = useCallback(() => {
     setExpanded(false);
     setShowGoods(false);
-  });
+  }, []);
+  useClickOutside(goodsRef, handleGoodItemClick);
+
   return (
     <>
       <div className="header container mx-auto pl-4 pr-4">
@@ -107,13 +109,13 @@ export function Layout({ children }: { children?: ReactNode }) {
                 </svg>
                 <ul>
                   <li>
-                    <GoodArchitectureLink />
+                    <GoodArchitectureLink onClick={handleGoodItemClick} />
                   </li>
                   <li>
-                    <GoodBuildingLink />
+                    <GoodBuildingLink onClick={handleGoodItemClick} />
                   </li>
                   <li>
-                    <GoodConsultingLink />
+                    <GoodConsultingLink onClick={handleGoodItemClick} />
                   </li>
                 </ul>
               </div>

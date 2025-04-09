@@ -19,7 +19,7 @@ export default function GoodConsulting() {
             ingredients.
           </p>
 
-          <div className="do-not-use flex gap-4">
+          <div className="do-not-use flex flex-col sm:flex-row sm:gap-4">
             <h2>DO NOT USE</h2>
             <dl className="dash-list">
               <dd>
@@ -151,6 +151,7 @@ export default function GoodConsulting() {
 
 const QuailLookout = () => (
   <svg
+    className="hidden sm:block"
     width="62"
     height="58"
     viewBox="0 0 62 58"

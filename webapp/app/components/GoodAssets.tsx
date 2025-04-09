@@ -1,4 +1,9 @@
 import { Link } from "@remix-run/react";
+import { SyntheticEvent } from "react";
+
+type Props = {
+  onClick?: (e: SyntheticEvent<HTMLAnchorElement>) => void;
+};
 
 export function GoodContact({ children }: { children: React.ReactNode }) {
   return (
@@ -15,9 +20,13 @@ export function GoodContact({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function GoodBuildingLink() {
+export function GoodBuildingLink({ onClick }: Props) {
   return (
-    <Link className="good-box good-box-hover" to="/good/building">
+    <Link
+      onClick={onClick}
+      className="good-box good-box-hover"
+      to="/good/building"
+    >
       <svg
         width="66"
         height="57"
@@ -54,9 +63,13 @@ export function GoodBuildingLink() {
   );
 }
 
-export function GoodConsultingLink() {
+export function GoodConsultingLink({ onClick }: Props) {
   return (
-    <Link className="good-box good-box-hover" to="/good/consulting">
+    <Link
+      onClick={onClick}
+      className="good-box good-box-hover"
+      to="/good/consulting"
+    >
       <svg
         width="64"
         height="64"
@@ -133,9 +146,13 @@ export function GoodConsultingLink() {
   );
 }
 
-export function GoodArchitectureLink() {
+export function GoodArchitectureLink({ onClick }: Props) {
   return (
-    <Link className="good-box good-box-hover" to="/good/architecture">
+    <Link
+      onClick={onClick}
+      className="good-box good-box-hover"
+      to="/good/architecture"
+    >
       <svg
         width="74"
         height="65"
