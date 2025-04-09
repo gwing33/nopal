@@ -4,12 +4,10 @@ import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
 import { CactiSix } from "../svg/path/cacti";
 
-import homeStyles from "../styles/home.css?url";
 import projectStyles from "../styles/project.css?url";
 import pathStyles from "../styles/path.css?url";
 
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: homeStyles },
   { rel: "stylesheet", href: projectStyles },
   { rel: "stylesheet", href: pathStyles },
 ];
@@ -30,9 +28,7 @@ export default function PathPage() {
           <Outlet />
         </div>
       </div>
-      <Footer title="Want to join us?">
-        We can travel together on this venture down the path of the unknown.
-      </Footer>
+      <Footer />
     </Layout>
   );
 }

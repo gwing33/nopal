@@ -7,12 +7,10 @@ import { useSchemePref } from "../hooks/useSchemePref";
 import seedNo3LightImg from "../images/seeds/seed-no-3-prototype-no-2-light.svg";
 import seedNo3DarkImg from "../images/seeds/seed-no-3-prototype-no-2-dark.svg";
 
-import homeStyles from "../styles/home.css?url";
 import seedsStyles from "../styles/seeds.css?url";
 import projectStyles from "../styles/project.css?url";
 
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: homeStyles },
   { rel: "stylesheet", href: projectStyles },
   { rel: "stylesheet", href: seedsStyles },
 ];

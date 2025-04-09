@@ -1,12 +1,10 @@
 import { LinksFunction } from "@remix-run/node";
 import { Layout } from "../components/Layout";
 
-import homeStyles from "../styles/home.css?url";
 import seedsStyles from "../styles/seeds.css?url";
 import { Link, Outlet } from "@remix-run/react";
 
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: homeStyles },
   { rel: "stylesheet", href: seedsStyles },
 ];
 
