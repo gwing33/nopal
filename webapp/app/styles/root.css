@@ -622,8 +622,36 @@ body {
 .arch-carousel {
   overflow: hidden;
   .carousel {
-    max-width: 720px;
+    max-width: 740px;
     margin: 0 auto;
+  }
+
+  .arch-slide {
+    margin-left: -9.3%;
+    margin-right: 9.3%;
+    gap: 2.4%;
+  }
+  .arch-filler {
+    border-radius: 4px;
+    z-index: 1;
+    max-width: 16.2%;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .arch-img {
+    border-radius: 4px;
+    z-index: 10;
+    max-width: 79%;
+    flex-shrink: 0;
+  }
+  .last-slide {
+    position: absolute;
+    width: 16.2%;
+    right: -6.9%;
+    top: 8px;
+    img {
+      max-width: 100%;
+    }
   }
 }
 
@@ -680,6 +708,9 @@ body {
 }
 .carousel-item {
   width: 100vw;
+  img {
+    max-width: 100vw;
+  }
 }
 
 /* SVG */

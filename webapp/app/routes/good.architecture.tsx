@@ -3,14 +3,15 @@ import goodsStyles from "../styles/goods.css?url";
 import { LinksFunction } from "@remix-run/node";
 import { FooterDiscovery } from "../components/Footer";
 import { Carousel } from "../components/Carousel";
-import { Link } from "@remix-run/react";
 import { GoodContact, GoodButtonBuilding } from "../components/GoodAssets";
+import { useArchCarouselHeight } from "../hooks/useArchCarouselHeight.client";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: goodsStyles },
 ];
 
 export default function GoodArchitecture() {
+  const height = useArchCarouselHeight?.() || 0;
   return (
     <Layout>
       <div className="scene1">
@@ -25,42 +26,71 @@ export default function GoodArchitecture() {
         </div>
         <div className="arch-carousel">
           <Carousel
-            height={400}
-            slides={[
+            height={height + "px"}
+            slides={(setCurrent) => [
               <ArchSlide>
-                <ArchImg src="/good-architecture/filler-1.png" alt="Home 1" />
+                <ArchFiller
+                  src="/good-architecture/filler-1.png"
+                  alt="Home 1"
+                  onClick={() => setCurrent(0)}
+                />
                 <ArchImg src="/good-architecture/arch-1.png" alt="Home 1" />
               </ArchSlide>,
               <ArchSlide>
-                <ArchImg src="/good-architecture/filler-2.png" alt="Home 2" />
+                <ArchFiller
+                  src="/good-architecture/filler-2.png"
+                  alt="Home 2"
+                  onClick={() => setCurrent(1)}
+                />
                 <ArchImg src="/good-architecture/arch-2.png" alt="Home 2" />
               </ArchSlide>,
               <ArchSlide>
-                <ArchImg src="/good-architecture/filler-3.png" alt="Home 3" />
+                <ArchFiller
+                  src="/good-architecture/filler-3.png"
+                  alt="Home 3"
+                  onClick={() => setCurrent(2)}
+                />
                 <ArchImg src="/good-architecture/arch-3.png" alt="Home 3" />
               </ArchSlide>,
               <ArchSlide>
-                <ArchImg src="/good-architecture/filler-4.png" alt="Home 4" />
+                <ArchFiller
+                  src="/good-architecture/filler-4.png"
+                  alt="Home 4"
+                  onClick={() => setCurrent(3)}
+                />
                 <ArchImg src="/good-architecture/arch-4.png" alt="Home 4" />
               </ArchSlide>,
               <ArchSlide>
-                <ArchImg src="/good-architecture/filler-5.png" alt="Home 5" />
+                <ArchFiller
+                  src="/good-architecture/filler-5.png"
+                  alt="Home 5"
+                  onClick={() => setCurrent(4)}
+                />
                 <ArchImg src="/good-architecture/arch-5.png" alt="Home 5" />
               </ArchSlide>,
               <ArchSlide>
-                <ArchImg src="/good-architecture/filler-6.png" alt="Home 6" />
+                <ArchFiller
+                  src="/good-architecture/filler-6.png"
+                  alt="Home 6"
+                  onClick={() => setCurrent(5)}
+                />
                 <ArchImg src="/good-architecture/arch-6.png" alt="Home 6" />
               </ArchSlide>,
               <div className="relative">
                 <ArchSlide>
-                  <ArchImg src="/good-architecture/filler-7.png" alt="Home 7" />
+                  <ArchFiller
+                    src="/good-architecture/filler-7.png"
+                    alt="Home 7"
+                    onClick={() => setCurrent(6)}
+                  />
                   <ArchImg src="/good-architecture/arch-7.png" alt="Home 7" />
                 </ArchSlide>
-                <div
-                  className="absolute"
-                  style={{ right: "-60px", top: "8px" }}
-                >
-                  <ArchImg src="/good-architecture/filler-8.png" alt="Home 8" />
+                <div className="last-slide">
+                  <ArchFiller
+                    src="/good-architecture/filler-8.png"
+                    alt="Filler 8"
+                    onClick={() => setCurrent(7)}
+                  />
                 </div>
               </div>,
             ]}
@@ -132,15 +162,25 @@ export default function GoodArchitecture() {
 }
 
 function ArchSlide({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="-ml-32 flex gap-2 items-center justify-center">
-      {children}
-    </div>
-  );
+  return <div className="arch-slide flex items-center">{children}</div>;
 }
 
 function ArchImg({ src, alt }: { src: string; alt: string }) {
-  return <img className="rounded" src={src} alt={alt} />;
+  return <img className={"arch-img"} src={src} alt={alt} />;
+}
+
+function ArchFiller({
+  src,
+  alt,
+  onClick,
+}: {
+  src: string;
+  alt: string;
+  onClick?: () => void;
+}) {
+  return (
+    <img onClick={onClick} className={"arch-filler"} src={src} alt={alt} />
+  );
 }
 
 function IncludedBox({

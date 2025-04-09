@@ -31,8 +31,8 @@ export default function Index() {
               <div className="sm:w-1/2 flex flex-col gap-4 text-xl">
                 <p>
                   We developed the 5 factors as a tool to assess materials and
-                  building methods with a focus on bringing mental and physical
-                  comfort.
+                  building methods with a focus on bringing mental health and
+                  physical comfort.
                 </p>
                 <p>Which factors are important to you?</p>
                 <Link className="link" to="/good/building">
