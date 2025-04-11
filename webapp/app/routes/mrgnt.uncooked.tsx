@@ -20,8 +20,6 @@ import {
   ArtMedium,
   CreateUncookedParams,
 } from "../data/uncooked.server";
-import { CreateBatchOptions } from "resend";
-import { log } from "console";
 
 const types = [
   "newspaper-clipping",

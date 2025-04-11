@@ -83,6 +83,9 @@ export function Layout({ children }: { children?: ReactNode }) {
             style={expanded ? { display: "block" } : {}}
           >
             <div className="good-menu" tabIndex={0}>
+              <NavLink to="/health" className="main-nav-item p-2">
+                Health
+              </NavLink>
               <NavLink
                 to="/good/s"
                 onClick={handleGoods}

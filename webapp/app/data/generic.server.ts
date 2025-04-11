@@ -130,3 +130,30 @@ export async function select<T extends Data>(thing: RecordId | string) {
   }
   return undefined;
 }
+
+export async function defineNotionTable(name: string) {
+  return await query(
+    `DEFINE TABLE IF NOT EXISTS ${name} TYPE ANY SCHEMALESS PERMISSIONS NONE`
+  );
+}
+
+export async function upsertToNotionTable(name: string, record: any) {
+  const db = await getDb();
+  if (!db) {
+    console.error("Database not initialized");
+    return undefined;
+  }
+
+  try {
+    const result = await db.upsert(name, record);
+    if (!result) {
+      return undefined;
+    }
+    return result;
+  } catch (err) {
+    console.error("Failed to upsert data:", err);
+  } finally {
+    await db.close();
+  }
+  return undefined;
+}
