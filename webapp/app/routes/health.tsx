@@ -35,7 +35,7 @@ export default function Health() {
   const data = useLoaderData<LoaderResult>();
   const { ingredients, recipes, connections } = data;
   const isTutorial = location.search.includes("tutorial=true");
-  console.log(ingredients, recipes, connections);
+  // console.log(ingredients, recipes, connections);
   return (
     <Layout>
       <div className="scene1">
@@ -65,7 +65,11 @@ export default function Health() {
             </a>
           </div>
 
-          <p>The 5 Factors of Good Building are to be our guiding light.</p>
+          <div className="folder-tabs mt-12">
+            <a className="active">Ingredients</a>
+            <a>Recipes</a>
+            <a>Collections</a>
+          </div>
         </div>
       </div>
       <FooterDiscovery />
