@@ -17,7 +17,7 @@ export async function sendEmail({ to, subject, react }: SendEmailBody) {
     return;
   }
   return resend.emails.send({
-    from: "Nopal Rowbot <rowbot@updates.nopal.build>",
+    from: "Nopal Rowbot <rowbot@nopal.build>",
     to,
     subject,
     react,

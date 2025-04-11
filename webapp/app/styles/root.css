@@ -713,6 +713,38 @@ body {
   }
 }
 
+/* Folder Tabs */
+.folder-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--foreground);
+  gap: 8px;
+  align-items: flex-end;
+  a {
+    @apply font-mono;
+    font-size: 20px;
+    color: var(--purple-light);
+    margin-bottom: -1px;
+    display: flex;
+    align-items: flex-end;
+    padding: 8px 16px;
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--foreground);
+    border-top-right-radius: 8px;
+    border-top-left-radius: 8px;
+
+    &.active {
+      border-bottom-color: white;
+      color: var(--green);
+      padding-top: 16px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background-color: var(--dark-background);
+      border-bottom: 1px solid var(--dark-border);
+    }
+  }
+}
+
 /* SVG */
 .foreground-fill {
   fill: var(--foreground);

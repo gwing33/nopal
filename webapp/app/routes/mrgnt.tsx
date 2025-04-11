@@ -15,6 +15,11 @@ export default function Mrgnt() {
           <div className="notions-box">
             <ul>
               <li>
+                <Link to="/mrgnt/gbs" className="link">
+                  +Ingredients & Recipes
+                </Link>
+              </li>
+              <li>
                 <Link to="/mrgnt/uncooked?type=presentation" className="link">
                   +Presentation
                 </Link>
