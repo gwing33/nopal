@@ -4,6 +4,8 @@ import {
   queryCollection,
   defineNotionTable,
   upsertToNotionTable,
+  query,
+  formatRecord,
 } from "./generic.server";
 import { getDb } from "./db.server";
 
@@ -19,7 +21,7 @@ type Database = {
 
 const INGREDIENTS = "gbs_ingredients";
 const RECIPES = "gbs_recipes";
-const CONNECTIONS = "gbs_connections";
+const COLLECTIONS = "gbs_collections";
 
 const dbs: Database[] = [
   {
@@ -32,7 +34,7 @@ const dbs: Database[] = [
   },
   {
     id: "1d1f2211e45f80df81c3c82b831b45c1",
-    dbName: CONNECTIONS,
+    dbName: COLLECTIONS,
   },
 ];
 
@@ -43,14 +45,27 @@ export type NotionObject = {
   [n: string]: any;
 };
 
+export async function getIngredientBySlug(slug: string): Promise<any> {
+  const results = await query(
+    `SELECT * FROM ${INGREDIENTS} WHERE properties.Slug.rich_text[0].plain_text = '${slug}'`
+  );
+  if (results.length === 1) {
+    const r: any = results[0];
+    const record = r[0] || null;
+    if (record) {
+      return formatRecord(record);
+    }
+  }
+  return null;
+}
 export function getAllIngredients(): Promise<any> {
   return queryCollection(`SELECT * FROM ${INGREDIENTS}`);
 }
 export function getAllRecipes(): Promise<any> {
   return queryCollection(`SELECT * FROM ${RECIPES}`);
 }
-export function getAllConnections(): Promise<any> {
-  return queryCollection(`SELECT * FROM ${CONNECTIONS}`);
+export function getAllCollections(): Promise<any> {
+  return queryCollection(`SELECT * FROM ${COLLECTIONS}`);
 }
 
 async function getDatabasePages(db: Database): Promise<any> {

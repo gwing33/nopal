@@ -1,29 +1,13 @@
 import { Layout } from "../components/Layout";
 import { FooterDiscovery } from "../components/Footer";
-import {
-  getAllIngredients,
-  getAllRecipes,
-  getAllConnections,
-} from "../data/notion.server";
-import type { Collection } from "../data/generic.server";
-import type { NotionObject } from "../data/notion.server";
-import { useLoaderData, useLocation, useNavigate } from "@remix-run/react";
+import { Outlet, NavLink, useLocation, useNavigate } from "@remix-run/react";
 import { GbScore } from "../components/GbScore";
+import { LinksFunction } from "@remix-run/node";
+import healthStyles from "../styles/health.css?url";
 
-type LoaderResult = {
-  ingredients: Collection<NotionObject>;
-  recipes: Collection<NotionObject>;
-  connections: Collection<NotionObject>;
-};
-export const loader = async (/* remixContext: LoaderFunctionArgs */) => {
-  const ingredients = await getAllIngredients();
-  const recipes = await getAllRecipes();
-  const connections = await getAllConnections();
-  return { ingredients, recipes, connections };
-  // const url = new URL(remixContext.request.url);
-  // const start = Number(url.searchParams.get("start")) || 0;
-  // return getAllUncooked({ limit: DISPLAY_LIMIT, start });
-};
+export const links: LinksFunction = () => [
+  { rel: "stylesheet", href: healthStyles },
+];
 
 export function shouldRevalidate() {
   return false;
@@ -32,10 +16,9 @@ export function shouldRevalidate() {
 export default function Health() {
   const navigate = useNavigate();
   const location = useLocation();
-  const data = useLoaderData<LoaderResult>();
-  const { ingredients, recipes, connections } = data;
-  const isTutorial = location.search.includes("tutorial=true");
-  // console.log(ingredients, recipes, connections);
+  const search = location?.search || "";
+  const isTutorial = search.includes("tutorial=true");
+
   return (
     <Layout>
       <div className="scene1">
@@ -65,10 +48,35 @@ export default function Health() {
             </a>
           </div>
 
+          {isTutorial && (
+            <div className="mt-8">
+              <p className="text-xl">
+                We review <b>ingredients & recipes</b> by looking at 5 Factors:
+              </p>
+              <p className="text-xl mt-8">
+                Before you get to that information, you’ll be presented with a
+                collective score. This is the <b>Good Building Score</b>.
+              </p>
+            </div>
+          )}
+
           <div className="folder-tabs mt-12">
-            <a className="active">Ingredients</a>
-            <a>Recipes</a>
-            <a>Collections</a>
+            <NavLink
+              to={"/health/ingredients" + search}
+              className={() => {
+                if (/^\/health(\/ingredients)??\/?$/.test(location.pathname)) {
+                  return "active";
+                }
+                return "";
+              }}
+            >
+              Ingredients
+            </NavLink>
+            <NavLink to={"/health/recipes" + search}>Recipes</NavLink>
+            <NavLink to={"/health/collections" + search}>Collections</NavLink>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            <Outlet />
           </div>
         </div>
       </div>

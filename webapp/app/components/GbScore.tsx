@@ -101,8 +101,10 @@ function getBgColor(score: number) {
 }
 
 function getTextColor(score: number) {
-  if (isPrettyGood(score)) {
+  if (isGood(score)) {
     return "var(--yellow-light)";
+  } else if (isPrettyGood(score)) {
+    return "white";
   } else if (isMeh(score)) {
     return "var(--purple-light)";
   } else if (isPrettyBad(score)) {

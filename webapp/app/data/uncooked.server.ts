@@ -77,7 +77,7 @@ export async function createUncooked(
       type_id: newId,
       date: new Date(),
     });
-    const newRecord = created?.[0];
+    const newRecord: any = created?.[0];
 
     if (!newRecord) {
       throw new Error("Failed to create uncooked record");

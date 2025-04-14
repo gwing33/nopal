@@ -1,6 +1,5 @@
 import { Layout } from "../components/Layout";
 import { FooterDiscovery } from "../components/Footer";
-import { GoodArrow } from "../components/GoodAssets";
 
 export default function Contact() {
   return (

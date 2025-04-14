@@ -5,7 +5,7 @@ import {
   GoodButtonBuilding,
   GoodButtonConsulting,
 } from "../components/GoodAssets";
-import { FiveFactors } from "../components/FiveFactors";
+import { RandomFiveFactors } from "../components/FiveFactors";
 import { Link } from "@remix-run/react";
 
 export default function Index() {
@@ -26,7 +26,7 @@ export default function Index() {
             </h2>
             <div className="flex gap-8 mt-4 mb-4 flex-col sm:flex-row mx-auto">
               <div className="sm:w-1/2">
-                <FiveFactors />
+                <RandomFiveFactors />
               </div>
               <div className="sm:w-1/2 flex flex-col gap-4 text-xl">
                 <p>

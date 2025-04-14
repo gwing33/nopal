@@ -19,6 +19,9 @@
   --dark-farground: #494a72;
   --dark-midground: #6d6e99;
   --dark-foreground: #8d8eb4;
+
+  --text-subtle: #817186;
+  --text-subtle-dark: #c8b8ce;
 }
 
 body {
@@ -741,6 +744,37 @@ body {
     @media (prefers-color-scheme: dark) {
       background-color: var(--dark-background);
       border-bottom: 1px solid var(--dark-border);
+    }
+  }
+}
+
+/* Breadcrumbs */
+.breadcrumbs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+
+  a {
+    color: var(--text-subtle);
+  }
+  a:hover {
+    color: var(--purple-light);
+    text-decoration: underline;
+  }
+  svg {
+    transform: rotate(-180deg);
+    path {
+      stroke: var(--text-subtle);
+    }
+  }
+  @media (prefers-color-scheme: dark) {
+    a {
+      color: var(--text-subtle-dark);
+    }
+    svg {
+      path {
+        stroke: var(--text-subtle-dark);
+      }
     }
   }
 }
