@@ -61,7 +61,17 @@ export default function About() {
             image="/about/james.png"
           >
             <p className="text-xl mt-4 mb-4">
-              Striving to deliver <em>Not Bad Architecture</em>™
+              The historical concept of a “master builder” has intrigued me
+              since I first heard of it in school. The idea that one individual
+              could invent an initial design concept of what a building or space
+              could be, conceptually evolve that imagination to a point where
+              physical construction becomes possible, and then totally change
+              mediums and work with craftsmen, trades, and the physical
+              materials necessary to bring that idea into reality, is
+              astounding. The vision, commitment, and metal focus required would
+              have to bordered insanity, not to mention the obsessive seeking of
+              prior knowledge that must been necessary to create an individual
+              who even possessed the ability to perform all those tasks.
             </p>
           </Profile>
           <Profile
