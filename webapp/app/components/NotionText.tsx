@@ -1,4 +1,10 @@
-export function NotionText({ text }: { text: Object[] }) {
+import type { RichText } from "../data/notion.server";
+
+export function getPlainText(text: RichText[]): string {
+  return text.map((t) => t.plain_text).join(" ");
+}
+
+export function NotionText({ text }: { text: RichText[] }) {
   return (
     <>
       {text.map((t: any, i) => {
@@ -24,9 +30,9 @@ export function NotionText({ text }: { text: Object[] }) {
               "text-xl "
             );
             return (
-              <p className={classNames} key={i}>
+              <span className={classNames} key={i}>
                 {t.plain_text}
-              </p>
+              </span>
             );
         }
         return null;

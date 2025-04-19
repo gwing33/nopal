@@ -1,9 +1,9 @@
-export function isPublished(obj: any): boolean {
-  const status = obj.properties["Status"];
-  return status.select?.name === "published";
+import type { IngredientRecord } from "./notion.server";
+
+export function isPublished(ingredient: IngredientRecord): boolean {
+  return ingredient.status === "published";
 }
 
-export function isFavorite(obj: any): boolean {
-  const favorite = obj.properties["Recommendation"];
-  return favorite?.select?.name === "Nopal Favorite";
+export function isFavorite(ingredient: IngredientRecord): boolean {
+  return ingredient.recommendation === "Nopal Favorite";
 }

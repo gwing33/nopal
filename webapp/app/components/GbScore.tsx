@@ -17,6 +17,7 @@ export function GbScore({ score, favorite = false }: Props) {
       >
         <path
           d="M28.599 31.0329C8.63073 28.5957 -3.06643e-06 21.6442 -2.87312e-06 17.2217C-2.6628e-06 12.4101 11.9424 4.18852 29.2275 1.07621C44.3936 -1.65456 56.8837 7.301 59.7121 18.7779C62.5406 30.2548 43.9642 32.9083 28.599 31.0329Z"
+          className="midground-stroke"
           fill={getBgColor(score)}
         />
       </svg>

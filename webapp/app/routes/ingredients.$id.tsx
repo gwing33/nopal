@@ -16,7 +16,7 @@ import {
   CarbonFactor,
   SocialEquityFactor,
 } from "../components/FiveFactors";
-import { NotionText } from "../components/NotionText";
+import { NotionPageDetails } from "../components/NotionPageDetails";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: healthStyles },
@@ -35,7 +35,18 @@ export async function loader(context: LoaderFunctionArgs) {
 
 export default function IngredientsId() {
   const { ingredient } = useLoaderData<Ingredient>();
-  const { properties } = ingredient;
+
+  const {
+    name,
+    gbs,
+    comfortScore,
+    efficiencyScore,
+    longevityScore,
+    socialImpactScore,
+    carbonScore,
+    pageDetails,
+  } = ingredient;
+  // console.log(pageDetails);
   return (
     <Layout>
       <div className="scene1">
@@ -45,49 +56,29 @@ export default function IngredientsId() {
               <Link to="/health">All Ingredients</Link>
             </Breadcrumb>
           </div>
-          <div className="flex items-center mb-8">
-            <h1 className="mr-4 purple-light-text text-4xl">
-              {properties.Name.title[0].plain_text}{" "}
-            </h1>
-            <GbScore
-              score={properties.GBS.number}
-              favorite={isFavorite(ingredient)}
-            />
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="mr-4 purple-light-text text-4xl">{name} </h1>
+            <GbScore score={gbs} favorite={isFavorite(ingredient)} />
           </div>
-          <NotionText text={properties["Overview Description"].rich_text} />
-          {/* <p className="mt-8 text-xl">
-            {properties["Overview Description"].rich_text[0].plain_text}
-          </p> */}
+
+          <NotionPageDetails pageDetails={pageDetails} />
 
           <h2 className="green-text text-3xl mt-12">Scoring</h2>
           <div className="flex flex-col gap-4 mt-4">
             <div>
-              <HealthFactor score={properties["Comfort Score"].number} />
-              <NotionText text={properties["Comfort Description"].rich_text} />
+              <HealthFactor score={comfortScore} />
             </div>
             <div>
-              <EfficiencyFactor score={properties["Efficiency Score"].number} />
-              <NotionText
-                text={properties["Efficiency Description"].rich_text}
-              />
+              <EfficiencyFactor score={efficiencyScore} />
             </div>
             <div>
-              <LongevityFactor score={properties["Longevity Score"].number} />
-              <NotionText
-                text={properties["Longevity Description"].rich_text}
-              />
+              <LongevityFactor score={longevityScore} />
             </div>
             <div>
-              <SocialEquityFactor
-                score={properties["Social Impact Score"].number}
-              />
-              <NotionText
-                text={properties["Social Impact Description"].rich_text}
-              />
+              <SocialEquityFactor score={socialImpactScore} />
             </div>
             <div>
-              <CarbonFactor score={properties["Carbon Score"].number} />
-              <NotionText text={properties["Carbon Description"].rich_text} />
+              <CarbonFactor score={carbonScore} />
             </div>
           </div>
         </div>

@@ -739,11 +739,16 @@ body {
       border-bottom-color: white;
       color: var(--green);
       padding-top: 16px;
+      @media (prefers-color-scheme: dark) {
+        border-bottom-color: var(--purple) !important;
+      }
     }
-
-    @media (prefers-color-scheme: dark) {
+  }
+  @media (prefers-color-scheme: dark) {
+    border-color: var(--dark-farground);
+    a {
       background-color: var(--dark-background);
-      border-bottom: 1px solid var(--dark-border);
+      border-color: var(--dark-farground);
     }
   }
 }

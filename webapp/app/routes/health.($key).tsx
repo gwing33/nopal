@@ -54,9 +54,7 @@ export default function HealthIndex() {
 
 function Ingredient({ ingredient }: { ingredient: any }) {
   const navigation = useNavigate();
-  const { Name, GBS } = ingredient.properties;
-  const slug = ingredient.properties["Slug"].rich_text[0].plain_text;
-  const summary = ingredient.properties["Summary Description"];
+  const { name, slug, summary, gbs } = ingredient;
 
   return (
     <div
@@ -67,10 +65,10 @@ function Ingredient({ ingredient }: { ingredient: any }) {
     >
       <div>
         <div className="mt-8 flex justify-center items-end">
-          <GbScore score={GBS.number} favorite={isFavorite(ingredient)} />
+          <GbScore score={gbs} favorite={isFavorite(ingredient)} />
         </div>
         <h3 className="mt-2 text-center font-bold purple-light-text text-2xl">
-          {Name.title?.[0]?.plain_text}
+          {name}
         </h3>
         <div className="mt-2 text-center">
           <NotionText text={summary?.rich_text} />

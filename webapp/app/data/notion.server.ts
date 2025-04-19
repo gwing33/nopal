@@ -7,7 +7,6 @@ import {
   query,
   formatRecord,
 } from "./generic.server";
-import { getDb } from "./db.server";
 
 // Initializing a client
 const notion = new Client({
@@ -29,7 +28,7 @@ const dbs: Database[] = [
     dbName: INGREDIENTS,
   },
   {
-    id: "1d1f2211e45f808c9103e2d4f63c1f83",
+    id: "1d6f2211e45f803a880dcbd7701ec65d",
     dbName: RECIPES,
   },
   {
@@ -53,13 +52,131 @@ export async function getIngredientBySlug(slug: string): Promise<any> {
     const r: any = results[0];
     const record = r[0] || null;
     if (record) {
-      return formatRecord(record);
+      return formatIngredientRecord(record);
     }
   }
   return null;
 }
+
+type Annotation = {
+  bold?: boolean;
+  italic?: boolean;
+  strikethrough?: boolean;
+  underline?: boolean;
+  code?: boolean;
+  color?: "default";
+};
+
+export type RichText = {
+  plain_text: string;
+  annotations: Annotation;
+};
+
+type Paragraph = {
+  color: "default";
+  rich_text: RichText[];
+};
+
+type Heading = {
+  color: "default";
+  is_toggleable: boolean;
+  rich_text: RichText[];
+};
+
+type ListItem = {
+  color: "default";
+  rich_text: RichText[];
+};
+
+type Image = {
+  caption: RichText[];
+  file: { expiry_time: string; url: string };
+  type: "file";
+};
+
+type User = {
+  id: string;
+  object: string;
+};
+
+export type PageDetail = {
+  archived: boolean;
+  created_by: User;
+  created_time: string;
+  has_children: boolean;
+  id: string;
+  in_trash: boolean;
+  last_edited_by: User;
+  last_edited_time: string;
+  object: "block";
+  heading_1?: Heading;
+  heading_2?: Heading;
+  heading_3?: Heading;
+  paragraph?: Paragraph;
+  bulleted_list_item?: ListItem;
+  image?: Image;
+  parent: { page_id: string; type: string };
+  type:
+    | "heading_1"
+    | "heading_2"
+    | "heading_3"
+    | "paragraph"
+    | "bulleted_list_item"
+    | "image";
+};
+
+export type IngredientRecord = {
+  id: { id: string; table: string };
+  _id: string;
+  name: string;
+  summary: { id: string; rich_text: RichText[]; type: string };
+  status: string;
+  recommendation: string;
+  comfortScore: number;
+  efficiencyScore: number;
+  longevityScore: number;
+  socialImpactScore: number;
+  carbonScore: number;
+  pageDetails: PageDetail[];
+};
+
+function formatIngredientRecord(record: any): IngredientRecord {
+  const ingredient = {
+    id: record.id,
+    _id: record.id,
+    name: record.properties.Name.title[0].plain_text,
+    slug: record.properties.Slug.rich_text[0].plain_text,
+    summary: record.properties.Summary,
+    status: record.properties.Status.select?.name || "",
+    recommendation: record.properties.Recommendation.select?.name || "",
+    gbs: 0,
+    comfortScore: record.properties["Comfort Score"].number,
+    efficiencyScore: record.properties["Efficiency Score"].number,
+    longevityScore: record.properties["Longevity Score"].number,
+    socialImpactScore: record.properties["Social Impact Score"].number,
+    carbonScore: record.properties["Carbon Score"].number,
+    pageDetails: record.pageDetails.results,
+  };
+  ingredient.gbs = getGBSScore(ingredient);
+  return formatRecord(ingredient);
+}
+function getGBSScore(ingredient: IngredientRecord): number {
+  return (
+    ingredient.comfortScore +
+    ingredient.efficiencyScore +
+    ingredient.longevityScore +
+    ingredient.socialImpactScore +
+    ingredient.carbonScore
+  );
+}
+
 export function getAllIngredients(): Promise<any> {
-  return queryCollection(`SELECT * FROM ${INGREDIENTS}`);
+  return queryCollection(`SELECT * FROM ${INGREDIENTS}`).then((results) => {
+    return {
+      ...results,
+      data: results.data.map(formatIngredientRecord),
+    };
+  });
 }
 export function getAllRecipes(): Promise<any> {
   return queryCollection(`SELECT * FROM ${RECIPES}`);
@@ -80,13 +197,21 @@ async function getDatabasePages(db: Database): Promise<any> {
       console.log("Upserting...", db.dbName);
       const processedResults = await Promise.all(
         resp.results.map(async (page) => {
-          const r = await upsertToNotionTable(db.dbName, page);
+          const pageDetails = await getPageDetails(page);
+          const newPage = { ...page, pageDetails };
+          const r = await upsertToNotionTable(db.dbName, newPage);
           return r?.[0];
         })
       );
       console.log("Done.", db.dbName);
       return processedResults;
     });
+}
+
+async function getPageDetails(page: any): Promise<any> {
+  return notion.blocks.children.list({
+    block_id: page.id,
+  });
 }
 
 export async function syncAllDatabases(): Promise<QueryDatabaseResponse[]> {
