@@ -9,8 +9,9 @@ export function GoodContact({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex gap-4 flex-col sm:flex-row justify-center sm:items-center items-start mt-10">
       <Link
-        className="btn-primary"
         to="/contact"
+        prefetch="render"
+        className="btn-primary"
         style={{ paddingBlock: "8px", lineHeight: "30px" }}
       >
         Contact Us
@@ -23,9 +24,10 @@ export function GoodContact({ children }: { children: React.ReactNode }) {
 export function GoodBuildingLink({ onClick }: Props) {
   return (
     <Link
+      to="/good/building"
+      prefetch="render"
       onClick={onClick}
       className="good-box good-box-hover"
-      to="/good/building"
     >
       <svg
         width="66"
@@ -66,9 +68,10 @@ export function GoodBuildingLink({ onClick }: Props) {
 export function GoodConsultingLink({ onClick }: Props) {
   return (
     <Link
+      to="/good/consulting"
+      prefetch="render"
       onClick={onClick}
       className="good-box good-box-hover"
-      to="/good/consulting"
     >
       <svg
         width="64"
@@ -149,9 +152,10 @@ export function GoodConsultingLink({ onClick }: Props) {
 export function GoodArchitectureLink({ onClick }: Props) {
   return (
     <Link
+      to="/good/architecture"
+      prefetch="render"
       onClick={onClick}
       className="good-box good-box-hover"
-      to="/good/architecture"
     >
       <svg
         width="74"

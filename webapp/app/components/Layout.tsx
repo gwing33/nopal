@@ -65,7 +65,7 @@ export function Layout({ children }: { children?: ReactNode }) {
       <div className="header container mx-auto pl-4 pr-4">
         <div className="py-4 flex justify-between items-center">
           <h1 className="text-6xl text-center">
-            <Link to="/">
+            <Link to="/" prefetch="render">
               <img src={isDark ? nopalDarkLogo : nopalLogo} alt="nopal" />
             </Link>
           </h1>
@@ -83,11 +83,16 @@ export function Layout({ children }: { children?: ReactNode }) {
             style={expanded ? { display: "block" } : {}}
           >
             <div className="good-menu" tabIndex={0}>
-              <NavLink to="/health" className="main-nav-item p-2">
+              {/* <NavLink
+                to="/health"
+                prefetch="render"
+                className="main-nav-item p-2"
+              >
                 Health
-              </NavLink>
+              </NavLink> */}
               <NavLink
                 to="/good/s"
+                prefetch="render"
                 onClick={handleGoods}
                 className="main-nav-item p-2"
               >
@@ -123,10 +128,14 @@ export function Layout({ children }: { children?: ReactNode }) {
                 </ul>
               </div>
             </div>
-            <NavLink to="/uncooked" className="main-nav-item p-2">
+            <NavLink
+              to="/uncooked"
+              prefetch="render"
+              className="main-nav-item p-2"
+            >
               Uncooked
             </NavLink>
-            <NavLink to="/path" className="main-nav-item p-2">
+            <NavLink to="/path" prefetch="render" className="main-nav-item p-2">
               Path
             </NavLink>
           </nav>

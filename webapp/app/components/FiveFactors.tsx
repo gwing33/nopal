@@ -4,6 +4,7 @@ import { GoodProgress } from "./GoodProgress";
 export const factors = [
   {
     title: "Health",
+    verboseTitle: "Comfort & Health",
     color: "var(--green)",
   },
   {
@@ -45,8 +46,14 @@ function RandomFactor({ title, color }: { title: string; color: string }) {
   return <Factor title={title} color={color} percent={percent} />;
 }
 
-export function HealthFactor({ score }: { score: number }) {
-  return <FactorDetails {...factors[0]} score={score} />;
+export function HealthFactor({
+  score,
+  verbose,
+}: {
+  score: number;
+  verbose?: boolean;
+}) {
+  return <FactorDetails {...factors[0]} verbose={verbose} score={score} />;
 }
 
 export function EfficiencyFactor({ score }: { score: number }) {
@@ -86,16 +93,20 @@ function FactorDetails({
   title,
   color,
   score,
+  verboseTitle,
+  verbose,
 }: {
   title: string;
   color: string;
   score: number;
+  verboseTitle?: string;
+  verbose?: boolean;
 }) {
   return (
     <div className="factor">
-      <div className="flex gap-4 mb-1 flex justify-between items-center">
-        <h6 className="font-bold text-xl">{title}</h6>
-        <div className="italic">{score} / 10</div>
+      <div className="flex gap-4 mb-1 justify-between items-center">
+        <h6 className="font-mono">{verbose ? verboseTitle || title : title}</h6>
+        <div className="italic text-nowrap">{score} / 10</div>
       </div>
       <GoodProgress color={color} percent={score * 10} />
     </div>

@@ -826,3 +826,10 @@ body {
     stroke: var(--dark-farground);
   }
 }
+
+.red-stroke {
+  stroke: var(--red);
+  @media (prefers-color-scheme: dark) {
+    stroke: var(--red-light);
+  }
+}

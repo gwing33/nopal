@@ -34,10 +34,14 @@ export function FooterBase({ children }: { children?: ReactNode }) {
         <img src={pad} alt="nopal" />
         <img src={pad} alt="nopal" />
         <img src={pad} alt="nopal" />
-        <NavLink className="ml-4 hover:underline" to="/about">
+        <NavLink prefetch="render" className="ml-4 hover:underline" to="/about">
           Who We Are
         </NavLink>
-        <NavLink className="ml-4 hover:underline" to="/contact">
+        <NavLink
+          prefetch="render"
+          className="ml-4 hover:underline"
+          to="/contact"
+        >
           Contact
         </NavLink>
       </div>

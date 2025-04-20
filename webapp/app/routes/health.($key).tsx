@@ -4,16 +4,23 @@ import {
   getAllCollections,
 } from "../data/notion.server";
 import type { Collection } from "../data/generic.server";
-import type { NotionObject } from "../data/notion.server";
+import type { IngredientRecord } from "../data/notion.server";
 import { useLoaderData, useLocation, useNavigate } from "@remix-run/react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { GbScore } from "../components/GbScore";
 import { NotionText } from "../components/NotionText";
 import { GoodArrow } from "../components/GoodAssets";
 import { isPublished, isFavorite } from "../data/ingredients";
+import { getCacheControlHeader } from "../util/getCacheControlHeader.server";
+
+export function headers() {
+  return {
+    "Cache-Control": getCacheControlHeader(),
+  };
+}
 
 type LoaderResult = {
-  data: Collection<NotionObject>;
+  data: Collection<IngredientRecord>;
 };
 export const loader = async (remixContext: LoaderFunctionArgs) => {
   const key = remixContext.params?.key || "ingredients";
@@ -22,18 +29,17 @@ export const loader = async (remixContext: LoaderFunctionArgs) => {
     case "ingredients":
       const ingredients = await getAllIngredients();
       return { data: ingredients };
-    case "recipes":
-      const recipes = await getAllRecipes();
-      return { data: recipes };
-    case "collections":
-      const collections = await getAllCollections();
-      return { data: collections };
+    // case "recipes":
+    //   const recipes = await getAllRecipes();
+    //   return { data: recipes };
+    // case "collections":
+    //   const collections = await getAllCollections();
+    //   return { data: collections };
   }
 };
 
 export default function HealthIndex() {
   const location = useLocation();
-  const navigation = useNavigate();
   const { data } = useLoaderData<LoaderResult>();
 
   return (
@@ -43,7 +49,10 @@ export default function HealthIndex() {
         if (!status) {
           return null;
         }
-        if (location.pathname === "/health/collections") {
+        if (
+          location.pathname === "/health/collections" ||
+          location.pathname === "/health/recipes"
+        ) {
           return null;
         }
         return <Ingredient ingredient={i} key={i._id} />;
@@ -54,12 +63,14 @@ export default function HealthIndex() {
 
 function Ingredient({ ingredient }: { ingredient: any }) {
   const navigation = useNavigate();
+  const location = useLocation();
+  const search = location?.search || "";
   const { name, slug, summary, gbs } = ingredient;
 
   return (
     <div
       onClick={() => {
-        navigation("/ingredients/" + slug);
+        navigation("/ingredients/" + slug + search);
       }}
       className="good-box good-box-hover p-4 flex flex-col justify-between"
     >

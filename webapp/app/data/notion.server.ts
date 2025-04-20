@@ -52,7 +52,9 @@ export async function getIngredientBySlug(slug: string): Promise<any> {
     const r: any = results[0];
     const record = r[0] || null;
     if (record) {
-      return formatIngredientRecord(record);
+      return formatIngredientRecord(formatRecord(record), {
+        includeDetails: true,
+      });
     }
   }
   return null;
@@ -140,10 +142,13 @@ export type IngredientRecord = {
   pageDetails: PageDetail[];
 };
 
-function formatIngredientRecord(record: any): IngredientRecord {
+function formatIngredientRecord(
+  record: any,
+  { includeDetails }: { includeDetails: boolean }
+): IngredientRecord {
   const ingredient = {
     id: record.id,
-    _id: record.id,
+    _id: record._id,
     name: record.properties.Name.title[0].plain_text,
     slug: record.properties.Slug.rich_text[0].plain_text,
     summary: record.properties.Summary,
@@ -155,10 +160,10 @@ function formatIngredientRecord(record: any): IngredientRecord {
     longevityScore: record.properties["Longevity Score"].number,
     socialImpactScore: record.properties["Social Impact Score"].number,
     carbonScore: record.properties["Carbon Score"].number,
-    pageDetails: record.pageDetails.results,
+    pageDetails: includeDetails ? record.pageDetails.results : [],
   };
   ingredient.gbs = getGBSScore(ingredient);
-  return formatRecord(ingredient);
+  return ingredient;
 }
 function getGBSScore(ingredient: IngredientRecord): number {
   return (
@@ -174,7 +179,9 @@ export function getAllIngredients(): Promise<any> {
   return queryCollection(`SELECT * FROM ${INGREDIENTS}`).then((results) => {
     return {
       ...results,
-      data: results.data.map(formatIngredientRecord),
+      data: results.data.map((r) =>
+        formatIngredientRecord(r, { includeDetails: false })
+      ),
     };
   });
 }
