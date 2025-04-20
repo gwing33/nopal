@@ -176,7 +176,11 @@ function getGBSScore(ingredient: IngredientRecord): number {
 }
 
 export function getAllIngredients(): Promise<any> {
-  return queryCollection(`SELECT * FROM ${INGREDIENTS}`).then((results) => {
+  return queryCollection(
+    `SELECT * FROM ${INGREDIENTS}`,
+    {},
+    { limit: 100 }
+  ).then((results) => {
     return {
       ...results,
       data: results.data.map((r) =>

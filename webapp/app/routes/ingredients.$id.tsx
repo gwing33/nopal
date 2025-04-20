@@ -63,7 +63,7 @@ export default function IngredientsId() {
         <div className="simple-container p-4">
           <div className="mt-12">
             <Breadcrumb>
-              <Link to="/health">All Ingredients</Link>
+              <Link to={"/health" + search}>All Ingredients</Link>
             </Breadcrumb>
           </div>
           <div className="flex items-center justify-between mb-8">
@@ -83,7 +83,7 @@ export default function IngredientsId() {
               style={{ height: "28px" }}
               className="inline-flex link font-mono text-lg"
             >
-              {isTutorial && "End Tutorial"}
+              {isTutorial ? "Hide" : "Expand"}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="24"
