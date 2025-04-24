@@ -63,7 +63,7 @@ export default function IngredientsId() {
         <div className="simple-container p-4">
           <div className="mt-12">
             <Breadcrumb>
-              <Link to={"/health" + search}>All Ingredients</Link>
+              <Link to={"/health"}>All Ingredients</Link>
             </Breadcrumb>
           </div>
           <div className="flex items-center justify-between mb-8">

@@ -1,28 +1,17 @@
 .special-flower {
   position: absolute;
   top: -40px;
-  left: 360px;
+  left: 192px;
   width: auto;
   white-space: nowrap;
   svg {
     position: absolute;
-    bottom: 16px;
     right: -12px;
+    bottom: 0;
+    width: 40px;
   }
 
-  @media (max-width: 600px) {
-    right: 0px;
-    left: auto;
-    svg {
-      bottom: 0;
-      width: 40px;
-    }
-  }
   @media (max-width: 514px) {
-    top: -32px;
-    svg {
-      bottom: 16px;
-      width: auto;
-    }
+    left: 00px;
   }
 }
