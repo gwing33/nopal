@@ -1,5 +1,8 @@
 import { Client } from "@notionhq/client";
-import { QueryDatabaseResponse } from "@notionhq/client/build/src/api-endpoints";
+import {
+  PageObjectResponse,
+  QueryDatabaseResponse,
+} from "@notionhq/client/build/src/api-endpoints";
 import {
   queryCollection,
   defineNotionTable,
@@ -7,6 +10,7 @@ import {
   query,
   formatRecord,
 } from "./generic.server";
+import { downloadAndUploadToS3 } from "./file.server";
 
 // Initializing a client
 const notion = new Client({
@@ -139,6 +143,7 @@ export type IngredientRecord = {
   longevityScore: number;
   socialImpactScore: number;
   carbonScore: number;
+  svg: string;
   pageDetails: PageDetail[];
 };
 
@@ -160,6 +165,7 @@ function formatIngredientRecord(
     longevityScore: record.properties["Longevity Score"].number,
     socialImpactScore: record.properties["Social Impact Score"].number,
     carbonScore: record.properties["Carbon Score"].number,
+    svg: record.properties["svg"].files?.[0]?.file?.url || "",
     pageDetails: includeDetails ? record.pageDetails.results : [],
   };
   ingredient.gbs = getGBSScore(ingredient);
@@ -207,7 +213,29 @@ async function getDatabasePages(db: Database): Promise<any> {
       await defineNotionTable(db.dbName);
       console.log("Upserting...", db.dbName);
       const processedResults = await Promise.all(
-        resp.results.map(async (page) => {
+        resp.results.map(async (_page) => {
+          const page = _page as PageObjectResponse;
+
+          await Promise.all(
+            Object.entries(page.properties || {}).map(async ([key, value]) => {
+              if (value.type == "files") {
+                const files = value.files;
+                return await Promise.all(
+                  files.map(async (file) => {
+                    if (file.type == "file" && file.name && file.file.url) {
+                      file.file.url = await downloadAndUploadToS3(
+                        file.file.url,
+                        file.name
+                      );
+                      console.log("File Uploaded: ", file.file.url);
+                      file.file.expiry_time = "";
+                    }
+                  })
+                );
+              }
+            })
+          );
+
           const pageDetails = await getPageDetails(page);
           const newPage = { ...page, pageDetails };
           const r = await upsertToNotionTable(db.dbName, newPage);

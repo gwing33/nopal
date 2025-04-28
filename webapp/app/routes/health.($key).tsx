@@ -65,17 +65,18 @@ function Ingredient({ ingredient }: { ingredient: any }) {
   const navigation = useNavigate();
   const location = useLocation();
   const search = location?.search || "";
-  const { name, slug, summary, gbs } = ingredient;
+  const { name, slug, summary, gbs, svg } = ingredient;
 
   return (
     <div
       onClick={() => {
-        navigation("/ingredients/" + slug + search);
+        navigation("/ingredients/" + slug);
       }}
       className="good-box good-box-hover p-4 flex flex-col justify-between"
     >
       <div>
         <div className="mt-8 flex justify-center items-end">
+          <img src={svg} />
           <GbScore score={gbs} favorite={isFavorite(ingredient)} />
         </div>
         <h3 className="mt-2 text-center font-bold purple-light-text text-2xl">
