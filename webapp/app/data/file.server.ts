@@ -38,6 +38,7 @@ export async function uploadPublicFileToS3(file: Buffer, filename: string) {
     Key: filename,
     Body: file,
     ACL: ObjectCannedACL.public_read,
+    ContentType: getFileContentType(filename),
   });
 
   try {
@@ -46,5 +47,34 @@ export async function uploadPublicFileToS3(file: Buffer, filename: string) {
   } catch (err) {
     console.error("Error uploading file:", err);
     throw err;
+  }
+}
+
+export function getFileContentType(filename: string): string {
+  const extension = filename.toLowerCase().split(".").pop();
+  switch (extension) {
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "png":
+      return "image/png";
+    case "gif":
+      return "image/gif";
+    case "svg":
+      return "image/svg+xml";
+    case "webp":
+      return "image/webp";
+    case "bmp":
+      return "image/bmp";
+    case "ico":
+      return "image/x-icon";
+    case "tiff":
+      return "image/tiff";
+    case "pdf":
+      return "application/pdf";
+    case "h264":
+      return "video/h264";
+    default:
+      return "application/octet-stream";
   }
 }
