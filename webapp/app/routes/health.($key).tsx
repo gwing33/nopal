@@ -75,7 +75,7 @@ function Ingredient({ ingredient }: { ingredient: any }) {
       className="good-box good-box-hover p-4 flex flex-col justify-between"
     >
       <div>
-        <div className="mt-8 flex justify-center items-end">
+        <div className="mt-8 gap-2 flex justify-center items-end">
           <img src={svg} />
           <GbScore score={gbs} favorite={isFavorite(ingredient)} />
         </div>
