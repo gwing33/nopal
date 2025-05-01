@@ -7,12 +7,19 @@
   padding-top: 48px;
   margin-top: 8px;
 
+  @media (width >= 40rem) {
+    margin-top: 0;
+  }
+
   .line {
     border-left: 1px solid var(--foreground);
     position: absolute;
     top: 0;
     bottom: 0;
     z-index: 1;
+    @media (prefers-color-scheme: dark) {
+      border-color: var(--dark-foreground);
+    }
   }
 
   .left,
@@ -61,6 +68,11 @@
   border-bottom: 0;
   border-top-left-radius: 4px;
   border-top-right-radius: 4px;
+  @media (width >= 40rem) {
+    border: 0;
+    width: 288px;
+    flex-shrink: 0;
+  }
   @media (prefers-color-scheme: dark) {
     background: var(--purple);
     border-color: var(--dark-foreground);
@@ -69,4 +81,10 @@
 .daily-experience-text {
   position: relative;
   z-index: 10;
+  border-top-right-radius: 0;
+  border-top-left-radius: 0;
+  @media (width >= 40rem) {
+    border-top-right-radius: 4px;
+    border-top-left-radius: 4px;
+  }
 }
