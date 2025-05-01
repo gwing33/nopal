@@ -1,0 +1,72 @@
+.daily-experience {
+  position: relative;
+  display: flex;
+  justify-items: center;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 48px;
+  margin-top: 8px;
+
+  .line {
+    border-left: 1px solid var(--foreground);
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+  }
+
+  .left,
+  .right {
+    display: inline-flex;
+    position: relative;
+    z-index: 10;
+  }
+  .circle {
+    height: 31px;
+    width: 31px;
+    border-radius: 16px;
+    border: 8px solid white;
+    @media (prefers-color-scheme: dark) {
+      border-color: var(--purple);
+    }
+  }
+  h3 {
+    position: absolute;
+    white-space: nowrap;
+    top: 0;
+  }
+
+  .left {
+    .circle {
+      background: var(--pink);
+    }
+    h3 {
+      right: 31px;
+    }
+  }
+  .right {
+    .circle {
+      background: var(--moon);
+    }
+    h3 {
+      left: 31px;
+    }
+  }
+}
+.daily-experience-graphic {
+  position: relative;
+  z-index: 10;
+  border: 1px solid var(--foreground);
+  background: white;
+  border-bottom: 0;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  @media (prefers-color-scheme: dark) {
+    background: var(--purple);
+    border-color: var(--dark-foreground);
+  }
+}
+.daily-experience-text {
+  position: relative;
+  z-index: 10;
+}

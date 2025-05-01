@@ -847,3 +847,10 @@ body {
     stroke: var(--red-light);
   }
 }
+
+.purple-light-stroke {
+  stroke: var(--purple-light);
+  @media (prefers-color-scheme: dark) {
+    stroke: var(--moon);
+  }
+}
