@@ -1,11 +1,31 @@
 import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
-import { LinksFunction } from "@remix-run/node";
+import type { LinksFunction, MetaFunction } from "@remix-run/node";
 import sunnyHomeStyles from "../styles/sunnyHome.css?url";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: sunnyHomeStyles },
 ];
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Sunny Home No.1; Health & Focus" },
+    {
+      property: "og:title",
+      content: "Sunny Home No.1",
+    },
+    {
+      name: "description",
+      content:
+        "This home is nestled at the end of Central Avenue on Foothill Dr. in Sunnyslope, with direct access to the trails of North Mountain.",
+    },
+    {
+      name: "keywords",
+      content:
+        "Health, Focus, Biophilic Design, Home, High Performance, Sustainable, Natural Materials",
+    },
+  ];
+};
 
 export default function SunnyHomeNo1() {
   return (
@@ -104,7 +124,7 @@ export default function SunnyHomeNo1() {
             this home is like no other in its ability to start the next day
             fresh.
           </DailyExperience>
-          <div className="flex justify-center">{quailSvg}</div>
+          <div className="flex justify-center mt-4 sm:mt-0">{quailSvg}</div>
           <h2 className="green-text text-3xl font-bold mt-20">
             The Simple Focused Life
           </h2>

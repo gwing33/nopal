@@ -1,5 +1,4 @@
 import { Link, NavLink } from "@remix-run/react";
-import pad from "../images/pad.svg";
 import { ReactNode } from "react";
 
 function ContactUsLinks() {
@@ -30,20 +29,35 @@ export function FooterBase({ children }: { children?: ReactNode }) {
           <div className="scene0-content p-10 lg:p-20">{children}</div>
         )}
       </div>
-      <div className="footer flex gap-2 p-8 pt-4 pb-4">
-        <img src={pad} alt="nopal" />
-        <img src={pad} alt="nopal" />
-        <img src={pad} alt="nopal" />
-        <NavLink prefetch="render" className="ml-4 hover:underline" to="/about">
-          Who We Are
-        </NavLink>
-        <NavLink
-          prefetch="render"
-          className="ml-4 hover:underline"
-          to="/contact"
-        >
-          Contact
-        </NavLink>
+      <div className="footer p-8 pt-4 pb-4">
+        <div className="flex gap-2">
+          <NavLink
+            prefetch="render"
+            className="hover:underline text-nowrap"
+            to="/about"
+          >
+            Who We Are
+          </NavLink>
+          <NavLink
+            prefetch="render"
+            className="ml-4 hover:underline text-nowrap"
+            to="/path"
+          >
+            Path
+          </NavLink>
+          <NavLink
+            prefetch="render"
+            className="ml-4 hover:underline text-nowrap"
+            to="/contact"
+          >
+            Contact
+          </NavLink>
+        </div>
+        <div className="inline-flex mt-4 gap-2 items-center">
+          {padSvg}
+          {padSvg}
+          {padSvg}
+        </div>
       </div>
     </div>
   );
@@ -89,3 +103,18 @@ export function FooterDiscovery({
     </FooterBase>
   );
 }
+
+const padSvg = (
+  <svg
+    width="28"
+    height="16"
+    viewBox="0 0 28 16"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M14.0632 15.7061C4.93032 15.2218 0.767884 12.1794 0.606669 10.0551C0.431272 7.74391 5.54053 3.38425 13.2558 1.29516C20.0253 -0.537834 26.0088 3.33456 27.7082 8.75014C29.4077 14.1657 21.0908 16.0788 14.0632 15.7061Z"
+      fill="white"
+    />
+  </svg>
+);

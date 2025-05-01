@@ -370,7 +370,7 @@ body {
   }
 }
 
-@media (max-width: 440px) {
+@media (max-width: 496px) {
   .hamburger-menu {
     display: flex;
   }
@@ -480,7 +480,7 @@ body {
 
   > svg {
     position: absolute;
-    left: calc(50% - 136px);
+    left: calc(50% - 176px);
     top: -32px;
     z-index: 4;
     @media (prefers-color-scheme: dark) {
@@ -496,6 +496,7 @@ body {
     }
     > svg {
       left: calc(50% - 112px);
+      transform: scalex(-1);
     }
   }
   @media (max-width: 639px) {
@@ -507,7 +508,7 @@ body {
       align-items: center;
     }
     > svg {
-      left: calc(100% - 240px);
+      left: calc(100% - 256px);
     }
   }
 }

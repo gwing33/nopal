@@ -135,8 +135,12 @@ export function Layout({ children }: { children?: ReactNode }) {
             >
               Uncooked
             </NavLink>
-            <NavLink to="/path" prefetch="render" className="main-nav-item p-2">
-              Path
+            <NavLink
+              to="/sunny-home-no1"
+              prefetch="render"
+              className="main-nav-item p-2 text-nowrap"
+            >
+              Sunny Home No.1
             </NavLink>
           </nav>
           {isDark ? (
