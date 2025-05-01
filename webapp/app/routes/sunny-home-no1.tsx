@@ -146,10 +146,36 @@ export default function SunnyHomeNo1() {
             joy, calm, focus and longevity. This home asks you to expect more
             from where you live.
           </p>
+
           <div
-            className="mt-10 p-2 drop-shadow-md mb-20"
-            style={{ background: "white" }}
+            className="good-box mt-20 p-4"
+            style={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}
           >
+            <h4 className="purple-light-text text-xl italic">
+              <span className="text-nowrap">In Permit.</span>{" "}
+              <span className="text-nowrap">Target Completion, 2026.</span>
+            </h4>
+            <div className="flex justify-between text-xl mt-2">
+              <div className="inline-flex items-end gap-1">
+                {rulerSvg}
+                <span>2,109 sq/ft</span>
+              </div>
+              <div>
+                <div className="inline-flex items-end gap-1">3 {bedSvg}</div>
+                <div className="ml-4 inline-flex items-end gap-1">
+                  2 {bathSvg}
+                </div>
+              </div>
+            </div>
+            <p className="text-xl mt-2">
+              Inquire at{" "}
+              <a className="link" href="mailto:human@nopal.build">
+                human@nopal.build
+              </a>
+            </p>
+          </div>
+
+          <div className="site-plan-box mb-12">
             <img
               src="/sunny-home-no1/site-plan-no1.png"
               alt="Site Plan of Sunny Home No.1"
@@ -580,6 +606,105 @@ const quailSvg = (
     <path
       d="M34.5899 54.4014C35.0283 53.1522 34.0611 51.0527 34.0611 51.0527L35.9999 50.5239C35.9999 50.5239 35.6618 53.1381 35.9999 54.4014C36.2149 55.2048 37.9386 57.2214 37.9386 57.2214C36.8445 57.8135 35.1186 57.9264 35.1186 57.2214C35.1186 56.5164 32.6511 57.2214 32.6511 57.2214V55.9876C32.6511 55.9876 34.1514 55.6507 34.5899 54.4014Z"
       className="midground-fill"
+    />
+  </svg>
+);
+
+const rulerSvg = (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 18 18"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className="mb-1"
+  >
+    <path
+      d="M2 1H16C16.2652 1 16.5196 1.10536 16.7071 1.29289C16.8946 1.48043 17 1.73478 17 2V7C17 7.26522 16.8946 7.51957 16.7071 7.70711C16.5196 7.89464 16.2652 8 16 8H9C8.73478 8 8.48043 8.10536 8.29289 8.29289C8.10536 8.48043 8 8.73478 8 9V16C8 16.2652 7.89464 16.5196 7.70711 16.7071C7.51957 16.8946 7.26522 17 7 17H2C1.73478 17 1.48043 16.8946 1.29289 16.7071C1.10536 16.5196 1 16.2652 1 16V2C1 1.73478 1.10536 1.48043 1.29289 1.29289C1.48043 1.10536 1.73478 1 2 1Z"
+      className="purple-light-stroke"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M1 5H3"
+      className="purple-light-stroke"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M1 9H4"
+      className="purple-light-stroke"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M1 13H3"
+      className="purple-light-stroke"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M5 1V3"
+      className="purple-light-stroke"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M9 1V4"
+      className="purple-light-stroke"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M13 1V3"
+      className="purple-light-stroke"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </svg>
+);
+const bedSvg = (
+  <svg
+    width="20"
+    height="10"
+    viewBox="0 0 20 10"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className="mb-1"
+  >
+    <path
+      d="M3 1C3.59334 1 4.17336 1.17595 4.66671 1.50559C5.16006 1.83524 5.54458 2.30377 5.77164 2.85195C5.9987 3.40013 6.05811 4.00333 5.94236 4.58527C5.8266 5.16721 5.54088 5.70176 5.12132 6.12132C4.70176 6.54088 4.16721 6.8266 3.58527 6.94236C3.00333 7.05811 2.40013 6.9987 1.85195 6.77164C1.30377 6.54458 0.835235 6.16006 0.505591 5.66671C0.175947 5.17336 0 4.59334 0 4L0.00500011 3.824C0.0498925 3.06011 0.384993 2.34224 0.941739 1.81728C1.49849 1.29233 2.23479 0.999957 3 1Z"
+      className="purple-light-fill"
+    />
+    <path
+      d="M16 0C17.0609 0 18.0783 0.421427 18.8284 1.17157C19.5786 1.92172 20 2.93913 20 4V6C20 6.26522 19.8946 6.51957 19.7071 6.70711C19.5196 6.89464 19.2652 7 19 7H8C7.73478 7 7.48043 6.89464 7.29289 6.70711C7.10536 6.51957 7 6.26522 7 6V1C7 0.734784 7.10536 0.48043 7.29289 0.292893C7.48043 0.105357 7.73478 0 8 0H16Z"
+      className="purple-light-fill"
+    />
+    <path
+      d="M19 8C19.2652 8 19.5196 8.10536 19.7071 8.29289C19.8946 8.48043 20 8.73478 20 9C20 9.26522 19.8946 9.51957 19.7071 9.70711C19.5196 9.89464 19.2652 10 19 10H1C0.734784 10 0.48043 9.89464 0.292893 9.70711C0.105357 9.51957 0 9.26522 0 9C0 8.73478 0.105357 8.48043 0.292893 8.29289C0.48043 8.10536 0.734784 8 1 8H19Z"
+      className="purple-light-fill"
+    />
+  </svg>
+);
+const bathSvg = (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 20 20"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className="mb-1"
+  >
+    <path
+      d="M9 0C9.24493 3.23106e-05 9.48134 0.0899562 9.66437 0.252715C9.84741 0.415475 9.96434 0.639749 9.993 0.883L10 1V3.25C9.99972 3.50488 9.90212 3.75003 9.72715 3.93537C9.55218 4.1207 9.31305 4.23223 9.05861 4.24717C8.80416 4.26211 8.55362 4.17933 8.35817 4.01574C8.16271 3.85214 8.0371 3.6201 8.007 3.367L8 3.25V2H6C5.75507 2.00003 5.51866 2.08996 5.33563 2.25272C5.15259 2.41547 5.03566 2.63975 5.007 2.883L5 3V9H18C18.5046 8.99984 18.9906 9.19041 19.3605 9.5335C19.7305 9.87659 19.9572 10.3468 19.995 10.85L20 11V14C20 15.475 19.362 16.8 18.346 17.715L18.832 18.445C18.9747 18.6573 19.0306 18.9161 18.9883 19.1683C18.946 19.4206 18.8086 19.647 18.6045 19.8011C18.4003 19.9551 18.1449 20.0251 17.8908 19.9966C17.6366 19.9682 17.403 19.8434 17.238 19.648L17.168 19.555L16.618 18.732C16.1863 18.8795 15.7365 18.967 15.281 18.992L15 19H5C4.44925 19.0006 3.9022 18.91 3.381 18.732L2.832 19.555C2.69056 19.7675 2.47321 19.9179 2.22448 19.9753C1.97575 20.0327 1.71447 19.9929 1.49418 19.8639C1.2739 19.7349 1.11129 19.5265 1.03968 19.2815C0.968061 19.0365 0.992863 18.7733 1.109 18.546L1.168 18.446L1.654 17.716C1.16524 17.2767 0.76812 16.7452 0.48547 16.1519C0.202821 15.5586 0.0402149 14.9153 0.00700007 14.259L1.00268e-07 14V11C-0.000159579 10.4954 0.190406 10.0094 0.533497 9.63945C0.876587 9.26947 1.34684 9.04284 1.85 9.005L2 9H3V3C2.99996 2.23479 3.29233 1.49849 3.81728 0.941739C4.34224 0.384993 5.06011 0.0498925 5.824 0.00500011L6 0H9Z"
+      className="purple-light-fill"
     />
   </svg>
 );

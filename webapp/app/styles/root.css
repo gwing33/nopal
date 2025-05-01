@@ -855,3 +855,10 @@ body {
     stroke: var(--moon);
   }
 }
+
+.purple-light-fill {
+  fill: var(--purple-light);
+  @media (prefers-color-scheme: dark) {
+    fill: var(--moon);
+  }
+}
