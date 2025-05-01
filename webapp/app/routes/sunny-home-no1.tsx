@@ -7,22 +7,34 @@ export const links: LinksFunction = () => [
   { rel: "stylesheet", href: sunnyHomeStyles },
 ];
 
-export const meta: MetaFunction = () => {
+const title = "Sunny Home No.1; Health & Focus";
+const desc =
+  "This home is nestled at the end of Central Avenue on Foothill Dr. in Sunnyslope, with direct access to the trails of North Mountain.";
+
+export const meta: MetaFunction = ({ matches, location }) => {
+  const keywords = matches.reduce((acc, match) => {
+    const meta: any = match.meta.find((m: any) => m?.name === "keywords");
+    if (meta?.content) {
+      return acc + meta.content + ", ";
+    }
+    return acc;
+  }, "");
   return [
-    { title: "Sunny Home No.1; Health & Focus" },
+    { title: title },
     {
       property: "og:title",
-      content: "Sunny Home No.1",
+      content: title,
     },
+    { property: "og:url", content: location.pathname },
+    { property: "og:image", content: "/sunny-home-no1/exterior-no1.png" },
+    { property: "og:description", content: desc },
     {
       name: "description",
-      content:
-        "This home is nestled at the end of Central Avenue on Foothill Dr. in Sunnyslope, with direct access to the trails of North Mountain.",
+      content: desc,
     },
     {
       name: "keywords",
-      content:
-        "Health, Focus, Biophilic Design, Home, High Performance, Sustainable, Natural Materials",
+      content: keywords + "Simple Life, Biophilic Design",
     },
   ];
 };
@@ -32,7 +44,7 @@ export default function SunnyHomeNo1() {
     <Layout>
       <div className="scene1">
         <div className="simple-container p-4">
-          <h1 className="purple-light-text text-4xl">Sunny Home No.1</h1>
+          <h1 className="mt-12 purple-light-text text-4xl">Sunny Home No.1</h1>
           <p className="text-lg mt-2 mb-4">
             This home is nestled at the end of Central Avenue on{" "}
             <a
@@ -56,7 +68,7 @@ export default function SunnyHomeNo1() {
             />
           </div>
 
-          <h2 className="green-text text-2xl mt-12">Health & Focus</h2>
+          <h2 className="green-text text-2xl mt-20">Health & Focus</h2>
           <p className="text-lg mt-4">
             Humans feel healthiest and function best when connected to nature.
             Nature dials down the noise, letting the signal of life gain
@@ -85,7 +97,7 @@ export default function SunnyHomeNo1() {
             className="mt-4"
           />
 
-          <h2 className="purple-light-text text-3xl mt-12 text-center">
+          <h2 className="purple-light-text text-3xl mt-20 text-center">
             The Daily Experiences
           </h2>
           <DailyExperience direction="left" title="Engawa" svg={EngawaSvg}>
