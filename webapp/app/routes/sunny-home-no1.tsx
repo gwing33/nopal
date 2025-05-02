@@ -2,6 +2,7 @@ import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
 import type { LinksFunction, MetaFunction } from "@remix-run/node";
 import sunnyHomeStyles from "../styles/sunnyHome.css?url";
+import { ZoomImg } from "../components/ZoomImg";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: sunnyHomeStyles },
@@ -82,7 +83,8 @@ export default function SunnyHomeNo1() {
             </a>
             , we create a space rising up from nature.
           </p>
-          <img
+          <ZoomImg
+            fullSrc="/sunny-home-no1/exterior-no1-full.png"
             src="/sunny-home-no1/exterior-no1.png"
             alt="Exterior of Sunny Home No.1"
             className="mt-4"
@@ -91,7 +93,8 @@ export default function SunnyHomeNo1() {
             Protective spaces mix with open views to bring an uncommonly calm
             interior. A place for security and contemplation.
           </p>
-          <img
+          <ZoomImg
+            fullSrc="/sunny-home-no1/interior-no1-full.jpg"
             src="/sunny-home-no1/interior-no1.png"
             alt="Interior of Sunny Home No.1"
             className="mt-4"
@@ -176,7 +179,8 @@ export default function SunnyHomeNo1() {
           </div>
 
           <div className="site-plan-box mb-12">
-            <img
+            <ZoomImg
+              fullSrc="/sunny-home-no1/site-plan-no1-full.jpg"
               src="/sunny-home-no1/site-plan-no1.png"
               alt="Site Plan of Sunny Home No.1"
             />
