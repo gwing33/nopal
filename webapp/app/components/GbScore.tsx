@@ -2,7 +2,7 @@ type Props = { score: number; favorite?: boolean };
 export function GbScore({ score, favorite = false }: Props) {
   return (
     <div
-      className="gb-score relative inline-flex items-center justify-center"
+      className="gb-score shrink-0 relative inline-flex items-center justify-center"
       style={{ width: "60px", height: "32px" }}
     >
       <DisplayScore score={score} />

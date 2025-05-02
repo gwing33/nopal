@@ -49,35 +49,41 @@ export default function HealthIndex() {
         if (!status) {
           return null;
         }
-        if (
-          location.pathname === "/health/collections"
-          // || location.pathname === "/health/recipes"
-        ) {
+        if (location.pathname === "/health/collections") {
           return null;
         }
-        return <Ingredient ingredient={i} key={i._id} />;
+        if (location.pathname === "/health/ingredients") {
+          return <HealthItem item={i} type="ingredients" key={i._id} />;
+        }
+        return <HealthItem item={i} type="recipes" key={i._id} />;
       })}
     </>
   );
 }
 
-function Ingredient({ ingredient }: { ingredient: any }) {
+function HealthItem({
+  item,
+  type,
+}: {
+  item: any;
+  type: "recipes" | "ingredients";
+}) {
   const navigation = useNavigate();
   const location = useLocation();
   const search = location?.search || "";
-  const { name, slug, summary, gbs, svg } = ingredient;
+  const { name, slug, summary, gbs, svg } = item;
 
   return (
     <div
       onClick={() => {
-        navigation("/ingredients/" + slug);
+        navigation(`/${type}/${slug}`);
       }}
       className="good-box good-box-hover p-4 flex flex-col justify-between"
     >
       <div>
         <div className="mt-8 gap-2 flex justify-center items-end">
           <img src={svg} />
-          <GbScore score={gbs} favorite={isFavorite(ingredient)} />
+          <GbScore score={gbs} favorite={isFavorite(item)} />
         </div>
         <h3 className="mt-2 text-center font-bold purple-light-text text-2xl">
           {name}

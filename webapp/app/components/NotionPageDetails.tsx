@@ -6,7 +6,7 @@ export function NotionPageDetails({
 }: {
   pageDetails: PageDetail[];
 }) {
-  return pageDetails.map((detail) => {
+  return pageDetails?.map((detail) => {
     switch (detail.type) {
       case "heading_1":
         return <Heading1 key={detail.id} detail={detail} />;

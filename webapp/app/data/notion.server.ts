@@ -218,7 +218,7 @@ function formatRecipeRecord(
     socialImpactScore: record.properties["Social Impact Score"].number,
     carbonScore: record.properties["Carbon Score"].number,
     svg: record.properties["svg"]?.files?.[0]?.file?.url || "",
-    pageDetails: includeDetails ? record.pageDetails.results : [],
+    pageDetails: includeDetails ? record.pageDetails?.results : [],
   };
   recipe.gbs = getGBSScore(recipe);
   return recipe;
