@@ -7,7 +7,12 @@ import {
   useRouteError,
   isRouteErrorResponse,
 } from "@remix-run/react";
-import { LinksFunction, json, type LoaderFunctionArgs } from "@remix-run/node";
+import {
+  MetaFunction,
+  LinksFunction,
+  json,
+  type LoaderFunctionArgs,
+} from "@remix-run/node";
 import styles from "./styles/root.css?url";
 import faviconAppleTouch from "./images/favicon/apple-touch-icon.png";
 import favicon32 from "./images/favicon/favicon-32x32.png";
@@ -33,6 +38,16 @@ export const links: LinksFunction = () => [
   { rel: "stylesheet", href: styles },
 ];
 
+export const meta: MetaFunction = () => [
+  { title: "Building Healthy Homes" },
+  { name: "description", content: "Nopal builds healthy homes for humans" },
+  {
+    name: "keywords",
+    content:
+      "Home, House, Build, High Performance, Health, Sustainable, Natural Materials",
+  },
+];
+
 export const headers = () => ({
   // Enables client hints for the Sec-CH-Prefers-Color-Scheme header
   "Accept-CH": "Sec-CH-Prefers-Color-Scheme",
@@ -42,16 +57,7 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
-        <title>Building Healthy Homes</title>
         <meta charSet="utf-8" />
-        <meta
-          name="description"
-          content="Nopal builds healthy homes for humans"
-        />
-        <meta
-          name="keywords"
-          content="Home, House, Build, High Performance, Health, Sustainable, Natural Materials"
-        />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="msapplication-TileColor" content="#fff9f1" />
         <meta name="theme-color" content="#fff9f1" />

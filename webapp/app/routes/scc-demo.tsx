@@ -5,7 +5,7 @@ export default function SCCDemo() {
   return (
     <Layout>
       <div className="scene1">
-        <div className="simple-container">
+        <div className="simple-container p-4">
           <h1 className="text-4xl font-bold mt-8">Demo Wall</h1>
           <h2 className="purple-light-text text-xl">
             Scottsdale Community College
@@ -15,7 +15,18 @@ export default function SCCDemo() {
             this demo wall. It showed a classic example of building science gone
             wrong and we asked to fix it.
           </p>
-          <img src="/scc-demo/scc-demo-before.png" />
+          <div className="video-container">
+            <iframe
+              width="600"
+              height="315"
+              src="https://www.youtube-nocookie.com/embed/6eeD2D8stHg?si=0YlI2HEMSVtIdLay"
+              title="YouTube video player"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+            ></iframe>
+          </div>
 
           <h3 className="green-text text-3xl mt-12">Why It Needs Fixin’</h3>
 
