@@ -1,5 +1,7 @@
 import { Client } from "@notionhq/client";
+
 import {
+  BlockObjectResponse,
   PageObjectResponse,
   QueryDatabaseResponse,
 } from "@notionhq/client/build/src/api-endpoints";
@@ -11,6 +13,7 @@ import {
   formatRecord,
 } from "./generic.server";
 import { downloadAndUploadToS3 } from "./file.server";
+import { getFileNameFromUrl } from "../util/getFileNameFromUrl";
 
 // Initializing a client
 const notion = new Client({
@@ -248,9 +251,28 @@ async function getDatabasePages(db: Database): Promise<any> {
 }
 
 async function getPageDetails(page: any): Promise<any> {
-  return notion.blocks.children.list({
-    block_id: page.id,
-  });
+  return notion.blocks.children
+    .list({
+      block_id: page.id,
+    })
+    .then(async (details) => {
+      await Promise.all(
+        details.results.map(async (_page) => {
+          const page = _page as BlockObjectResponse;
+          if (page.type == "image" && page.image?.type == "file") {
+            const name = getFileNameFromUrl(page.image.file.url);
+
+            page.image.file.url = await downloadAndUploadToS3(
+              page.image.file.url,
+              name
+            );
+            console.log("File Uploaded: ", page.image.file.url);
+            page.image.file.expiry_time = "";
+          }
+        })
+      );
+      return details;
+    });
 }
 
 export async function syncAllDatabases(): Promise<QueryDatabaseResponse[]> {
