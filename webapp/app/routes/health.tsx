@@ -100,19 +100,20 @@ export default function Health() {
 
           <div className="folder-tabs mt-12">
             <NavLink
-              prefetch="render"
-              to={"/health/ingredients"}
               className={() => {
-                if (/^\/health(\/ingredients)??\/?$/.test(location.pathname)) {
+                if (/^\/health(\/recipes)??\/?$/.test(location.pathname)) {
                   return "active";
                 }
                 return "";
               }}
+              to={"/health"}
             >
+              Recipes
+            </NavLink>
+            <NavLink prefetch="render" to={"/health/ingredients"}>
               Ingredients
             </NavLink>
-            {/* <NavLink to={"/health/recipes"}>Recipes</NavLink>
-            <NavLink to={"/health/collections"}>Collections</NavLink> */}
+            {/* <NavLink to={"/health/collections"}>Collections</NavLink> */}
           </div>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Outlet />

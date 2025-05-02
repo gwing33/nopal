@@ -4,7 +4,10 @@ export function getPlainText(text: RichText[]): string {
   return text.map((t) => t.plain_text).join(" ");
 }
 
-export function NotionText({ text }: { text: RichText[] }) {
+export function NotionText({ text }: { text?: RichText[] }) {
+  if (!text) {
+    return null;
+  }
   return (
     <>
       {text.map((t: any, i) => {

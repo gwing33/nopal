@@ -66,6 +66,21 @@ export async function getIngredientBySlug(slug: string): Promise<any> {
   }
   return null;
 }
+export async function getRecipeBySlug(slug: string): Promise<any> {
+  const results = await query(
+    `SELECT * FROM ${RECIPES} WHERE properties.Slug.rich_text[0].plain_text = '${slug}'`
+  );
+  if (results.length === 1) {
+    const r: any = results[0];
+    const record = r[0] || null;
+    if (record) {
+      return formatRecipeRecord(formatRecord(record), {
+        includeDetails: true,
+      });
+    }
+  }
+  return null;
+}
 
 type Annotation = {
   bold?: boolean;
@@ -184,6 +199,31 @@ function getGBSScore(ingredient: IngredientRecord): number {
   );
 }
 
+function formatRecipeRecord(
+  record: any,
+  { includeDetails }: { includeDetails: boolean }
+): IngredientRecord {
+  const recipe = {
+    id: record.id,
+    _id: record._id,
+    name: record.properties.Name.title[0]?.plain_text,
+    slug: record.properties.Slug.rich_text[0]?.plain_text,
+    summary: record.properties.Summary,
+    status: record.properties.Status.select?.name || "",
+    recommendation: record.properties.Recommendation.select?.name || "",
+    gbs: 0,
+    comfortScore: record.properties["Comfort Score"].number,
+    efficiencyScore: record.properties["Efficiency Score"].number,
+    longevityScore: record.properties["Longevity Score"].number,
+    socialImpactScore: record.properties["Social Impact Score"].number,
+    carbonScore: record.properties["Carbon Score"].number,
+    svg: record.properties["svg"]?.files?.[0]?.file?.url || "",
+    pageDetails: includeDetails ? record.pageDetails.results : [],
+  };
+  recipe.gbs = getGBSScore(recipe);
+  return recipe;
+}
+
 export function getAllIngredients(): Promise<any> {
   return queryCollection(
     `SELECT * FROM ${INGREDIENTS}`,
@@ -199,8 +239,18 @@ export function getAllIngredients(): Promise<any> {
   });
 }
 export function getAllRecipes(): Promise<any> {
-  return queryCollection(`SELECT * FROM ${RECIPES}`);
+  return queryCollection(`SELECT * FROM ${RECIPES}`, {}, { limit: 100 }).then(
+    (results) => {
+      return {
+        ...results,
+        data: results.data.map((r) =>
+          formatRecipeRecord(r, { includeDetails: false })
+        ),
+      };
+    }
+  );
 }
+
 export function getAllCollections(): Promise<any> {
   return queryCollection(`SELECT * FROM ${COLLECTIONS}`);
 }

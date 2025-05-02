@@ -23,15 +23,15 @@ type LoaderResult = {
   data: Collection<IngredientRecord>;
 };
 export const loader = async (remixContext: LoaderFunctionArgs) => {
-  const key = remixContext.params?.key || "ingredients";
+  const key = remixContext.params?.key || "recipes";
 
   switch (key) {
     case "ingredients":
       const ingredients = await getAllIngredients();
       return { data: ingredients };
-    // case "recipes":
-    //   const recipes = await getAllRecipes();
-    //   return { data: recipes };
+    case "recipes":
+      const recipes = await getAllRecipes();
+      return { data: recipes };
     // case "collections":
     //   const collections = await getAllCollections();
     //   return { data: collections };
@@ -50,8 +50,8 @@ export default function HealthIndex() {
           return null;
         }
         if (
-          location.pathname === "/health/collections" ||
-          location.pathname === "/health/recipes"
+          location.pathname === "/health/collections"
+          // || location.pathname === "/health/recipes"
         ) {
           return null;
         }
