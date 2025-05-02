@@ -5,11 +5,7 @@
   flex-direction: column;
   align-items: center;
   padding-top: 48px;
-  margin-top: 8px;
-
-  @media (width >= 40rem) {
-    margin-top: 0;
-  }
+  padding-bottom: 24px;
 
   .line {
     border-left: 1px solid var(--foreground);

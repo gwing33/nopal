@@ -139,7 +139,7 @@ export default function SunnyHomeNo1() {
             this home is like no other in its ability to start the next day
             fresh.
           </DailyExperience>
-          <div className="flex justify-center mt-4 sm:mt-0">{quailSvg}</div>
+          <div className="flex justify-center">{quailSvg}</div>
           <h2 className="green-text text-3xl font-bold mt-20">
             The Simple Focused Life
           </h2>
