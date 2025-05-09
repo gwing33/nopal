@@ -12,7 +12,7 @@ export type Data = {
   _id: string;
 };
 
-export type Collection<T> = {
+export type Collection<T extends Data> = {
   data: T[];
   metadata: {
     nextStart: number | null;
@@ -21,12 +21,12 @@ export type Collection<T> = {
 
 const DEFAULT_LIMIT = 5;
 
-export function formatRecord<T extends Data>({ id, ...data }: T) {
+export function formatRecord<T extends Data>({ id, ...data }: T): T {
   return {
     ...data,
     _id: id.id,
     id: { tb: id.tb, id: id.id },
-  };
+  } as T;
 }
 
 // Helps keep collection response consistent, handles extra pagination.
@@ -48,7 +48,8 @@ export function formatCollection<T extends Data>(
       if (i >= limit) {
         return acc;
       }
-      return acc.concat(formatRecord(d));
+      const r = formatRecord<T>(d);
+      return acc.concat(r);
     }, []),
   };
 }

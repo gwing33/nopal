@@ -3,7 +3,7 @@ import { Footer } from "../components/Footer";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import { Link, useLoaderData, useLocation } from "@remix-run/react";
-import { getRecipeBySlug } from "../data/notion.server";
+import { getRecipeBySlug } from "../data/notion/recipes.server";
 import { GbScore } from "../components/GbScore";
 import { isFavorite } from "../data/ingredients";
 import { LinksFunction } from "@remix-run/node";

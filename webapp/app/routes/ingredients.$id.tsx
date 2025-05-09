@@ -3,7 +3,8 @@ import { Footer } from "../components/Footer";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import { Link, useLoaderData, useLocation } from "@remix-run/react";
-import { getIngredientBySlug } from "../data/notion.server";
+import { getIngredientBySlug } from "../data/notion/ingredients.server";
+import type { IngredientRecord } from "~/data/notion/types";
 import { GbScore } from "../components/GbScore";
 import { isFavorite } from "../data/ingredients";
 import { LinksFunction } from "@remix-run/node";
@@ -29,8 +30,6 @@ export const links: LinksFunction = () => [
   { rel: "stylesheet", href: healthStyles },
 ];
 
-type Ingredient = Awaited<ReturnType<typeof getIngredientBySlug>>;
-
 export async function loader(context: LoaderFunctionArgs) {
   const id = context.params?.id;
   if (!id) {
@@ -41,7 +40,7 @@ export async function loader(context: LoaderFunctionArgs) {
 }
 
 export default function IngredientsId() {
-  const { ingredient } = useLoaderData<Ingredient>();
+  const { ingredient } = useLoaderData<{ ingredient: IngredientRecord }>();
   const location = useLocation();
   const search = location?.search || "";
   const isTutorial = search.includes("tutorial=true");

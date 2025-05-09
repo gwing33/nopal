@@ -1,10 +1,10 @@
-import type { RichText } from "../data/notion.server";
+import type { RichTextItemResponse } from "@notionhq/client/build/src/api-endpoints";
 
-export function getPlainText(text: RichText[]): string {
+export function getPlainText(text: RichTextItemResponse[]): string {
   return text.map((t) => t.plain_text).join(" ");
 }
 
-export function NotionText({ text }: { text?: RichText[] }) {
+export function NotionText({ text }: { text?: RichTextItemResponse[] }) {
   if (!text) {
     return null;
   }

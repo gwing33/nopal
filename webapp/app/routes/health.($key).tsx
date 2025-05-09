@@ -1,10 +1,5 @@
-import {
-  getAllIngredients,
-  getAllRecipes,
-  getAllCollections,
-} from "../data/notion.server";
 import type { Collection } from "../data/generic.server";
-import type { IngredientRecord } from "../data/notion.server";
+import type { IngredientRecord } from "../data/notion/types";
 import { useLoaderData, useLocation, useNavigate } from "@remix-run/react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { GbScore } from "../components/GbScore";
@@ -12,6 +7,8 @@ import { NotionText } from "../components/NotionText";
 import { GoodArrow } from "../components/GoodAssets";
 import { isPublished, isFavorite } from "../data/ingredients";
 import { getCacheControlHeader } from "../util/getCacheControlHeader.server";
+import { getAllIngredients } from "../data/notion/ingredients.server";
+import { getAllRecipes } from "../data/notion/recipes.server";
 
 export function headers() {
   return {

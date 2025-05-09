@@ -30,7 +30,7 @@ export function getAllDbs() {
 }
 
 // Store all pages in a single table
-const PAGE_TABLE_NAME = "notion_pages";
+export const PAGE_TABLE_NAME = "notion_pages";
 const BLOCK_TABLE_NAME = "notion_blocks";
 
 export async function defineNotionTables() {
@@ -77,4 +77,27 @@ export async function findAllNopalBlocksByIds(ids: string[]) {
 
 export async function findNopalBlockById(id: string) {
   return await select<NopalBlock>(new RecordId(BLOCK_TABLE_NAME, id));
+}
+
+export async function getAllPagesByDbRef(dbName: string) {
+  return await query(`SELECT page.* FROM ${dbName}`, {
+    limit: 100,
+    start: 0,
+  }).then((_results) => {
+    return (_results?.[0] || []) as { page: NopalPage }[];
+  });
+}
+
+export async function getPageByDbRefAndSlug(dbName: string, slug: string) {
+  const results = await query(
+    `SELECT page.*, page.pageDetails.* FROM ${dbName} WHERE page.properties.Slug.rich_text[0].plain_text = '${slug}'`
+  );
+  if (results.length === 1) {
+    const r = results[0] as { page: NopalPage }[];
+    const record = r[0] || null;
+    if (record?.page) {
+      return record.page;
+    }
+  }
+  return null;
 }

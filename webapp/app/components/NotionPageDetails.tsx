@@ -1,10 +1,45 @@
 import { getPlainText, NotionText } from "./NotionText";
-import type { PageDetail } from "../data/notion.server";
+import type {
+  BlockObjectResponse,
+  Heading1BlockObjectResponse,
+  Heading2BlockObjectResponse,
+  Heading3BlockObjectResponse,
+  ParagraphBlockObjectResponse,
+  BulletedListItemBlockObjectResponse,
+  // NumberedListItemBlockObjectResponse,
+  // QuoteBlockObjectResponse,
+  // ToDoBlockObjectResponse,
+  // ToggleBlockObjectResponse,
+  // TemplateBlockObjectResponse,
+  // SyncedBlockBlockObjectResponse,
+  // ChildPageBlockObjectResponse,
+  // ChildDatabaseBlockObjectResponse,
+  // EquationBlockObjectResponse,
+  // CodeBlockObjectResponse,
+  // CalloutBlockObjectResponse,
+  // DividerBlockObjectResponse,
+  // BreadcrumbBlockObjectResponse,
+  // TableOfContentsBlockObjectResponse,
+  // ColumnListBlockObjectResponse,
+  // ColumnBlockObjectResponse,
+  // LinkToPageBlockObjectResponse,
+  // TableBlockObjectResponse,
+  // TableRowBlockObjectResponse,
+  // EmbedBlockObjectResponse,
+  // BookmarkBlockObjectResponse,
+  ImageBlockObjectResponse,
+  // VideoBlockObjectResponse,
+  // PdfBlockObjectResponse,
+  // FileBlockObjectResponse,
+  // AudioBlockObjectResponse,
+  // LinkPreviewBlockObjectResponse,
+  // UnsupportedBlockObjectResponse
+} from "@notionhq/client/build/src/api-endpoints";
 
 export function NotionPageDetails({
   pageDetails,
 }: {
-  pageDetails: PageDetail[];
+  pageDetails: BlockObjectResponse[];
 }) {
   return pageDetails?.map((detail) => {
     switch (detail.type) {
@@ -28,7 +63,7 @@ export function NotionPageDetails({
   });
 }
 
-function Heading1({ detail }: { detail: PageDetail }) {
+function Heading1({ detail }: { detail: Heading1BlockObjectResponse }) {
   return (
     <h1 className="font-bold purple-light-text text-4xl mt-12">
       <NotionText text={detail.heading_1?.rich_text || []} />
@@ -36,7 +71,7 @@ function Heading1({ detail }: { detail: PageDetail }) {
   );
 }
 
-function Heading2({ detail }: { detail: PageDetail }) {
+function Heading2({ detail }: { detail: Heading2BlockObjectResponse }) {
   return (
     <h2 className="font-bold green-text text-3xl mt-8">
       <NotionText text={detail.heading_2?.rich_text || []} />
@@ -44,7 +79,7 @@ function Heading2({ detail }: { detail: PageDetail }) {
   );
 }
 
-function Heading3({ detail }: { detail: PageDetail }) {
+function Heading3({ detail }: { detail: Heading3BlockObjectResponse }) {
   return (
     <h3 className="font-bold green-text text-2xl mt-4">
       <NotionText text={detail.heading_3?.rich_text || []} />
@@ -52,7 +87,7 @@ function Heading3({ detail }: { detail: PageDetail }) {
   );
 }
 
-function Paragraph({ detail }: { detail: PageDetail }) {
+function Paragraph({ detail }: { detail: ParagraphBlockObjectResponse }) {
   return (
     <p className="text-xl mt-2">
       <NotionText text={detail.paragraph?.rich_text || []} />
@@ -60,7 +95,11 @@ function Paragraph({ detail }: { detail: PageDetail }) {
   );
 }
 
-function BulletedListItem({ detail }: { detail: PageDetail }) {
+function BulletedListItem({
+  detail,
+}: {
+  detail: BulletedListItemBlockObjectResponse;
+}) {
   return (
     <ul className="list-disc ml-4 text-xl mt-2">
       <li>
@@ -70,7 +109,7 @@ function BulletedListItem({ detail }: { detail: PageDetail }) {
   );
 }
 
-function Image({ detail }: { detail: PageDetail }) {
+function Image({ detail }: { detail: ImageBlockObjectResponse }) {
   const image = detail.image;
   const url = image?.file?.url;
   if (!url) return null;
