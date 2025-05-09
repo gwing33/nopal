@@ -20,6 +20,10 @@ export function NotionPageDetails({
         return <BulletedListItem key={detail.id} detail={detail} />;
       case "image":
         return <Image key={detail.id} detail={detail} />;
+      default:
+        console.warn("Unsupported Page Detail");
+        console.log({ detail });
+        return null;
     }
   });
 }
