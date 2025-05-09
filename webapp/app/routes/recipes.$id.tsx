@@ -56,7 +56,6 @@ export default function RecipesId() {
     carbonScore,
     pageDetails,
   } = recipe;
-  console.log(recipe);
 
   return (
     <Layout>

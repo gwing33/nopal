@@ -21,11 +21,11 @@ export type Collection<T> = {
 
 const DEFAULT_LIMIT = 5;
 
-export function formatRecord<T extends Data>(data: T) {
+export function formatRecord<T extends Data>({ id, ...data }: T) {
   return {
     ...data,
-    _id: data.id.toString(),
-    id: { tb: data.id.tb, id: data.id.id },
+    _id: id.id,
+    id: { tb: id.tb, id: id.id },
   };
 }
 
@@ -131,13 +131,13 @@ export async function select<T extends Data>(thing: RecordId | string) {
   return undefined;
 }
 
-export async function defineNotionTable(name: string) {
+export async function defineTable(name: string) {
   return await query(
     `DEFINE TABLE IF NOT EXISTS ${name} TYPE ANY SCHEMALESS PERMISSIONS NONE`
   );
 }
 
-export async function upsertToNotionTable(name: string, record: any) {
+export async function upsert(name: string, record: any) {
   const db = await getDb();
   if (!db) {
     console.error("Database not initialized");
