@@ -12,6 +12,7 @@ import { getGBSScore } from "../../util/getGBSScore";
 const db = {
   id: "1d6f2211e45f803a880dcbd7701ec65d",
   dbName: "gbs_recipes_v2",
+  getPublicUrl: (slug: string) => `/recipes/${slug}`,
 };
 export function registerRecipesDb() {
   registerDb(db);

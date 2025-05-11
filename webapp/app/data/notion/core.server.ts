@@ -9,13 +9,14 @@ import { query, select, defineTable, upsert } from "../generic.server";
 import type { Data } from "../generic.server";
 
 // Nopal Notion Wrapper Types
-export type NopalBlock = { blocks: BlockObjectResponse[] } & Data;
+export type NopalBlock = ListBlockChildrenResponse & Data;
 export type NopalPage = PageObjectResponse &
   Data & { pageDetails?: BlockObjectResponse[] };
 
 // Connecting Notion Databases to locally stored DBs.
 export type NotionDatabase = {
   id: string; // Notion DB ID
+  getPublicUrl: (slug: string) => string; // Noapl url, e.g. /recipes/${slug}
   dbName: string; // Local DB Name
 };
 const _dbs: NotionDatabase[] = [];
@@ -52,27 +53,18 @@ export async function upsertBlock(block: ListBlockChildrenResponse) {
   return upsert(BLOCK_TABLE_NAME, block);
 }
 
-export async function findAllNopalPagesByIds(ids: string[]) {
-  return await query<NopalPage[]>("SELECT * FROM $table WHERE id IN $ids", {
-    table: PAGE_TABLE_NAME,
-    ids,
-  });
+export async function findAllNopalPages() {
+  return await query<NopalPage[]>(`SELECT * FROM ${PAGE_TABLE_NAME}`);
+}
+export async function findAllNopalBlocks() {
+  const results = await query<NopalBlock[][]>(
+    `SELECT * FROM ${BLOCK_TABLE_NAME}`
+  );
+  return results[0];
 }
 
 export async function findNopalPageById(id: string) {
-  const page = await select<NopalPage>(new RecordId(PAGE_TABLE_NAME, id));
-  if (page) {
-    const blocks = await findNopalBlockById(id);
-    page.pageDetails = blocks?.blocks || [];
-  }
-  return page;
-}
-
-export async function findAllNopalBlocksByIds(ids: string[]) {
-  return await query<NopalBlock[]>("SELECT * FROM $table WHERE id IN $ids", {
-    table: BLOCK_TABLE_NAME,
-    ids,
-  });
+  return await select<NopalPage>(new RecordId(PAGE_TABLE_NAME, id));
 }
 
 export async function findNopalBlockById(id: string) {
