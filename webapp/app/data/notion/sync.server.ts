@@ -18,8 +18,6 @@ import {
   BlockObjectResponse,
   PageObjectResponse,
   RichTextItemResponse,
-  PropertyItemObjectResponse,
-  RichTextPropertyItemObjectResponse,
 } from "@notionhq/client/build/src/api-endpoints";
 
 import { initDbs } from "./init.server";
