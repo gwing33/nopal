@@ -26,11 +26,11 @@ export async function getDb(
   const db = new Surreal();
 
   try {
-    await db.connect(config.url);
+    await db.connect(config.url, { versionCheck: false });
     await db.signin({
-      namespace: config.namespace,
       ...config.auth,
     });
+
     await db.use({ namespace: config.namespace, database: config.database });
     return db;
   } catch (err) {
