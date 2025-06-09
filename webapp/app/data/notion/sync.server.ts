@@ -12,7 +12,7 @@ import type { NotionDatabase } from "./core.server";
 import { downloadAndUploadToS3 } from "../file.server";
 import { getFileNameFromUrl } from "../../util/getFileNameFromUrl";
 import { getBlockObjectResponseWithRichText } from "../../util/notion";
-import { defineTable, upsert, formatRecord } from "../generic.server";
+import { defineTable, upsert } from "../generic.server";
 import {
   ListBlockChildrenResponse,
   BlockObjectResponse,
