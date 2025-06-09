@@ -140,6 +140,16 @@ export async function syncAllDatabases() {
         return await Promise.all(
           pages.results.map(async (_page) => {
             const page = _page as PageObjectResponse;
+
+            // Skip page if it's already synced.
+            // DISABLED FOR NOW
+            // const dbPage = await findNopalPageById(page.id);
+            // if (dbPage && dbPage.last_edited_time == page.last_edited_time) {
+            //   console.log("Skipping page:", page.id);
+            //   return null;
+            // }
+            // console.log("Syncing page:", page.id);
+
             const slugProp = page.properties.Slug || null;
             const slug =
               slugProp?.type == "rich_text"

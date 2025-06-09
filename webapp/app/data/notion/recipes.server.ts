@@ -1,7 +1,5 @@
 import {
   registerDb,
-  PAGE_TABLE_NAME,
-  NopalPage,
   getAllPagesByDbRef,
   getPageByDbRefAndSlug,
 } from "./core.server";
@@ -41,8 +39,8 @@ function formatRecipeRecord(_record: any): IngredientRecord {
   const recipe = {
     id: record.id,
     _id: record._id,
-    name: record.properties.Name.title[0]?.plain_text,
-    slug: record.properties.Slug.rich_text[0]?.plain_text,
+    name: record.properties.Name.title[0]?.plain_text || "",
+    slug: record.properties.Slug.rich_text[0]?.plain_text || "",
     summary: record.properties.Summary,
     status: record.properties.Status.select?.name || "",
     recommendation: record.properties.Recommendation.select?.name || "",

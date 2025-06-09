@@ -21,7 +21,10 @@ export type NotionDatabase = {
 };
 const _dbs: NotionDatabase[] = [];
 export function registerDb(db: NotionDatabase) {
-  _dbs.push(db);
+  const existing = _dbs.find((_db) => _db.dbName === db.dbName);
+  if (!existing) {
+    _dbs.push(db);
+  }
 }
 export function getDbByName(name: string): NotionDatabase | undefined {
   return _dbs.find((db) => db.dbName === name);
@@ -64,7 +67,14 @@ export async function findAllNopalBlocks() {
 }
 
 export async function findNopalPageById(id: string) {
-  return await select<NopalPage>(new RecordId(PAGE_TABLE_NAME, id));
+  try {
+    return await select<NopalPage>(new RecordId(PAGE_TABLE_NAME, id));
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("fetch failed")) {
+      return undefined;
+    }
+    throw error;
+  }
 }
 
 export async function findNopalBlockById(id: string) {
