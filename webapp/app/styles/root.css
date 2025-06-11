@@ -78,6 +78,14 @@ body {
   color: white;
 }
 
+.btn-yellow {
+  @apply btn;
+  background-color: var(--btn-color, var(--farground));
+  border: 1px solid var(--border-color, var(--foreground));
+  padding: 8px 16px;
+  color: var(--purple-light);
+}
+
 /* Good Box */
 .good-box {
   border: 1px solid var(--foreground);

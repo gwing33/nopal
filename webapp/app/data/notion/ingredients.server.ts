@@ -1,6 +1,6 @@
 import {
   registerDb,
-  getAllPagesByDbRef,
+  getAllPublishedPagesByDbRef,
   getPageByDbRefAndSlug,
 } from "./core.server";
 import type { IngredientRecord } from "./types";
@@ -19,7 +19,7 @@ export function registerIngredientsDb() {
 export async function getAllIngredients(): Promise<{
   data: IngredientRecord[];
 }> {
-  const results = await getAllPagesByDbRef(db.dbName);
+  const results = await getAllPublishedPagesByDbRef(db.dbName);
 
   return {
     data: results.map(({ page }) => formatIngredientRecord(page)),

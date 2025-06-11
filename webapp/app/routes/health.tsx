@@ -1,6 +1,6 @@
 import { Layout } from "../components/Layout";
 import { FooterDiscovery } from "../components/Footer";
-import { Outlet, NavLink, useLocation } from "@remix-run/react";
+import { Outlet, NavLink, useLocation, useLoaderData } from "@remix-run/react";
 import { GbScore } from "../components/GbScore";
 import { LinksFunction } from "@remix-run/node";
 import healthStyles from "../styles/health.css?url";
@@ -11,20 +11,68 @@ import {
   CarbonFactor,
   SocialEquityFactor,
 } from "../components/FiveFactors";
+import { getSampleTastings } from "../data/notion/tastings.server";
+import type { Collection } from "../data/generic.server";
+import type { TastingRecord, RichText } from "../data/notion/types";
+import { NotionText } from "../components/NotionText";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: healthStyles },
 ];
 
+type LoaderResult = {
+  tastings: Collection<TastingRecord>;
+};
+export const loader = async () => {
+  const tastings = await getSampleTastings();
+  return { tastings };
+};
+
 export default function Health() {
   const location = useLocation();
+  const { tastings } = useLoaderData<LoaderResult>();
+
   return (
     <Layout>
       <div className="scene1">
         <div className="simple-container p-4">
-          <h1 className="purple-light-text text-4xl mt-12">
+          <h1 className="green-text text-4xl mt-12">Tastings</h1>
+          <div className="font-hand red-text text-2xl">
+            Explore and compare different recipes to building
+          </div>
+          <div>
+            {tastings.data.map((tasting) => {
+              return (
+                <TastingItem
+                  key={tasting._id}
+                  img={tasting.thumbnail}
+                  title={tasting.name}
+                  description={tasting.summary}
+                  scores={tasting.scores || []}
+                />
+              );
+            })}
+            <div className="flex items-center mt-4 gap-2">
+              <svg
+                width="23"
+                height="15"
+                viewBox="0 0 23 15"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M21.5294 9.02936L16.8237 4.3237C15.5462 3.04622 13.3638 3.98314 13.4101 5.78918L13.5747 12.2075C13.6198 13.9641 15.7458 14.813 16.9883 13.5704L21.5294 9.02936ZM21.5294 9.02936L6.99998 9.04701C6.99998 9.04701 0.999998 9.04701 0.999998 0.500002"
+                  stroke="#7F5B8B"
+                />
+              </svg>
+              <button className="btn-yellow">More Tastings</button>
+            </div>
+          </div>
+        </div>
+        <div className="simple-container p-4">
+          <h2 className="purple-light-text text-4xl mt-12">
             The Good Building Score
-          </h1>
+          </h2>
           <div className="flex flex-wrap">
             <div className="flex gap-2 mt-4 mr-2">
               <GbScore score={0} />
@@ -123,4 +171,67 @@ export default function Health() {
       <FooterDiscovery />
     </Layout>
   );
+}
+
+type TastingItemProps = {
+  img: string;
+  title: string;
+  description: RichText;
+  scores: number[];
+};
+
+function TastingItem({ title, description, scores, img }: TastingItemProps) {
+  return (
+    <div className="flex gap-4 mt-4">
+      <div
+        className="w-36 h-36 rounded bg-cover shrink-0 bg-center"
+        style={{ backgroundImage: `url("${img}")` }}
+      ></div>
+      <div className="flex flex-col gap-2">
+        <h3 className="purple-light-text text-2xl">{title}</h3>
+        <NotionText text={description.rich_text} />
+        <div className="flex items-center gap-2">
+          <TastingScores scores={scores} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TastingScores({ scores }: { scores: number[] }) {
+  const sortedScores = scores.sort();
+  if (sortedScores.length == 2) {
+    const diff = sortedScores[1] - sortedScores[0];
+    return (
+      <>
+        <GbScore score={sortedScores[0]} />
+        <svg
+          width="26"
+          height="12"
+          viewBox="0 0 26 12"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M25.0294 6.02936L20.3237 1.32371C19.0462 0.0462249 16.8638 0.983148 16.9102 2.78919L17.0747 9.20748C17.1198 10.9641 19.2458 11.813 20.4883 10.5704L25.0294 6.02936ZM25.0294 6.02936C25.0294 6.02936 6.48377 6.06931 0.970642 6.02936"
+            stroke="#7F5B8B"
+          />
+        </svg>
+        <GbScore score={sortedScores[1]} />
+        <div className="font-hand red-text text-xl">+{diff}pt improvement!</div>
+      </>
+    );
+  }
+
+  if (sortedScores.length > 2) {
+    return (
+      <>
+        <GbScore score={sortedScores[0]} />
+        <GbScore score={sortedScores[1]} />
+        <GbScore score={sortedScores[2]} />
+        <div className="font-hand red-text text-xl">Basics at their best</div>
+      </>
+    );
+  }
+  return null;
 }

@@ -29,9 +29,6 @@ export const loader = async (remixContext: LoaderFunctionArgs) => {
     case "recipes":
       const recipes = await getAllRecipes();
       return { data: recipes };
-    // case "collections":
-    //   const collections = await getAllCollections();
-    //   return { data: collections };
   }
 };
 
