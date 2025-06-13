@@ -1,5 +1,6 @@
 import type { BlockObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 import type { RichTextItemResponse } from "@notionhq/client/build/src/api-endpoints";
+import type { NopalPage } from "./core.server";
 
 export type RichText = {
   id: string;
@@ -36,4 +37,5 @@ export type TastingRecord = {
   thumbnail: string;
   scores: number[];
   pageDetails: BlockObjectResponse[];
+  recipes: NopalPage[];
 };

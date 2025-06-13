@@ -15,3 +15,7 @@
     left: 00px;
   }
 }
+
+.article-item {
+  cursor: pointer;
+}

@@ -41,10 +41,14 @@ export async function loader(context: LoaderFunctionArgs) {
 }
 
 export default function RecipesId() {
-  const { recipe } = useLoaderData<Recipe>();
+  const { recipe } = useLoaderData<{ recipe: Recipe }>();
   const location = useLocation();
   const search = location?.search || "";
   const isTutorial = search.includes("tutorial=true");
+
+  if (!recipe) {
+    return null;
+  }
 
   const {
     name,

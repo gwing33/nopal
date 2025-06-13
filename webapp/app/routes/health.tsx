@@ -1,6 +1,12 @@
 import { Layout } from "../components/Layout";
 import { FooterDiscovery } from "../components/Footer";
-import { Outlet, NavLink, useLocation, useLoaderData } from "@remix-run/react";
+import {
+  Outlet,
+  NavLink,
+  useNavigate,
+  useLocation,
+  useLoaderData,
+} from "@remix-run/react";
 import { GbScore } from "../components/GbScore";
 import { LinksFunction } from "@remix-run/node";
 import healthStyles from "../styles/health.css?url";
@@ -31,6 +37,7 @@ export const loader = async () => {
 
 const MAX_STUDIES = 2;
 export default function Health() {
+  const navigation = useNavigate();
   const location = useLocation();
   const { tastings } = useLoaderData<LoaderResult>();
   const [showStudies, setShowStudies] = useState(false);
@@ -132,6 +139,9 @@ export default function Health() {
                     description={tasting.summary}
                     scores={tasting.scores || []}
                     annotation={tasting.annotation}
+                    onClick={() => {
+                      navigation(`/science/${tasting.slug}`);
+                    }}
                   />
                 );
               })}
@@ -161,6 +171,7 @@ export default function Health() {
 
           <div className="folder-tabs mt-12">
             <NavLink
+              preventScrollReset={true}
               className={() => {
                 if (/^\/health(\/recipes)??\/?$/.test(location.pathname)) {
                   return "active";
@@ -171,7 +182,11 @@ export default function Health() {
             >
               Assemblies
             </NavLink>
-            <NavLink prefetch="render" to={"/health/ingredients"}>
+            <NavLink
+              preventScrollReset={true}
+              prefetch="render"
+              to={"/health/ingredients"}
+            >
               Materials
             </NavLink>
           </div>
@@ -191,6 +206,7 @@ type TastingItemProps = {
   description: RichText;
   scores: number[];
   annotation: string;
+  onClick: () => void;
 };
 
 function TastingItem({
@@ -199,9 +215,16 @@ function TastingItem({
   scores,
   img,
   annotation,
+  onClick,
 }: TastingItemProps) {
   return (
-    <div className="flex gap-4 mt-4">
+    <div
+      className="flex gap-4 mt-4 article-item"
+      onClick={(e) => {
+        e.preventDefault();
+        onClick();
+      }}
+    >
       <div
         className="w-36 h-36 rounded bg-cover shrink-0 bg-center"
         style={{ backgroundImage: `url("${img}")` }}

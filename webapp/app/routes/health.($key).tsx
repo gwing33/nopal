@@ -55,7 +55,7 @@ export default function HealthIndex() {
   );
 }
 
-function HealthItem({
+export function HealthItem({
   item,
   type,
 }: {
@@ -63,8 +63,6 @@ function HealthItem({
   type: "recipes" | "ingredients";
 }) {
   const navigation = useNavigate();
-  const location = useLocation();
-  const search = location?.search || "";
   const { name, slug, summary, gbs, svg } = item;
 
   return (

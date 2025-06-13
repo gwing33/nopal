@@ -1,5 +1,11 @@
 import { query } from "../generic.server";
-import { registerDb, getAllPublishedPagesByDbRef } from "./core.server";
+import {
+  registerDb,
+  getAllPublishedPagesByDbRef,
+  getPageByDbRefAndSlug,
+} from "./core.server";
+import type { NopalPage } from "./core.server";
+import { getRecipesByPageIds } from "./recipes.server";
 import type { TastingRecord } from "./types";
 import { formatRecord } from "../generic.server";
 import { RecordId } from "surrealdb";
@@ -18,7 +24,16 @@ export async function getSampleTastings(): Promise<{
   data: TastingRecord[];
 }> {
   const results = await getAllPublishedPagesByDbRef(db.dbName);
-  const recipePageIds = results.reduce((acc: string[], { page }) => {
+  const recipePageIds = getRecipePageIds(results);
+  const gbs = await getGBSByPageIds(recipePageIds);
+
+  return {
+    data: results.map(({ page }) => formatTastingRecord(page, gbs)),
+  };
+}
+
+function getRecipePageIds(results: { page: NopalPage }[]) {
+  return results.reduce((acc: string[], { page }) => {
     const recipes = page.properties?.["Recipe Database"];
     if (recipes?.type == "relation" && Array.isArray(recipes.relation)) {
       recipes.relation.forEach(({ id }) => {
@@ -29,11 +44,6 @@ export async function getSampleTastings(): Promise<{
     }
     return acc;
   }, []);
-  const gbs = await getGBSByPageIds(recipePageIds);
-
-  return {
-    data: results.map(({ page }) => formatTastingRecord(page, gbs)),
-  };
 }
 
 type GBSPage = { id: string; gbs: number };
@@ -58,7 +68,24 @@ async function getGBSByPageIds(ids: string[]): Promise<GBSPage[]> {
   return [];
 }
 
-function formatTastingRecord(_record: any, gbs: GBSPage[]): TastingRecord {
+export async function getTastingBySlug(slug: string) {
+  const record = await getPageByDbRefAndSlug(db.dbName, slug);
+  if (record) {
+    const db = record.properties["Recipe Database"];
+    if (db.type === "relation") {
+      const recipeIds = db.relation.map(({ id }: { id: string }) => id);
+      const recipes = await getRecipesByPageIds(recipeIds);
+      return formatTastingRecord(record, [], recipes);
+    }
+  }
+  return null;
+}
+
+function formatTastingRecord(
+  _record: any,
+  gbs: GBSPage[],
+  recipes: NopalPage[] = []
+): TastingRecord {
   const record = formatRecord(_record);
   const ingredient: TastingRecord = {
     id: record.id,
@@ -76,6 +103,7 @@ function formatTastingRecord(_record: any, gbs: GBSPage[]): TastingRecord {
       })
       .filter((score: number) => score > 0),
     pageDetails: record.pageDetails?.results || [],
+    recipes,
   };
   return ingredient;
 }

@@ -28,7 +28,7 @@ import type {
   // EmbedBlockObjectResponse,
   // BookmarkBlockObjectResponse,
   ImageBlockObjectResponse,
-  // VideoBlockObjectResponse,
+  VideoBlockObjectResponse,
   // PdfBlockObjectResponse,
   // FileBlockObjectResponse,
   // AudioBlockObjectResponse,
@@ -55,6 +55,8 @@ export function NotionPageDetails({
         return <BulletedListItem key={detail.id} detail={detail} />;
       case "image":
         return <Image key={detail.id} detail={detail} />;
+      case "video":
+        return <Video key={detail.id} detail={detail} />;
       default:
         console.warn("Unsupported Page Detail");
         console.log({ detail });
@@ -111,10 +113,50 @@ function BulletedListItem({
 
 function Image({ detail }: { detail: ImageBlockObjectResponse }) {
   const image = detail.image;
+  if (image.type !== "file") return null;
+
   const url = image?.file?.url;
   if (!url) return null;
 
   const caption = getPlainText(image.caption);
 
   return <img className="mt-4" src={url} alt={caption} />;
+}
+
+function Video({ detail }: { detail: VideoBlockObjectResponse }) {
+  const video = detail.video;
+  if (video.type !== "external") return null;
+
+  const getUrl = () => {
+    const url = video?.external?.url;
+
+    // This corrects this format to change it into the embed format to prevent cross origin
+    // Input: https://youtu.be/Nk-I--FN2BU?si=CPMkK7KVMKtmfwUG
+    // Output: https://www.youtube.com/embed/Nk-I--FN2BU?si=dm8N4Mm-tbDKEZHY
+    if (url.startsWith("https://youtu.be/")) {
+      return url.replace("https://youtu.be/", "https://www.youtube.com/embed/");
+    }
+
+    return url;
+  };
+
+  const url = getUrl();
+  if (!url) return null;
+
+  const caption = getPlainText(video.caption);
+
+  return (
+    <div key={detail.id} className="video-container">
+      <iframe
+        width="600"
+        height="315"
+        src={url}
+        title={caption || "YouTube video player"}
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerPolicy="strict-origin-when-cross-origin"
+        allowFullScreen
+      />
+    </div>
+  );
 }

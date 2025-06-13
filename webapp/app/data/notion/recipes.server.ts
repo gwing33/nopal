@@ -1,3 +1,4 @@
+import { query } from "../generic.server";
 import {
   registerDb,
   getAllPublishedPagesByDbRef,
@@ -6,6 +7,7 @@ import {
 import type { IngredientRecord } from "./types";
 import { formatRecord } from "../generic.server";
 import { getGBSScore } from "../../util/getGBSScore";
+import { RecordId } from "surrealdb";
 
 const db = {
   id: "1d6f2211e45f803a880dcbd7701ec65d",
@@ -26,6 +28,17 @@ export async function getAllRecipes(): Promise<{
   };
 }
 
+export async function getRecipesByPageIds(ids: string[]) {
+  const results = await query<any[]>(
+    `SELECT * FROM notion_pages WHERE id IN $ids`,
+    { ids: ids.map((id) => new RecordId("notion_pages", id)) }
+  );
+  if (results.length != 1) {
+    return undefined;
+  }
+  return results[0].map((page: any) => formatRecipeRecord(page));
+}
+
 export async function getRecipeBySlug(slug: string) {
   const record = await getPageByDbRefAndSlug(db.dbName, slug);
   if (record) {
@@ -34,7 +47,7 @@ export async function getRecipeBySlug(slug: string) {
   return null;
 }
 
-function formatRecipeRecord(_record: any): IngredientRecord {
+export function formatRecipeRecord(_record: any): IngredientRecord {
   const record = formatRecord(_record);
   const recipe = {
     id: record.id,
