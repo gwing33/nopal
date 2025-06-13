@@ -50,6 +50,7 @@ async function getGBSByPageIds(ids: string[]): Promise<GBSPage[]> {
       ]) as gbs FROM notion_pages WHERE id IN $ids`,
     { ids: ids.map((id) => new RecordId("notion_pages", id)) }
   );
+
   const first = result[0];
   if (Array.isArray(first)) {
     return first.map(({ id, gbs }) => ({ id: id.id, gbs }));
@@ -65,6 +66,7 @@ function formatTastingRecord(_record: any, gbs: GBSPage[]): TastingRecord {
     name: record.properties.Name.title[0]?.plain_text || "",
     slug: record.properties.Slug.rich_text[0]?.plain_text || "",
     summary: record.properties.Summary,
+    annotation: record.properties.Annotation.rich_text[0]?.plain_text || "",
     status: record.properties.Status.select?.name || "",
     thumbnail: record.properties.Thumbnail.files?.[0]?.file?.url || "",
     scores: record.properties["Recipe Database"].relation

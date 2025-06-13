@@ -15,6 +15,7 @@ import { getSampleTastings } from "../data/notion/tastings.server";
 import type { Collection } from "../data/generic.server";
 import type { TastingRecord, RichText } from "../data/notion/types";
 import { NotionText } from "../components/NotionText";
+import { useState } from "react";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: healthStyles },
@@ -28,51 +29,19 @@ export const loader = async () => {
   return { tastings };
 };
 
+const MAX_STUDIES = 2;
 export default function Health() {
   const location = useLocation();
   const { tastings } = useLoaderData<LoaderResult>();
+  const [showStudies, setShowStudies] = useState(false);
 
   return (
     <Layout>
       <div className="scene1">
         <div className="simple-container p-4">
-          <h1 className="green-text text-4xl mt-12">Tastings</h1>
-          <div className="font-hand red-text text-2xl">
-            Explore and compare different recipes to building
-          </div>
-          <div>
-            {tastings.data.map((tasting) => {
-              return (
-                <TastingItem
-                  key={tasting._id}
-                  img={tasting.thumbnail}
-                  title={tasting.name}
-                  description={tasting.summary}
-                  scores={tasting.scores || []}
-                />
-              );
-            })}
-            <div className="flex items-center mt-4 gap-2">
-              <svg
-                width="23"
-                height="15"
-                viewBox="0 0 23 15"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M21.5294 9.02936L16.8237 4.3237C15.5462 3.04622 13.3638 3.98314 13.4101 5.78918L13.5747 12.2075C13.6198 13.9641 15.7458 14.813 16.9883 13.5704L21.5294 9.02936ZM21.5294 9.02936L6.99998 9.04701C6.99998 9.04701 0.999998 9.04701 0.999998 0.500002"
-                  stroke="#7F5B8B"
-                />
-              </svg>
-              <button className="btn-yellow">More Tastings</button>
-            </div>
-          </div>
-        </div>
-        <div className="simple-container p-4">
-          <h2 className="purple-light-text text-4xl mt-12">
+          <h1 className="purple-light-text text-4xl mt-12">
             The Good Building Score
-          </h2>
+          </h1>
           <div className="flex flex-wrap">
             <div className="flex gap-2 mt-4 mr-2">
               <GbScore score={0} />
@@ -104,7 +73,7 @@ export default function Health() {
               </svg>
             </div>
             <p className="text-xl">
-              We review <b>ingredients & recipes</b> by looking at 5 Factors:
+              We review <b>materials & assemblies</b> by looking at 5 Factors:
             </p>
             <div className="flex gap-8 items-center">
               <div className="flex flex-col gap-4 mt-4 w-2/3">
@@ -134,16 +103,60 @@ export default function Health() {
                 >
                   <path
                     d="M139.735 49.6558C139.735 49.6558 96.1783 -7.46098 39.4723 1.77095C23.7951 4.32325 0.999983 14.9669 0.999983 14.9669M0.999983 14.9669L14.6331 21.2011C16.2761 21.9524 17.9943 20.3127 17.3206 18.6364L10.6387 2.01035C9.98339 0.379903 7.69482 0.326392 6.96406 1.92443L0.999983 14.9669Z"
-                    stroke="#A63B31"
+                    className="red-stroke"
                   />
                 </svg>
                 We rate each factor out of 10.
               </div>
             </div>
-            <p className="text-xl mt-8">
-              Before we get to that info, you’ll be presented with a collective
-              score. This is the <b>Good Building Score</b>.
+            <p className="text-xl mt-6">
+              Before you get to that information, we recommend looking at our{" "}
+              <b>applied science case studies</b> where we examine real-world
+              projects.
             </p>
+          </div>
+
+          <h2 className="green-text text-4xl mt-12">Applied Science</h2>
+          <div className="font-hand red-text text-2xl">
+            Explore and compare different building assemblies and materials
+          </div>
+          <div>
+            {tastings.data
+              .filter((_, x) => showStudies || x < MAX_STUDIES)
+              .map((tasting) => {
+                return (
+                  <TastingItem
+                    key={tasting._id}
+                    img={tasting.thumbnail}
+                    title={tasting.name}
+                    description={tasting.summary}
+                    scores={tasting.scores || []}
+                    annotation={tasting.annotation}
+                  />
+                );
+              })}
+            {!showStudies && tastings.data.length > MAX_STUDIES && (
+              <div className="flex items-center mt-4 gap-2">
+                <svg
+                  width="23"
+                  height="15"
+                  viewBox="0 0 23 15"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M21.5294 9.02936L16.8237 4.3237C15.5462 3.04622 13.3638 3.98314 13.4101 5.78918L13.5747 12.2075C13.6198 13.9641 15.7458 14.813 16.9883 13.5704L21.5294 9.02936ZM21.5294 9.02936L6.99998 9.04701C6.99998 9.04701 0.999998 9.04701 0.999998 0.500002"
+                    className="purple-light-stroke"
+                  />
+                </svg>
+                <button
+                  className="btn-yellow"
+                  onClick={() => setShowStudies(true)}
+                >
+                  More studies
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="folder-tabs mt-12">
@@ -156,12 +169,11 @@ export default function Health() {
               }}
               to={"/health"}
             >
-              Recipes
+              Assemblies
             </NavLink>
             <NavLink prefetch="render" to={"/health/ingredients"}>
-              Ingredients
+              Materials
             </NavLink>
-            {/* <NavLink to={"/health/collections"}>Collections</NavLink> */}
           </div>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Outlet />
@@ -178,9 +190,16 @@ type TastingItemProps = {
   title: string;
   description: RichText;
   scores: number[];
+  annotation: string;
 };
 
-function TastingItem({ title, description, scores, img }: TastingItemProps) {
+function TastingItem({
+  title,
+  description,
+  scores,
+  img,
+  annotation,
+}: TastingItemProps) {
   return (
     <div className="flex gap-4 mt-4">
       <div
@@ -191,34 +210,46 @@ function TastingItem({ title, description, scores, img }: TastingItemProps) {
         <h3 className="purple-light-text text-2xl">{title}</h3>
         <NotionText text={description.rich_text} />
         <div className="flex items-center gap-2">
-          <TastingScores scores={scores} />
+          <TastingScores scores={scores} annotation={annotation} />
         </div>
       </div>
     </div>
   );
 }
 
-function TastingScores({ scores }: { scores: number[] }) {
+function TastingScores({
+  scores,
+  annotation,
+}: {
+  scores: number[];
+  annotation: string;
+}) {
   const sortedScores = scores.sort();
   if (sortedScores.length == 2) {
     const diff = sortedScores[1] - sortedScores[0];
+
     return (
       <>
         <GbScore score={sortedScores[0]} />
-        <svg
-          width="26"
-          height="12"
-          viewBox="0 0 26 12"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M25.0294 6.02936L20.3237 1.32371C19.0462 0.0462249 16.8638 0.983148 16.9102 2.78919L17.0747 9.20748C17.1198 10.9641 19.2458 11.813 20.4883 10.5704L25.0294 6.02936ZM25.0294 6.02936C25.0294 6.02936 6.48377 6.06931 0.970642 6.02936"
-            stroke="#7F5B8B"
-          />
-        </svg>
+        {diff > 15 && (
+          <svg
+            width="26"
+            height="12"
+            viewBox="0 0 26 12"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M25.0294 6.02936L20.3237 1.32371C19.0462 0.0462249 16.8638 0.983148 16.9102 2.78919L17.0747 9.20748C17.1198 10.9641 19.2458 11.813 20.4883 10.5704L25.0294 6.02936ZM25.0294 6.02936C25.0294 6.02936 6.48377 6.06931 0.970642 6.02936"
+              className="red-stroke"
+            />
+          </svg>
+        )}
         <GbScore score={sortedScores[1]} />
-        <div className="font-hand red-text text-xl">+{diff}pt improvement!</div>
+        <div className="font-hand red-text text-xl">
+          {diff > 15 && `+${diff}pt `}
+          {annotation}
+        </div>
       </>
     );
   }
@@ -229,7 +260,7 @@ function TastingScores({ scores }: { scores: number[] }) {
         <GbScore score={sortedScores[0]} />
         <GbScore score={sortedScores[1]} />
         <GbScore score={sortedScores[2]} />
-        <div className="font-hand red-text text-xl">Basics at their best</div>
+        <div className="font-hand red-text text-xl">{annotation}</div>
       </>
     );
   }

@@ -30,6 +30,7 @@ export type TastingRecord = {
   _id: string;
   name: string;
   summary: RichText;
+  annotation: string;
   status: string;
   slug: string;
   thumbnail: string;

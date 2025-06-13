@@ -84,6 +84,11 @@ body {
   border: 1px solid var(--border-color, var(--foreground));
   padding: 8px 16px;
   color: var(--purple-light);
+  @media (prefers-color-scheme: dark) {
+    background-color: var(--dark-farground);
+    border-color: var(--dark-foreground);
+    color: white;
+  }
 }
 
 /* Good Box */
@@ -749,8 +754,12 @@ body {
       color: var(--green);
       padding-top: 16px;
       @media (prefers-color-scheme: dark) {
+        color: var(--green-light);
         border-bottom-color: var(--purple) !important;
       }
+    }
+    @media (prefers-color-scheme: dark) {
+      color: white;
     }
   }
   @media (prefers-color-scheme: dark) {
