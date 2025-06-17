@@ -1,55 +1,42 @@
-import { query } from "../generic.server";
 import {
   registerDb,
   getAllPublishedPagesByDbRef,
   getPageByDbRefAndSlug,
 } from "./core.server";
-import type { IngredientRecord } from "./types";
+import type { MaterialRecord } from "./types";
 import { formatRecord } from "../generic.server";
 import { getGBSScore } from "../../util/getGBSScore";
-import { RecordId } from "surrealdb";
 
 const db = {
-  id: "1d6f2211e45f803a880dcbd7701ec65d",
-  dbName: "gbs_recipes_v2",
-  getPublicUrl: (slug: string) => `/recipes/${slug}`,
+  id: "1d1f2211e45f80a7a7a7e2ecb09ff6da",
+  dbName: "gbs_materials",
+  getPublicUrl: (slug: string) => `/materials/${slug}`,
 };
-export function registerRecipesDb() {
+export function registerMaterialsDb() {
   registerDb(db);
 }
 
-export async function getAllRecipes(): Promise<{
-  data: IngredientRecord[];
+export async function getAllMaterials(): Promise<{
+  data: MaterialRecord[];
 }> {
   const results = await getAllPublishedPagesByDbRef(db.dbName);
 
   return {
-    data: results.map(({ page }) => formatRecipeRecord(page)),
+    data: results.map(({ page }) => formatMaterialRecord(page)),
   };
 }
 
-export async function getRecipesByPageIds(ids: string[]) {
-  const results = await query<any[]>(
-    `SELECT * FROM notion_pages WHERE id IN $ids`,
-    { ids: ids.map((id) => new RecordId("notion_pages", id)) }
-  );
-  if (results.length != 1) {
-    return undefined;
-  }
-  return results[0].map((page: any) => formatRecipeRecord(page));
-}
-
-export async function getRecipeBySlug(slug: string) {
+export async function getMaterialBySlug(slug: string) {
   const record = await getPageByDbRefAndSlug(db.dbName, slug);
   if (record) {
-    return formatRecipeRecord(record);
+    return formatMaterialRecord(record);
   }
   return null;
 }
 
-export function formatRecipeRecord(_record: any): IngredientRecord {
+function formatMaterialRecord(_record: any): MaterialRecord {
   const record = formatRecord(_record);
-  const recipe = {
+  const material: MaterialRecord = {
     id: record.id,
     _id: record._id,
     name: record.properties.Name.title[0]?.plain_text || "",
@@ -63,9 +50,9 @@ export function formatRecipeRecord(_record: any): IngredientRecord {
     longevityScore: record.properties["Longevity Score"].number,
     socialImpactScore: record.properties["Social Impact Score"].number,
     carbonScore: record.properties["Carbon Score"].number,
-    svg: record.properties["svg"]?.files?.[0]?.file?.url || "",
+    svg: record.properties["svg"].files?.[0]?.file?.url || "",
     pageDetails: record.pageDetails?.results || [],
   };
-  recipe.gbs = getGBSScore(recipe);
-  return recipe;
+  material.gbs = getGBSScore(material);
+  return material;
 }

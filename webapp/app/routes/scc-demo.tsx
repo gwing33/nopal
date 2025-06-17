@@ -44,9 +44,8 @@ export default function SCCDemo() {
           </p>
           <p className="mt-4 text-lg">
             <em className="font-bold">Carbon:</em> Fiberglass takes a lot of
-            energy to harvest the ingredients and manufacture them into the
-            final product, so it has a relatively large amount of embodied
-            carbon.
+            energy to harvest the materials and manufacture them into the final
+            product, so it has a relatively large amount of embodied carbon.
           </p>
           <p className="mt-4 text-lg">
             <em className="font-bold">Performance #1:</em> Rated R-value is very

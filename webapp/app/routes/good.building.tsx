@@ -21,7 +21,7 @@ export default function GoodBuilding() {
           <p className="text-xl mt-4">
             Nature gives us the best ingredients. It also gives us hints as to
             how they should be used and this is where we start to define and
-            create the recipe for any Nopal build.
+            create the assembly for any Nopal build.
           </p>
 
           <h2 className="green-text text-3xl mt-12">Nopal's Recipes</h2>

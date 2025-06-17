@@ -3,10 +3,8 @@ import { Footer } from "../components/Footer";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import { Link, useLoaderData, useLocation } from "@remix-run/react";
-import { getIngredientBySlug } from "../data/notion/ingredients.server";
-import type { IngredientRecord } from "~/data/notion/types";
+import { getAssembliesBySlug } from "../data/notion/assemblies.server";
 import { GbScore } from "../components/GbScore";
-import { isFavorite } from "../data/ingredients";
 import { LinksFunction } from "@remix-run/node";
 import { Breadcrumb } from "../components/Breadcrumb";
 import healthStyles from "../styles/health.css?url";
@@ -30,20 +28,26 @@ export const links: LinksFunction = () => [
   { rel: "stylesheet", href: healthStyles },
 ];
 
+type Assemblies = Awaited<ReturnType<typeof getAssembliesBySlug>>;
+
 export async function loader(context: LoaderFunctionArgs) {
   const id = context.params?.id;
   if (!id) {
     return redirect("/health");
   }
-  const ingredient = await getIngredientBySlug(id);
-  return { ingredient };
+  const assemblies = await getAssembliesBySlug(id);
+  return { assemblies };
 }
 
-export default function IngredientsId() {
-  const { ingredient } = useLoaderData<{ ingredient: IngredientRecord }>();
+export default function AssemblyId() {
+  const { assemblies } = useLoaderData<{ assemblies: Assemblies }>();
   const location = useLocation();
   const search = location?.search || "";
   const isTutorial = search.includes("tutorial=true");
+
+  if (!assemblies) {
+    return null;
+  }
 
   const {
     name,
@@ -54,7 +58,7 @@ export default function IngredientsId() {
     socialImpactScore,
     carbonScore,
     pageDetails,
-  } = ingredient;
+  } = assemblies;
 
   return (
     <Layout>
@@ -62,12 +66,12 @@ export default function IngredientsId() {
         <div className="simple-container p-4">
           <div className="mt-12">
             <Breadcrumb>
-              <Link to={"/health"}>All Ingredients</Link>
+              <Link to={"/health"}>All Assemblies</Link>
             </Breadcrumb>
           </div>
           <div className="flex items-center justify-between mb-8">
             <h1 className="mr-4 purple-light-text text-4xl">{name} </h1>
-            <GbScore score={gbs} favorite={isFavorite(ingredient)} />
+            <GbScore score={gbs} />
           </div>
 
           <NotionPageDetails pageDetails={pageDetails} />
@@ -113,11 +117,11 @@ export default function IngredientsId() {
                     get down ranked.
                   </p>
                   <p className="mt-4 font-hand red-text text-lg">
-                    Acoustics can also play into air quality. Does this
-                    ingredient help stabilize sound for the building?
+                    Acoustics can also play into air quality. Does this assembly
+                    help stabilize sound for the building?
                   </p>
                   <p className="mt-4 mb-8 font-hand red-text text-lg">
-                    Biophilic design helps us look at ingredients that are
+                    Biophilic design helps us look at assemblies that are
                     visually seen. Humans have a deep intrinsic connection to
                     nature that can lead to focused attention and relaxed mental
                     states.
@@ -130,7 +134,7 @@ export default function IngredientsId() {
               {isTutorial && (
                 <>
                   <p className="mt-2 mb-8 font-hand red-text text-lg">
-                    How does this ingredient impact the performance of the
+                    How does this assembly impact the performance of the
                     building? Reducing energy consumption is important.
                   </p>
                 </>
@@ -141,12 +145,11 @@ export default function IngredientsId() {
               {isTutorial && (
                 <>
                   <p className="mt-2 font-hand red-text text-lg">
-                    What is the normal time for this ingredient to last? Less
-                    than 20 years is terrible while more than 100 years is
-                    amazing.
+                    What is the normal time for this assembly to last? Less than
+                    20 years is terrible while more than 100 years is amazing.
                   </p>
                   <p className="mt-4 mb-8 font-hand red-text text-lg">
-                    Sometimes the difficulty of installing an ingredient can
+                    Sometimes the difficulty of installing an assembly can
                     compromise its lifespan. We aren't just picking an average
                     but rather looking at it's use across the spectrum.
                   </p>
@@ -159,7 +162,7 @@ export default function IngredientsId() {
                 <>
                   <p className="mt-2 font-hand red-text text-lg mb-8">
                     From blood diamonds and child labor to simply installing
-                    toxic ingredients, we look at how materials impact different
+                    toxic assemblies, we look at how materials impact different
                     classes of people.
                   </p>
                 </>
@@ -170,12 +173,12 @@ export default function IngredientsId() {
               {isTutorial && (
                 <>
                   <p className="mt-2 font-hand red-text text-lg">
-                    This one looks at the carbon impact of the ingredient. We
-                    can calculate the embodied carbon for ingredients.
+                    This one looks at the carbon impact of the assembly. We can
+                    calculate the embodied carbon for assemblies.
                   </p>
                   <p className="mt-4 font-hand red-text text-lg">
                     Embodied carbon is how much C02 is emitted during the
-                    production and transportation of an ingredient.
+                    production and transportation of an assembly.
                   </p>
                   <p className="mt-4 font-hand red-text text-lg mb-8">
                     Operational carbon isn't considered in this factor since it

@@ -16,7 +16,7 @@ export type NopalPage = PageObjectResponse &
 // Connecting Notion Databases to locally stored DBs.
 export type NotionDatabase = {
   id: string; // Notion DB ID
-  getPublicUrl: (slug: string) => string; // Noapl url, e.g. /recipes/${slug}
+  getPublicUrl: (slug: string) => string; // Noapl url, e.g. /assemblies/${slug}
   dbName: string; // Local DB Name
 };
 const _dbs: NotionDatabase[] = [];

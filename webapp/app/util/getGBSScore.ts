@@ -1,11 +1,11 @@
-import type { IngredientRecord } from "../data/notion/types";
+import type { MaterialRecord } from "../data/notion/types";
 
-export function getGBSScore(ingredient: IngredientRecord): number {
+export function getGBSScore(material: MaterialRecord): number {
   return (
-    ingredient.comfortScore +
-    ingredient.efficiencyScore +
-    ingredient.longevityScore +
-    ingredient.socialImpactScore +
-    ingredient.carbonScore
+    material.comfortScore +
+    material.efficiencyScore +
+    material.longevityScore +
+    material.socialImpactScore +
+    material.carbonScore
   );
 }

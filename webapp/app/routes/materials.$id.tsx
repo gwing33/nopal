@@ -3,9 +3,9 @@ import { Footer } from "../components/Footer";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import { Link, useLoaderData, useLocation } from "@remix-run/react";
-import { getRecipeBySlug } from "../data/notion/recipes.server";
+import { getMaterialBySlug } from "../data/notion/materials.server";
+import type { MaterialRecord } from "~/data/notion/types";
 import { GbScore } from "../components/GbScore";
-import { isFavorite } from "../data/ingredients";
 import { LinksFunction } from "@remix-run/node";
 import { Breadcrumb } from "../components/Breadcrumb";
 import healthStyles from "../styles/health.css?url";
@@ -29,26 +29,20 @@ export const links: LinksFunction = () => [
   { rel: "stylesheet", href: healthStyles },
 ];
 
-type Recipe = Awaited<ReturnType<typeof getRecipeBySlug>>;
-
 export async function loader(context: LoaderFunctionArgs) {
   const id = context.params?.id;
   if (!id) {
     return redirect("/health");
   }
-  const recipe = await getRecipeBySlug(id);
-  return { recipe };
+  const material = await getMaterialBySlug(id);
+  return { material };
 }
 
-export default function RecipesId() {
-  const { recipe } = useLoaderData<{ recipe: Recipe }>();
+export default function MaterialsId() {
+  const { material } = useLoaderData<{ material: MaterialRecord }>();
   const location = useLocation();
   const search = location?.search || "";
   const isTutorial = search.includes("tutorial=true");
-
-  if (!recipe) {
-    return null;
-  }
 
   const {
     name,
@@ -59,7 +53,7 @@ export default function RecipesId() {
     socialImpactScore,
     carbonScore,
     pageDetails,
-  } = recipe;
+  } = material;
 
   return (
     <Layout>
@@ -67,12 +61,12 @@ export default function RecipesId() {
         <div className="simple-container p-4">
           <div className="mt-12">
             <Breadcrumb>
-              <Link to={"/health"}>All Recipes</Link>
+              <Link to={"/health"}>All Materials</Link>
             </Breadcrumb>
           </div>
           <div className="flex items-center justify-between mb-8">
             <h1 className="mr-4 purple-light-text text-4xl">{name} </h1>
-            <GbScore score={gbs} favorite={isFavorite(recipe)} />
+            <GbScore score={gbs} />
           </div>
 
           <NotionPageDetails pageDetails={pageDetails} />
@@ -118,13 +112,14 @@ export default function RecipesId() {
                     get down ranked.
                   </p>
                   <p className="mt-4 font-hand red-text text-lg">
-                    Acoustics can also play into air quality. Does this recipe
+                    Acoustics can also play into air quality. Does this material
                     help stabilize sound for the building?
                   </p>
                   <p className="mt-4 mb-8 font-hand red-text text-lg">
-                    Biophilic design helps us look at recipes that are visually
-                    seen. Humans have a deep intrinsic connection to nature that
-                    can lead to focused attention and relaxed mental states.
+                    Biophilic design helps us look at materials that are
+                    visually seen. Humans have a deep intrinsic connection to
+                    nature that can lead to focused attention and relaxed mental
+                    states.
                   </p>
                 </>
               )}
@@ -134,8 +129,8 @@ export default function RecipesId() {
               {isTutorial && (
                 <>
                   <p className="mt-2 mb-8 font-hand red-text text-lg">
-                    How does this recipe impact the performance of the building?
-                    Reducing energy consumption is important.
+                    How does this material impact the performance of the
+                    building? Reducing energy consumption is important.
                   </p>
                 </>
               )}
@@ -145,11 +140,11 @@ export default function RecipesId() {
               {isTutorial && (
                 <>
                   <p className="mt-2 font-hand red-text text-lg">
-                    What is the normal time for this recipe to last? Less than
+                    What is the normal time for this material to last? Less than
                     20 years is terrible while more than 100 years is amazing.
                   </p>
                   <p className="mt-4 mb-8 font-hand red-text text-lg">
-                    Sometimes the difficulty of installing an recipe can
+                    Sometimes the difficulty of installing an material can
                     compromise its lifespan. We aren't just picking an average
                     but rather looking at it's use across the spectrum.
                   </p>
@@ -162,7 +157,7 @@ export default function RecipesId() {
                 <>
                   <p className="mt-2 font-hand red-text text-lg mb-8">
                     From blood diamonds and child labor to simply installing
-                    toxic recipes, we look at how materials impact different
+                    toxic materials, we look at how materials impact different
                     classes of people.
                   </p>
                 </>
@@ -173,12 +168,12 @@ export default function RecipesId() {
               {isTutorial && (
                 <>
                   <p className="mt-2 font-hand red-text text-lg">
-                    This one looks at the carbon impact of the recipe. We can
-                    calculate the embodied carbon for recipes.
+                    This one looks at the carbon impact of the material. We can
+                    calculate the embodied carbon for materials.
                   </p>
                   <p className="mt-4 font-hand red-text text-lg">
                     Embodied carbon is how much C02 is emitted during the
-                    production and transportation of an recipe.
+                    production and transportation of an material.
                   </p>
                   <p className="mt-4 font-hand red-text text-lg mb-8">
                     Operational carbon isn't considered in this factor since it

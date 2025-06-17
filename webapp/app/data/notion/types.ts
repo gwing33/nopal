@@ -8,7 +8,7 @@ export type RichText = {
   type: string;
 };
 
-export type IngredientRecord = {
+export type MaterialRecord = {
   id: { id: string; tb: string };
   _id: string;
   name: string;
@@ -26,7 +26,7 @@ export type IngredientRecord = {
   pageDetails: BlockObjectResponse[];
 };
 
-export type TastingRecord = {
+export type ScienceRecord = {
   id: { id: string; tb: string };
   _id: string;
   name: string;
@@ -37,5 +37,5 @@ export type TastingRecord = {
   thumbnail: string;
   scores: number[];
   pageDetails: BlockObjectResponse[];
-  recipes: NopalPage[];
+  assemblies: NopalPage[];
 };

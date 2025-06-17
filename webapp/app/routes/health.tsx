@@ -17,9 +17,9 @@ import {
   CarbonFactor,
   SocialEquityFactor,
 } from "../components/FiveFactors";
-import { getSampleTastings } from "../data/notion/tastings.server";
+import { getSampleSciences } from "../data/notion/science.server";
 import type { Collection } from "../data/generic.server";
-import type { TastingRecord, RichText } from "../data/notion/types";
+import type { ScienceRecord, RichText } from "../data/notion/types";
 import { NotionText } from "../components/NotionText";
 import { useState } from "react";
 
@@ -28,18 +28,18 @@ export const links: LinksFunction = () => [
 ];
 
 type LoaderResult = {
-  tastings: Collection<TastingRecord>;
+  science: Collection<ScienceRecord>;
 };
 export const loader = async () => {
-  const tastings = await getSampleTastings();
-  return { tastings };
+  const science = await getSampleSciences();
+  return { science };
 };
 
 const MAX_STUDIES = 2;
 export default function Health() {
   const navigation = useNavigate();
   const location = useLocation();
-  const { tastings } = useLoaderData<LoaderResult>();
+  const { science } = useLoaderData<LoaderResult>();
   const [showStudies, setShowStudies] = useState(false);
 
   return (
@@ -58,27 +58,12 @@ export default function Health() {
             </div>
             <div className="flex gap-2  mt-4">
               <GbScore score={35} />
-              <GbScore score={45} favorite={true} />
+              <GbScore score={45} />
               <GbScore score={50} />
             </div>
           </div>
 
-          <div className="mt-20 relative">
-            <div className="special-flower font-hand red-text text-2xl">
-              Flowers are our favorite.
-              <svg
-                width="76"
-                height="83"
-                viewBox="0 0 76 83"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M71.4846 81.962C71.4846 81.962 90.2278 51.9659 37.5359 24.6995C23.4292 17.3997 1.23367 6.35845 1.23367 6.35845M1.23367 6.35845L6.28456 20.4728C6.89327 22.1738 9.2667 22.2599 9.99695 20.6074L17.2397 4.21787C17.95 2.61062 16.3909 0.934355 14.7365 1.52641L1.23367 6.35845Z"
-                  className="red-stroke"
-                />
-              </svg>
-            </div>
+          <div className="mt-4 relative">
             <p className="text-xl">
               We review <b>materials & assemblies</b> by looking at 5 Factors:
             </p>
@@ -118,17 +103,16 @@ export default function Health() {
             </div>
             <p className="text-xl mt-6">
               Before you get to that information, we recommend looking at our{" "}
-              <b>applied science case studies</b> where we examine real-world
-              projects.
+              <b>case studies</b> where we examine real-world projects.
             </p>
           </div>
 
           <h2 className="green-text text-4xl mt-12">Applied Science</h2>
           <div className="font-hand red-text text-2xl">
-            Explore and compare different building assemblies and materials
+            Exploring different building assemblies and materials!
           </div>
           <div>
-            {tastings.data
+            {science.data
               .filter((_, x) => showStudies || x < MAX_STUDIES)
               .map((tasting) => {
                 return (
@@ -145,7 +129,7 @@ export default function Health() {
                   />
                 );
               })}
-            {!showStudies && tastings.data.length > MAX_STUDIES && (
+            {!showStudies && science.data.length > MAX_STUDIES && (
               <div className="flex items-center mt-4 gap-2">
                 <svg
                   width="23"
@@ -173,7 +157,7 @@ export default function Health() {
             <NavLink
               preventScrollReset={true}
               className={() => {
-                if (/^\/health(\/recipes)??\/?$/.test(location.pathname)) {
+                if (/^\/health(\/assemblies)??\/?$/.test(location.pathname)) {
                   return "active";
                 }
                 return "";
@@ -185,7 +169,7 @@ export default function Health() {
             <NavLink
               preventScrollReset={true}
               prefetch="render"
-              to={"/health/ingredients"}
+              to={"/health/materials"}
             >
               Materials
             </NavLink>
@@ -233,14 +217,14 @@ function TastingItem({
         <h3 className="purple-light-text text-2xl">{title}</h3>
         <NotionText text={description.rich_text} />
         <div className="flex items-center gap-2">
-          <TastingScores scores={scores} annotation={annotation} />
+          <ScienceScores scores={scores} annotation={annotation} />
         </div>
       </div>
     </div>
   );
 }
 
-function TastingScores({
+function ScienceScores({
   scores,
   annotation,
 }: {

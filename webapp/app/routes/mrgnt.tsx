@@ -16,7 +16,7 @@ export default function Mrgnt() {
             <ul>
               <li>
                 <Link to="/mrgnt/gbs" className="link">
-                  +Ingredients & Recipes
+                  +Materials & Assemblies
                 </Link>
               </li>
               <li>

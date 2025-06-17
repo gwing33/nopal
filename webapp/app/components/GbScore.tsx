@@ -1,12 +1,11 @@
-type Props = { score: number; favorite?: boolean };
-export function GbScore({ score, favorite = false }: Props) {
+type Props = { score: number };
+export function GbScore({ score }: Props) {
   return (
     <div
       className="gb-score shrink-0 relative inline-flex items-center justify-center"
       style={{ width: "60px", height: "32px" }}
     >
       <DisplayScore score={score} />
-      {favorite && <Flower />}
       <svg
         className="absolute"
         width="60"
@@ -54,35 +53,6 @@ function DisplayScore({ score }: Props) {
     </span>
   );
 }
-
-const Flower = () => (
-  <svg
-    className="absolute z-10"
-    style={{ top: "-24px", right: "-24px" }}
-    width="48"
-    height="38"
-    viewBox="0 0 48 38"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M11.7796 34.638C12.06 32.1065 17.7784 21.4773 15.9338 16.0521C19.8231 17.2938 31.1038 19.7693 30.277 21.3603C29.2434 23.3491 18.0291 35.2047 15.6917 36.7109C13.3542 38.2171 11.4975 37.1851 11.7796 34.638Z"
-      fill="var(--purple-light)"
-    />
-    <path
-      d="M32.4029 8.71994C27.9213 8.35724 24.3694 9.10834 24.0552 12.2889C20.2111 6.92682 16.4717 4.92929 16.4717 4.92929C16.4717 4.92929 12.0094 9.02268 14.4422 11.9148C10.8519 12.1066 8.44459 10.3687 4.28013 13.0276C8.50048 17.2504 9.57255 20.2023 13.5726 19.5047C11.331 21.9618 12.2673 19.5637 10.5312 24.1896C13.2338 25.9059 16.6291 24.7577 21.0168 24.2777C20.1482 28.3496 26.2694 32.5274 26.2694 32.5274C26.2694 32.5274 28.0264 31.9662 29.112 27.316C32.6295 29.076 37.2668 30.847 41.7202 28.8243C40.2754 25.6432 38.5828 23.1743 34.9687 22.2576C38.2701 21.0779 39.656 21.8724 42.4327 18.6926C39.5 16.3296 36.4888 14.692 33.2355 16.3296C35.1159 13.0773 33.9919 13.2744 32.4029 8.71994Z"
-      fill="var(--pink)"
-    />
-    <ellipse
-      cx="23.7652"
-      cy="18.7129"
-      rx="8.64664"
-      ry="4.32332"
-      transform="rotate(20.5722 23.7652 18.7129)"
-      fill="var(--yellow-light)"
-    />
-  </svg>
-);
 
 function getBgColor(score: number) {
   if (isGood(score)) {

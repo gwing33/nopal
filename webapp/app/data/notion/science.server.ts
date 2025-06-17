@@ -5,38 +5,40 @@ import {
   getPageByDbRefAndSlug,
 } from "./core.server";
 import type { NopalPage } from "./core.server";
-import { getRecipesByPageIds } from "./recipes.server";
-import type { TastingRecord } from "./types";
+import { getAssembliesByPageIds } from "./assemblies.server";
+import type { ScienceRecord } from "./types";
 import { formatRecord } from "../generic.server";
 import { RecordId } from "surrealdb";
 
 const db = {
   id: "1d1f2211e45f80df81c3c82b831b45c1",
-  dbName: "gbs_tastings_v2",
-  getPublicUrl: (slug: string) => `/tastings/${slug}`,
+  dbName: "gbs_applied_science",
+  getPublicUrl: (slug: string) => `/science/${slug}`,
 };
 
-export function registerTastingsDb() {
+export function registerAppliedScienceDb() {
   registerDb(db);
 }
 
-export async function getSampleTastings(): Promise<{
-  data: TastingRecord[];
+const assemblyDbFieldName = "Assembly Database";
+
+export async function getSampleSciences(): Promise<{
+  data: ScienceRecord[];
 }> {
   const results = await getAllPublishedPagesByDbRef(db.dbName);
-  const recipePageIds = getRecipePageIds(results);
-  const gbs = await getGBSByPageIds(recipePageIds);
+  const ids = getAssemblyPageIds(results);
+  const gbs = await getGBSByPageIds(ids);
 
   return {
-    data: results.map(({ page }) => formatTastingRecord(page, gbs)),
+    data: results.map(({ page }) => formatScienceRecord(page, gbs)),
   };
 }
 
-function getRecipePageIds(results: { page: NopalPage }[]) {
+function getAssemblyPageIds(results: { page: NopalPage }[]) {
   return results.reduce((acc: string[], { page }) => {
-    const recipes = page.properties?.["Recipe Database"];
-    if (recipes?.type == "relation" && Array.isArray(recipes.relation)) {
-      recipes.relation.forEach(({ id }) => {
+    const assemblies = page.properties?.[assemblyDbFieldName];
+    if (assemblies?.type == "relation" && Array.isArray(assemblies.relation)) {
+      assemblies.relation.forEach(({ id }) => {
         if (!acc.includes(id)) {
           acc.push(id);
         }
@@ -68,26 +70,26 @@ async function getGBSByPageIds(ids: string[]): Promise<GBSPage[]> {
   return [];
 }
 
-export async function getTastingBySlug(slug: string) {
+export async function getScienceBySlug(slug: string) {
   const record = await getPageByDbRefAndSlug(db.dbName, slug);
   if (record) {
-    const db = record.properties["Recipe Database"];
+    const db = record.properties[assemblyDbFieldName];
     if (db.type === "relation") {
-      const recipeIds = db.relation.map(({ id }: { id: string }) => id);
-      const recipes = await getRecipesByPageIds(recipeIds);
-      return formatTastingRecord(record, [], recipes);
+      const ids = db.relation.map(({ id }: { id: string }) => id);
+      const assemblies = await getAssembliesByPageIds(ids);
+      return formatScienceRecord(record, [], assemblies);
     }
   }
   return null;
 }
 
-function formatTastingRecord(
+function formatScienceRecord(
   _record: any,
   gbs: GBSPage[],
-  recipes: NopalPage[] = []
-): TastingRecord {
+  assemblies: NopalPage[] = []
+): ScienceRecord {
   const record = formatRecord(_record);
-  const ingredient: TastingRecord = {
+  const scienceRecord: ScienceRecord = {
     id: record.id,
     _id: record._id,
     name: record.properties.Name.title[0]?.plain_text || "",
@@ -96,14 +98,14 @@ function formatTastingRecord(
     annotation: record.properties.Annotation.rich_text[0]?.plain_text || "",
     status: record.properties.Status.select?.name || "",
     thumbnail: record.properties.Thumbnail.files?.[0]?.file?.url || "",
-    scores: record.properties["Recipe Database"].relation
+    scores: record.properties[assemblyDbFieldName].relation
       .map(({ id }: { id: string }) => {
         const score = gbs.find((s) => s.id === id);
         return score ? score.gbs : 0;
       })
       .filter((score: number) => score > 0),
     pageDetails: record.pageDetails?.results || [],
-    recipes,
+    assemblies,
   };
-  return ingredient;
+  return scienceRecord;
 }

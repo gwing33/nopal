@@ -3,7 +3,7 @@ import { Footer } from "../components/Footer";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
-import { getTastingBySlug } from "../data/notion/tastings.server";
+import { getScienceBySlug } from "../data/notion/science.server";
 import { LinksFunction } from "@remix-run/node";
 import { Breadcrumb } from "../components/Breadcrumb";
 import healthStyles from "../styles/health.css?url";
@@ -21,24 +21,24 @@ export const links: LinksFunction = () => [
   { rel: "stylesheet", href: healthStyles },
 ];
 
-type Tasting = Awaited<ReturnType<typeof getTastingBySlug>>;
+type Science = Awaited<ReturnType<typeof getScienceBySlug>>;
 
 export async function loader(context: LoaderFunctionArgs) {
   const id = context.params?.id;
   if (!id) {
     return redirect("/health");
   }
-  const tasting = await getTastingBySlug(id);
-  return { tasting };
+  const science = await getScienceBySlug(id);
+  return { science };
 }
 
 export default function ScienceId() {
-  const { tasting } = useLoaderData<{ tasting: Tasting }>();
-  if (!tasting) {
+  const { science } = useLoaderData<{ science: Science }>();
+  if (!science) {
     return null;
   }
 
-  const { name, pageDetails } = tasting;
+  const { name, pageDetails } = science;
 
   return (
     <Layout>
@@ -59,9 +59,13 @@ export default function ScienceId() {
             Dive Into the Assemblies
           </h2>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {tasting.recipes.map((recipe) => {
+            {science.assemblies.map((assembly) => {
               return (
-                <HealthItem key={recipe.id} type="recipes" item={recipe} />
+                <HealthItem
+                  key={assembly.id}
+                  type="assemblies"
+                  item={assembly}
+                />
               );
             })}
           </div>
