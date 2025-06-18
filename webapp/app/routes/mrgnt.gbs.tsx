@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { json, ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useActionData, useNavigation } from "@remix-run/react";
 import { authenticator } from "../modules/auth/auth.server";
-import { syncAllDatabases } from "../data/notion.server";
+import { syncAllDatabases } from "../data/notion/sync.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await authenticator.isAuthenticated(request, {

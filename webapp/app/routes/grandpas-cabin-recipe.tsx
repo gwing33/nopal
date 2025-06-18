@@ -64,7 +64,7 @@ function CabinRecipe() {
 
   return (
     <>
-      <h2>MTF Ingredients</h2>
+      <h2>MTF Materials</h2>
 
       <div>
         For a building that is{" "}

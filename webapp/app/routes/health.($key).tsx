@@ -1,17 +1,14 @@
-import {
-  getAllIngredients,
-  getAllRecipes,
-  getAllCollections,
-} from "../data/notion.server";
 import type { Collection } from "../data/generic.server";
-import type { IngredientRecord } from "../data/notion.server";
+import type { MaterialRecord } from "../data/notion/types";
 import { useLoaderData, useLocation, useNavigate } from "@remix-run/react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { GbScore } from "../components/GbScore";
 import { NotionText } from "../components/NotionText";
 import { GoodArrow } from "../components/GoodAssets";
-import { isPublished, isFavorite } from "../data/ingredients";
+import { isPublished } from "../data/materials";
 import { getCacheControlHeader } from "../util/getCacheControlHeader.server";
+import { getAllMaterials } from "../data/notion/materials.server";
+import { getAllAssemblies } from "../data/notion/assemblies.server";
 
 export function headers() {
   return {
@@ -20,21 +17,18 @@ export function headers() {
 }
 
 type LoaderResult = {
-  data: Collection<IngredientRecord>;
+  data: Collection<MaterialRecord>;
 };
 export const loader = async (remixContext: LoaderFunctionArgs) => {
-  const key = remixContext.params?.key || "recipes";
+  const key = remixContext.params?.key || "assemblies";
 
   switch (key) {
-    case "ingredients":
-      const ingredients = await getAllIngredients();
-      return { data: ingredients };
-    case "recipes":
-      const recipes = await getAllRecipes();
-      return { data: recipes };
-    // case "collections":
-    //   const collections = await getAllCollections();
-    //   return { data: collections };
+    case "materials":
+      const materials = await getAllMaterials();
+      return { data: materials };
+    case "assemblies":
+      const assemblies = await getAllAssemblies();
+      return { data: assemblies };
   }
 };
 
@@ -52,38 +46,38 @@ export default function HealthIndex() {
         if (location.pathname === "/health/collections") {
           return null;
         }
-        if (location.pathname === "/health/ingredients") {
-          return <HealthItem item={i} type="ingredients" key={i._id} />;
+        if (location.pathname === "/health/materials") {
+          return <HealthItem item={i} type="materials" key={i._id} />;
         }
-        return <HealthItem item={i} type="recipes" key={i._id} />;
+        return <HealthItem item={i} type="assemblies" key={i._id} />;
       })}
     </>
   );
 }
 
-function HealthItem({
+export function HealthItem({
   item,
   type,
+  returnUrl,
 }: {
   item: any;
-  type: "recipes" | "ingredients";
+  type: "assemblies" | "materials";
+  returnUrl?: string;
 }) {
   const navigation = useNavigate();
-  const location = useLocation();
-  const search = location?.search || "";
   const { name, slug, summary, gbs, svg } = item;
 
   return (
     <div
       onClick={() => {
-        navigation(`/${type}/${slug}`);
+        navigation(`/${type}/${slug}`, { state: { returnUrl } });
       }}
       className="good-box good-box-hover p-4 flex flex-col justify-between"
     >
       <div>
         <div className="mt-8 gap-2 flex justify-center items-end">
           <img src={svg} />
-          <GbScore score={gbs} favorite={isFavorite(item)} />
+          <GbScore score={gbs} />
         </div>
         <h3 className="mt-2 text-center font-bold purple-light-text text-2xl">
           {name}

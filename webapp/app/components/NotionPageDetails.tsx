@@ -1,10 +1,45 @@
 import { getPlainText, NotionText } from "./NotionText";
-import type { PageDetail } from "../data/notion.server";
+import type {
+  BlockObjectResponse,
+  Heading1BlockObjectResponse,
+  Heading2BlockObjectResponse,
+  Heading3BlockObjectResponse,
+  ParagraphBlockObjectResponse,
+  BulletedListItemBlockObjectResponse,
+  // NumberedListItemBlockObjectResponse,
+  // QuoteBlockObjectResponse,
+  // ToDoBlockObjectResponse,
+  // ToggleBlockObjectResponse,
+  // TemplateBlockObjectResponse,
+  // SyncedBlockBlockObjectResponse,
+  // ChildPageBlockObjectResponse,
+  // ChildDatabaseBlockObjectResponse,
+  // EquationBlockObjectResponse,
+  // CodeBlockObjectResponse,
+  // CalloutBlockObjectResponse,
+  // DividerBlockObjectResponse,
+  // BreadcrumbBlockObjectResponse,
+  // TableOfContentsBlockObjectResponse,
+  // ColumnListBlockObjectResponse,
+  // ColumnBlockObjectResponse,
+  // LinkToPageBlockObjectResponse,
+  // TableBlockObjectResponse,
+  // TableRowBlockObjectResponse,
+  // EmbedBlockObjectResponse,
+  // BookmarkBlockObjectResponse,
+  ImageBlockObjectResponse,
+  VideoBlockObjectResponse,
+  // PdfBlockObjectResponse,
+  // FileBlockObjectResponse,
+  // AudioBlockObjectResponse,
+  // LinkPreviewBlockObjectResponse,
+  // UnsupportedBlockObjectResponse
+} from "@notionhq/client/build/src/api-endpoints";
 
 export function NotionPageDetails({
   pageDetails,
 }: {
-  pageDetails: PageDetail[];
+  pageDetails: BlockObjectResponse[];
 }) {
   return pageDetails?.map((detail) => {
     switch (detail.type) {
@@ -20,11 +55,17 @@ export function NotionPageDetails({
         return <BulletedListItem key={detail.id} detail={detail} />;
       case "image":
         return <Image key={detail.id} detail={detail} />;
+      case "video":
+        return <Video key={detail.id} detail={detail} />;
+      default:
+        console.warn("Unsupported Page Detail");
+        console.log({ detail });
+        return null;
     }
   });
 }
 
-function Heading1({ detail }: { detail: PageDetail }) {
+function Heading1({ detail }: { detail: Heading1BlockObjectResponse }) {
   return (
     <h1 className="font-bold purple-light-text text-4xl mt-12">
       <NotionText text={detail.heading_1?.rich_text || []} />
@@ -32,7 +73,7 @@ function Heading1({ detail }: { detail: PageDetail }) {
   );
 }
 
-function Heading2({ detail }: { detail: PageDetail }) {
+function Heading2({ detail }: { detail: Heading2BlockObjectResponse }) {
   return (
     <h2 className="font-bold green-text text-3xl mt-8">
       <NotionText text={detail.heading_2?.rich_text || []} />
@@ -40,7 +81,7 @@ function Heading2({ detail }: { detail: PageDetail }) {
   );
 }
 
-function Heading3({ detail }: { detail: PageDetail }) {
+function Heading3({ detail }: { detail: Heading3BlockObjectResponse }) {
   return (
     <h3 className="font-bold green-text text-2xl mt-4">
       <NotionText text={detail.heading_3?.rich_text || []} />
@@ -48,7 +89,7 @@ function Heading3({ detail }: { detail: PageDetail }) {
   );
 }
 
-function Paragraph({ detail }: { detail: PageDetail }) {
+function Paragraph({ detail }: { detail: ParagraphBlockObjectResponse }) {
   return (
     <p className="text-xl mt-2">
       <NotionText text={detail.paragraph?.rich_text || []} />
@@ -56,7 +97,11 @@ function Paragraph({ detail }: { detail: PageDetail }) {
   );
 }
 
-function BulletedListItem({ detail }: { detail: PageDetail }) {
+function BulletedListItem({
+  detail,
+}: {
+  detail: BulletedListItemBlockObjectResponse;
+}) {
   return (
     <ul className="list-disc ml-4 text-xl mt-2">
       <li>
@@ -66,12 +111,52 @@ function BulletedListItem({ detail }: { detail: PageDetail }) {
   );
 }
 
-function Image({ detail }: { detail: PageDetail }) {
+function Image({ detail }: { detail: ImageBlockObjectResponse }) {
   const image = detail.image;
+  if (image.type !== "file") return null;
+
   const url = image?.file?.url;
   if (!url) return null;
 
   const caption = getPlainText(image.caption);
 
   return <img className="mt-4" src={url} alt={caption} />;
+}
+
+function Video({ detail }: { detail: VideoBlockObjectResponse }) {
+  const video = detail.video;
+  if (video.type !== "external") return null;
+
+  const getUrl = () => {
+    const url = video?.external?.url;
+
+    // This corrects this format to change it into the embed format to prevent cross origin
+    // Input: https://youtu.be/Nk-I--FN2BU?si=CPMkK7KVMKtmfwUG
+    // Output: https://www.youtube.com/embed/Nk-I--FN2BU?si=dm8N4Mm-tbDKEZHY
+    if (url.startsWith("https://youtu.be/")) {
+      return url.replace("https://youtu.be/", "https://www.youtube.com/embed/");
+    }
+
+    return url;
+  };
+
+  const url = getUrl();
+  if (!url) return null;
+
+  const caption = getPlainText(video.caption);
+
+  return (
+    <div key={detail.id} className="video-container">
+      <iframe
+        width="600"
+        height="315"
+        src={url}
+        title={caption || "YouTube video player"}
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerPolicy="strict-origin-when-cross-origin"
+        allowFullScreen
+      />
+    </div>
+  );
 }

@@ -108,7 +108,7 @@ export default function GoodConsulting() {
               </ul>
             </div>
             <div className="good-box ingredient-box p-4 font-mono">
-              <h4 className="text-xl font-bold">Good Ingredients</h4>
+              <h4 className="text-xl font-bold">Good Materials</h4>
               <div className="flex gap-4 mt-2">
                 <Star />
                 <Star />

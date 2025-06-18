@@ -1,6 +1,12 @@
 import { Layout } from "../components/Layout";
 import { FooterDiscovery } from "../components/Footer";
-import { Outlet, NavLink, useLocation } from "@remix-run/react";
+import {
+  Outlet,
+  NavLink,
+  useNavigate,
+  useLocation,
+  useLoaderData,
+} from "@remix-run/react";
 import { GbScore } from "../components/GbScore";
 import { LinksFunction } from "@remix-run/node";
 import healthStyles from "../styles/health.css?url";
@@ -11,13 +17,31 @@ import {
   CarbonFactor,
   SocialEquityFactor,
 } from "../components/FiveFactors";
+import { getSampleSciences } from "../data/notion/science.server";
+import type { Collection } from "../data/generic.server";
+import type { ScienceRecord, RichText } from "../data/notion/types";
+import { NotionText } from "../components/NotionText";
+import { useState } from "react";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: healthStyles },
 ];
 
+type LoaderResult = {
+  science: Collection<ScienceRecord>;
+};
+export const loader = async () => {
+  const science = await getSampleSciences();
+  return { science };
+};
+
+const MAX_STUDIES = 2;
 export default function Health() {
+  const navigation = useNavigate();
   const location = useLocation();
+  const { science } = useLoaderData<LoaderResult>();
+  const [showStudies, setShowStudies] = useState(false);
+
   return (
     <Layout>
       <div className="scene1">
@@ -34,29 +58,14 @@ export default function Health() {
             </div>
             <div className="flex gap-2  mt-4">
               <GbScore score={35} />
-              <GbScore score={45} favorite={true} />
+              <GbScore score={45} />
               <GbScore score={50} />
             </div>
           </div>
 
-          <div className="mt-20 relative">
-            <div className="special-flower font-hand red-text text-2xl">
-              Flowers are our favorite.
-              <svg
-                width="76"
-                height="83"
-                viewBox="0 0 76 83"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M71.4846 81.962C71.4846 81.962 90.2278 51.9659 37.5359 24.6995C23.4292 17.3997 1.23367 6.35845 1.23367 6.35845M1.23367 6.35845L6.28456 20.4728C6.89327 22.1738 9.2667 22.2599 9.99695 20.6074L17.2397 4.21787C17.95 2.61062 16.3909 0.934355 14.7365 1.52641L1.23367 6.35845Z"
-                  className="red-stroke"
-                />
-              </svg>
-            </div>
+          <div className="mt-4 relative">
             <p className="text-xl">
-              We review <b>ingredients & recipes</b> by looking at 5 Factors:
+              We review <b>materials & assemblies</b> by looking at 5 Factors:
             </p>
             <div className="flex gap-8 items-center">
               <div className="flex flex-col gap-4 mt-4 w-2/3">
@@ -86,34 +95,84 @@ export default function Health() {
                 >
                   <path
                     d="M139.735 49.6558C139.735 49.6558 96.1783 -7.46098 39.4723 1.77095C23.7951 4.32325 0.999983 14.9669 0.999983 14.9669M0.999983 14.9669L14.6331 21.2011C16.2761 21.9524 17.9943 20.3127 17.3206 18.6364L10.6387 2.01035C9.98339 0.379903 7.69482 0.326392 6.96406 1.92443L0.999983 14.9669Z"
-                    stroke="#A63B31"
+                    className="red-stroke"
                   />
                 </svg>
                 We rate each factor out of 10.
               </div>
             </div>
-            <p className="text-xl mt-8">
-              Before we get to that info, you’ll be presented with a collective
-              score. This is the <b>Good Building Score</b>.
+            <p className="text-xl mt-6">
+              Before you get to that information, we recommend looking at our{" "}
+              <b>case studies</b> where we examine real-world projects.
             </p>
+          </div>
+
+          <h2 className="green-text text-4xl mt-12">Applied Science</h2>
+          <div className="font-hand red-text text-2xl">
+            Exploring different building assemblies and materials!
+          </div>
+          <div>
+            {science.data
+              .filter((_, x) => showStudies || x < MAX_STUDIES)
+              .map((tasting) => {
+                return (
+                  <TastingItem
+                    key={tasting._id}
+                    img={tasting.thumbnail}
+                    title={tasting.name}
+                    description={tasting.summary}
+                    scores={tasting.scores || []}
+                    annotation={tasting.annotation}
+                    onClick={() => {
+                      navigation(`/science/${tasting.slug}`);
+                    }}
+                  />
+                );
+              })}
+            {!showStudies && science.data.length > MAX_STUDIES && (
+              <div className="flex items-center mt-4 gap-2">
+                <svg
+                  width="23"
+                  height="15"
+                  viewBox="0 0 23 15"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M21.5294 9.02936L16.8237 4.3237C15.5462 3.04622 13.3638 3.98314 13.4101 5.78918L13.5747 12.2075C13.6198 13.9641 15.7458 14.813 16.9883 13.5704L21.5294 9.02936ZM21.5294 9.02936L6.99998 9.04701C6.99998 9.04701 0.999998 9.04701 0.999998 0.500002"
+                    className="purple-light-stroke"
+                  />
+                </svg>
+                <button
+                  className="btn-yellow"
+                  onClick={() => setShowStudies(true)}
+                >
+                  More studies
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="folder-tabs mt-12">
             <NavLink
+              preventScrollReset={true}
               className={() => {
-                if (/^\/health(\/recipes)??\/?$/.test(location.pathname)) {
+                if (/^\/health(\/assemblies)??\/?$/.test(location.pathname)) {
                   return "active";
                 }
                 return "";
               }}
               to={"/health"}
             >
-              Recipes
+              Assemblies
             </NavLink>
-            <NavLink prefetch="render" to={"/health/ingredients"}>
-              Ingredients
+            <NavLink
+              preventScrollReset={true}
+              prefetch="render"
+              to={"/health/materials"}
+            >
+              Materials
             </NavLink>
-            {/* <NavLink to={"/health/collections"}>Collections</NavLink> */}
           </div>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Outlet />
@@ -123,4 +182,94 @@ export default function Health() {
       <FooterDiscovery />
     </Layout>
   );
+}
+
+type TastingItemProps = {
+  img: string;
+  title: string;
+  description: RichText;
+  scores: number[];
+  annotation: string;
+  onClick: () => void;
+};
+
+function TastingItem({
+  title,
+  description,
+  scores,
+  img,
+  annotation,
+  onClick,
+}: TastingItemProps) {
+  return (
+    <div
+      className="flex gap-4 mt-4 article-item flex-col sm:flex-row"
+      onClick={(e) => {
+        e.preventDefault();
+        onClick();
+      }}
+    >
+      <div
+        className="h-52 sm:w-36 sm:h-36 rounded bg-cover shrink-0 bg-center"
+        style={{ backgroundImage: `url("${img}")` }}
+      ></div>
+      <div className="flex flex-col gap-2">
+        <h3 className="purple-light-text text-2xl">{title}</h3>
+        <NotionText text={description.rich_text} />
+        <div className="flex items-center gap-2">
+          <ScienceScores scores={scores} annotation={annotation} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ScienceScores({
+  scores,
+  annotation,
+}: {
+  scores: number[];
+  annotation: string;
+}) {
+  const sortedScores = scores.sort();
+  if (sortedScores.length == 2) {
+    const diff = sortedScores[1] - sortedScores[0];
+
+    return (
+      <>
+        <GbScore score={sortedScores[0]} />
+        {diff > 15 && (
+          <svg
+            width="26"
+            height="12"
+            viewBox="0 0 26 12"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M25.0294 6.02936L20.3237 1.32371C19.0462 0.0462249 16.8638 0.983148 16.9102 2.78919L17.0747 9.20748C17.1198 10.9641 19.2458 11.813 20.4883 10.5704L25.0294 6.02936ZM25.0294 6.02936C25.0294 6.02936 6.48377 6.06931 0.970642 6.02936"
+              className="red-stroke"
+            />
+          </svg>
+        )}
+        <GbScore score={sortedScores[1]} />
+        <div className="font-hand red-text text-xl">
+          {diff > 15 && `+${diff}pt `}
+          {annotation}
+        </div>
+      </>
+    );
+  }
+
+  if (sortedScores.length > 2) {
+    return (
+      <>
+        <GbScore score={sortedScores[0]} />
+        <GbScore score={sortedScores[1]} />
+        <GbScore score={sortedScores[2]} />
+        <div className="font-hand red-text text-xl">{annotation}</div>
+      </>
+    );
+  }
+  return null;
 }

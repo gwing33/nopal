@@ -82,14 +82,14 @@ export function Layout({ children }: { children?: ReactNode }) {
             className="main-nav mr-4 ml-4"
             style={expanded ? { display: "block" } : {}}
           >
+            <NavLink
+              to="/health"
+              prefetch="render"
+              className="main-nav-item p-2"
+            >
+              Health
+            </NavLink>
             <div className="good-menu" tabIndex={0}>
-              {/* <NavLink
-                to="/health"
-                prefetch="render"
-                className="main-nav-item p-2"
-              >
-                Health
-              </NavLink> */}
               <NavLink
                 to="/good/s"
                 prefetch="render"
@@ -140,7 +140,7 @@ export function Layout({ children }: { children?: ReactNode }) {
               prefetch="render"
               className="main-nav-item p-2 text-nowrap"
             >
-              Sunny Home No.1
+              Sunny Home
             </NavLink>
           </nav>
           {isDark ? (

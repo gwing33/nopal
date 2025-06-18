@@ -78,6 +78,19 @@ body {
   color: white;
 }
 
+.btn-yellow {
+  @apply btn;
+  background-color: var(--btn-color, var(--farground));
+  border: 1px solid var(--border-color, var(--foreground));
+  padding: 8px 16px;
+  color: var(--purple-light);
+  @media (prefers-color-scheme: dark) {
+    background-color: var(--dark-farground);
+    border-color: var(--dark-foreground);
+    color: white;
+  }
+}
+
 /* Good Box */
 .good-box {
   border: 1px solid var(--foreground);
@@ -322,6 +335,9 @@ body {
     }
   }
 }
+.main-nav {
+  white-space: nowrap;
+}
 
 .main-nav a.main-nav-item {
   position: relative;
@@ -480,8 +496,9 @@ body {
 
   > svg {
     position: absolute;
-    left: calc(50% - 176px);
-    top: -32px;
+    left: calc(50% - 48px);
+    top: -28px;
+    transform: scalex(-1);
     z-index: 4;
     @media (prefers-color-scheme: dark) {
       path {
@@ -494,10 +511,6 @@ body {
     ul {
       width: min-content;
     }
-    > svg {
-      left: calc(50% - 112px);
-      transform: scalex(-1);
-    }
   }
   @media (max-width: 639px) {
     top: 80px;
@@ -508,7 +521,7 @@ body {
       align-items: center;
     }
     > svg {
-      left: calc(100% - 256px);
+      left: calc(100% - 224px);
     }
   }
 }
@@ -741,8 +754,12 @@ body {
       color: var(--green);
       padding-top: 16px;
       @media (prefers-color-scheme: dark) {
+        color: var(--green-light);
         border-bottom-color: var(--purple) !important;
       }
+    }
+    @media (prefers-color-scheme: dark) {
+      color: white;
     }
   }
   @media (prefers-color-scheme: dark) {
