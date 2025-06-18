@@ -203,14 +203,14 @@ function TastingItem({
 }: TastingItemProps) {
   return (
     <div
-      className="flex gap-4 mt-4 article-item"
+      className="flex gap-4 mt-4 article-item flex-col sm:flex-row"
       onClick={(e) => {
         e.preventDefault();
         onClick();
       }}
     >
       <div
-        className="w-36 h-36 rounded bg-cover shrink-0 bg-center"
+        className="h-52 sm:w-36 sm:h-36 rounded bg-cover shrink-0 bg-center"
         style={{ backgroundImage: `url("${img}")` }}
       ></div>
       <div className="flex flex-col gap-2">

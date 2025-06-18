@@ -42,6 +42,7 @@ export async function loader(context: LoaderFunctionArgs) {
 export default function AssemblyId() {
   const { assemblies } = useLoaderData<{ assemblies: Assemblies }>();
   const location = useLocation();
+  const returnUrl = location.state?.returnUrl;
   const search = location?.search || "";
   const isTutorial = search.includes("tutorial=true");
 
@@ -66,7 +67,11 @@ export default function AssemblyId() {
         <div className="simple-container p-4">
           <div className="mt-12">
             <Breadcrumb>
-              <Link to={"/health"}>All Assemblies</Link>
+              {returnUrl ? (
+                <Link to={returnUrl}>Back to Applied Science</Link>
+              ) : (
+                <Link to={"/health"}>All Assemblies</Link>
+              )}
             </Breadcrumb>
           </div>
           <div className="flex items-center justify-between mb-8">

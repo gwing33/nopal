@@ -58,9 +58,11 @@ export default function HealthIndex() {
 export function HealthItem({
   item,
   type,
+  returnUrl,
 }: {
   item: any;
   type: "assemblies" | "materials";
+  returnUrl?: string;
 }) {
   const navigation = useNavigate();
   const { name, slug, summary, gbs, svg } = item;
@@ -68,7 +70,7 @@ export function HealthItem({
   return (
     <div
       onClick={() => {
-        navigation(`/${type}/${slug}`);
+        navigation(`/${type}/${slug}`, { state: { returnUrl } });
       }}
       className="good-box good-box-hover p-4 flex flex-col justify-between"
     >

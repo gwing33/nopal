@@ -63,6 +63,7 @@ export default function ScienceId() {
               return (
                 <HealthItem
                   key={assembly.id}
+                  returnUrl={`/science/${science.slug}`}
                   type="assemblies"
                   item={assembly}
                 />
