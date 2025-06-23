@@ -171,8 +171,9 @@ function Column({ detail }: { detail: ColumnBlockObjectResponse }) {
   const widthRatio = detail.column.width_ratio;
 
   const getWidthClassName = () => {
+    const baseClasses = "w-full";
     if (widthRatio == 0.5) {
-      return "w-1/2";
+      return `${baseClasses} sm:w-1/2`;
     }
     return "";
   };
@@ -189,7 +190,7 @@ function ColumnList({ detail }: { detail: ColumnListBlockObjectResponse }) {
   const columns: BlockObjectResponse[] = detail.children.results;
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-col sm:flex-row gap-2">
       <NotionPageDetails pageDetails={columns} />
     </div>
   );

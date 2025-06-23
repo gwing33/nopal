@@ -166,6 +166,7 @@ export async function syncAllDatabases() {
               page.properties.Slug.rich_text[0].plain_text = slug;
               page.public_url = db.getPublicUrl(slug);
             }
+
             await syncFileProperties(page);
 
             const details = await syncPageDetailImagesAndFiles(
