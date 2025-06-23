@@ -36,9 +36,9 @@ async function getAllPagesFromNotionDB(db: NotionDatabase) {
   });
 }
 
-async function getPageDetails(page: PageObjectResponse) {
+async function getPageDetails(id: string) {
   return await notion.blocks.children.list({
-    block_id: page.id,
+    block_id: id,
   });
 }
 
@@ -57,6 +57,13 @@ async function syncPageDetailImagesAndFiles(
         );
         console.log("File Uploaded: ", detail.image.file.url);
         detail.image.file.expiry_time = "";
+      }
+      if (detail.has_children) {
+        const childrenDetails = await syncPageDetailImagesAndFiles(
+          await getPageDetails(detail.id)
+        );
+        // @ts-ignore
+        detail.children = childrenDetails;
       }
       return detail;
     })
@@ -151,17 +158,18 @@ export async function syncAllDatabases() {
             // console.log("Syncing page:", page.id);
 
             const slugProp = page.properties.Slug || null;
-            const slug =
-              slugProp?.type == "rich_text"
-                ? slugProp.rich_text?.[0]?.plain_text || null
-                : null;
-            if (slug) {
+            if (
+              page.properties.Slug.type == "rich_text" &&
+              page.properties.Slug?.rich_text?.[0]?.plain_text
+            ) {
+              const slug = page.properties.Slug.rich_text[0].plain_text.trim();
+              page.properties.Slug.rich_text[0].plain_text = slug;
               page.public_url = db.getPublicUrl(slug);
             }
             await syncFileProperties(page);
 
             const details = await syncPageDetailImagesAndFiles(
-              await getPageDetails(page)
+              await getPageDetails(page.id)
             );
             // Save block
             const block = (await upsertBlock(details))?.[0];
