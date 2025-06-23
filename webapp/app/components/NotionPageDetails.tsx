@@ -20,8 +20,8 @@ import type {
   // DividerBlockObjectResponse,
   // BreadcrumbBlockObjectResponse,
   // TableOfContentsBlockObjectResponse,
-  // ColumnListBlockObjectResponse,
-  // ColumnBlockObjectResponse,
+  ColumnListBlockObjectResponse,
+  ColumnBlockObjectResponse,
   // LinkToPageBlockObjectResponse,
   // TableBlockObjectResponse,
   // TableRowBlockObjectResponse,
@@ -57,6 +57,10 @@ export function NotionPageDetails({
         return <Image key={detail.id} detail={detail} />;
       case "video":
         return <Video key={detail.id} detail={detail} />;
+      case "column_list":
+        return <ColumnList key={detail.id} detail={detail} />;
+      case "column":
+        return <Column key={detail.id} detail={detail} />;
       default:
         console.warn("Unsupported Page Detail");
         console.log({ detail });
@@ -157,6 +161,37 @@ function Video({ detail }: { detail: VideoBlockObjectResponse }) {
         referrerPolicy="strict-origin-when-cross-origin"
         allowFullScreen
       />
+    </div>
+  );
+}
+
+function Column({ detail }: { detail: ColumnBlockObjectResponse }) {
+  // @ts-ignore
+  const children = detail.children.results;
+  const widthRatio = detail.column.width_ratio;
+
+  const getWidthClassName = () => {
+    const baseClasses = "w-full";
+    if (widthRatio == 0.5) {
+      return `${baseClasses} sm:w-1/2`;
+    }
+    return "";
+  };
+
+  return (
+    <div className={getWidthClassName()}>
+      <NotionPageDetails pageDetails={children} />
+    </div>
+  );
+}
+
+function ColumnList({ detail }: { detail: ColumnListBlockObjectResponse }) {
+  // @ts-ignore
+  const columns: BlockObjectResponse[] = detail.children.results;
+
+  return (
+    <div className="flex flex-col sm:flex-row gap-2">
+      <NotionPageDetails pageDetails={columns} />
     </div>
   );
 }
