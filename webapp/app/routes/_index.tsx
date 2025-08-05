@@ -16,7 +16,7 @@ export default function Index() {
           <div className="mt-16">
             <h1 className="purple-light-text text-4xl">Homes for Humans</h1>
             <p className="text-xl mt-4 mb-4">
-              We start with natural materials and a thoughtful assemblies to
+              We start with natural materials and thoughtful assemblies to
               deliver a home that helps you focus on life.
             </p>
           </div>
