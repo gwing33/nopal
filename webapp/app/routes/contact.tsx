@@ -9,10 +9,14 @@ export default function Contact() {
           <h1 className="purple-light-text text-4xl">Contact</h1>
 
           <div className="flex gap-8 flex-col sm:flex-row items-start sm:items-center text-xl mt-8">
+            <ButtonLink href="https://calendly.com/build-for-good/30minhttps://calendly.com/build-for-good/30min">
+              Schedule a Call
+            </ButtonLink>
             <ButtonLink href="https://discord.gg/avFGzMNAXu">
               Join us on Discord
             </ButtonLink>
-
+          </div>
+          <div className="mt-4">
             <a href="mailto:human@nopal.build" className="link">
               Email us at human@nopal.build
             </a>

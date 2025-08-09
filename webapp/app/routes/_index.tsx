@@ -19,6 +19,13 @@ export default function Index() {
               We start with natural materials and thoughtful assemblies to
               deliver a home that helps you focus on life.
             </p>
+            <a
+              className="btn-primary"
+              target="_blank"
+              href="https://calendly.com/build-for-good/30minhttps://calendly.com/build-for-good/30min"
+            >
+              Schedule a Call
+            </a>
           </div>
           <div className="mt-16">
             <h2 className="green-text text-3xl">
