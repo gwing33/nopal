@@ -22,7 +22,7 @@ export default function Index() {
             <a
               className="btn-primary"
               target="_blank"
-              href="https://calendly.com/build-for-good"
+              href="https://calendly.com/build-for-good/30min"
             >
               Schedule a Call
             </a>

@@ -9,7 +9,7 @@ export default function Contact() {
           <h1 className="purple-light-text text-4xl">Contact</h1>
 
           <div className="flex gap-8 flex-col sm:flex-row items-start sm:items-center text-xl mt-8">
-            <ButtonLink href="https://calendly.com/build-for-good">
+            <ButtonLink href="https://calendly.com/build-for-good/30min">
               Schedule a Call
             </ButtonLink>
             <ButtonLink href="https://discord.gg/avFGzMNAXu">
