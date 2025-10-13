@@ -19,37 +19,6 @@ export default function Mrgnt() {
                   +Materials & Assemblies
                 </Link>
               </li>
-              <li>
-                <Link to="/mrgnt/uncooked?type=presentation" className="link">
-                  +Presentation
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/mrgnt/uncooked?type=newspaper-clipping"
-                  className="link text-nowrap"
-                >
-                  +Newpaper Clippings
-                </Link>
-              </li>
-              <li>
-                <Link to="/mrgnt/uncooked?type=print" className="link">
-                  +Print
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/mrgnt/uncooked?type=view-master-reel"
-                  className="link"
-                >
-                  +View-Master Reel
-                </Link>
-              </li>
-              <li>
-                <Link to="/mrgnt/uncooked?type=betamax" className="link">
-                  +Betamax
-                </Link>
-              </li>
             </ul>
           </div>
         </div>
