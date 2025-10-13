@@ -18,8 +18,13 @@ import {
   SocialEquityFactor,
 } from "../components/FiveFactors";
 import { getSampleSciences } from "../data/notion/science.server";
+import { getAllStories } from "../data/notion/stories.server";
 import type { Collection } from "../data/generic.server";
-import type { ScienceRecord, RichText } from "../data/notion/types";
+import type {
+  StoryRecord,
+  ScienceRecord,
+  RichText,
+} from "../data/notion/types";
 import { NotionText } from "../components/NotionText";
 import { useState } from "react";
 
@@ -28,19 +33,23 @@ export const links: LinksFunction = () => [
 ];
 
 type LoaderResult = {
+  stories: Collection<StoryRecord>;
   science: Collection<ScienceRecord>;
 };
 export const loader = async () => {
+  const stories = await getAllStories();
   const science = await getSampleSciences();
-  return { science };
+  return { science, stories };
 };
 
 const MAX_STUDIES = 2;
 export default function Health() {
   const navigation = useNavigate();
   const location = useLocation();
-  const { science } = useLoaderData<LoaderResult>();
+  const { science, stories } = useLoaderData<LoaderResult>();
   const [showStudies, setShowStudies] = useState(false);
+
+  const hasStories = stories.data.length > 0;
 
   return (
     <Layout>
@@ -103,9 +112,35 @@ export default function Health() {
             </div>
             <p className="text-xl mt-6">
               Before you get to that information, we recommend looking at our{" "}
-              <b>case studies</b> where we examine real-world projects.
+              <b>stories</b> and <b>case studies</b> where we examine real-world
+              projects.
             </p>
           </div>
+
+          {hasStories && (
+            <>
+              <h2 className="green-text text-4xl mt-12">Stories</h2>
+              <div className="font-hand red-text text-2xl">
+                Our journey to building Arizona's healthiest homes
+              </div>
+              <div>
+                {stories.data.map((story) => {
+                  return (
+                    <TastingItem
+                      key={story._id}
+                      img={story.thumbnail}
+                      title={story.name}
+                      description={story.summary}
+                      annotation={story.annotation}
+                      onClick={() => {
+                        navigation(`/stories/${story.slug}`);
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </>
+          )}
 
           <h2 className="green-text text-4xl mt-12">Applied Science</h2>
           <div className="font-hand red-text text-2xl">
@@ -188,7 +223,7 @@ type TastingItemProps = {
   img: string;
   title: string;
   description: RichText;
-  scores: number[];
+  scores?: number[];
   annotation: string;
   onClick: () => void;
 };
@@ -216,9 +251,11 @@ function TastingItem({
       <div className="flex flex-col gap-2">
         <h3 className="purple-light-text text-2xl">{title}</h3>
         <NotionText text={description.rich_text} />
-        <div className="flex items-center gap-2">
-          <ScienceScores scores={scores} annotation={annotation} />
-        </div>
+        {scores && (
+          <div className="flex items-center gap-2">
+            <ScienceScores scores={scores} annotation={annotation} />
+          </div>
+        )}
       </div>
     </div>
   );

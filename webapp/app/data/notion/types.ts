@@ -45,6 +45,7 @@ export type StoryRecord = {
   _id: string;
   name: string;
   summary: RichText;
+  thumbnail: string;
   status: string;
   slug: string;
   annotation: string;

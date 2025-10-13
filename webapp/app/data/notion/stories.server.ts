@@ -5,7 +5,6 @@ import {
 } from "./core.server";
 import type { StoryRecord } from "./types";
 import { formatRecord } from "../generic.server";
-import { getGBSScore } from "../../util/getGBSScore";
 
 const db = {
   id: "27af2211e45f80a993d4dde9a4067ea3",
@@ -42,6 +41,7 @@ function formatStoryRecord(_record: any): StoryRecord {
     name: record.properties.Name.title[0]?.plain_text || "",
     slug: record.properties.Slug.rich_text[0]?.plain_text || "",
     summary: record.properties.Summary,
+    thumbnail: record.properties.Thumbnail.files?.[0]?.file?.url || "",
     status: record.properties.Status.select?.name || "",
     annotation: record.properties.Annotation.select?.name || "",
     pageDetails: record.pageDetails?.results || [],
