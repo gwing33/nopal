@@ -39,3 +39,14 @@ export type ScienceRecord = {
   pageDetails: BlockObjectResponse[];
   assemblies: NopalPage[];
 };
+
+export type StoryRecord = {
+  id: { id: string; tb: string };
+  _id: string;
+  name: string;
+  summary: RichText;
+  status: string;
+  slug: string;
+  annotation: string;
+  pageDetails: BlockObjectResponse[];
+};
