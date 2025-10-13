@@ -55,10 +55,13 @@ export default function GoodConsulting() {
             <h3 className="font-bold text-3xl">At Your Service</h3>
             <div className="purple-light-text">Collaborate & Question</div>
             <hr className="my-4" />
-            <div className="font-bold text-3xl">
-              $3k+<span className="font-normal text-lg">/mo</span>
-            </div>
-            <div className="purple-light-text">Starting</div>
+            <a
+              className="btn-primary text-lg"
+              target="_blank"
+              href="https://calendly.com/build-for-good/30min"
+            >
+              Schedule a Call
+            </a>
             <div className="mt-8">
               <h5 className="text-lg font-bold">Design Phase</h5>
               <ul className="dash-list">
