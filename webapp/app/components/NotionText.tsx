@@ -13,7 +13,20 @@ export function NotionText({ text }: { text?: RichTextItemResponse[] }) {
       {text.map((t: any, i) => {
         switch (t.type) {
           case "text":
+            const href = t.href;
             const classNames = getTextClasses(t, "text-xl");
+            if (href) {
+              return (
+                <a
+                  key={i}
+                  target="_blank"
+                  className={classNames + " underline"}
+                  href={href}
+                >
+                  {t.plain_text}
+                </a>
+              );
+            }
             return (
               <span key={i} className={classNames}>
                 {t.plain_text}

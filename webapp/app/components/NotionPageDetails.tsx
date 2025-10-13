@@ -6,7 +6,7 @@ import type {
   Heading3BlockObjectResponse,
   ParagraphBlockObjectResponse,
   BulletedListItemBlockObjectResponse,
-  // NumberedListItemBlockObjectResponse,
+  NumberedListItemBlockObjectResponse,
   // QuoteBlockObjectResponse,
   // ToDoBlockObjectResponse,
   // ToggleBlockObjectResponse,
@@ -41,32 +41,59 @@ export function NotionPageDetails({
 }: {
   pageDetails: BlockObjectResponse[];
 }) {
-  return pageDetails?.map((detail) => {
-    switch (detail.type) {
-      case "heading_1":
-        return <Heading1 key={detail.id} detail={detail} />;
-      case "heading_2":
-        return <Heading2 key={detail.id} detail={detail} />;
-      case "heading_3":
-        return <Heading3 key={detail.id} detail={detail} />;
-      case "paragraph":
-        return <Paragraph key={detail.id} detail={detail} />;
-      case "bulleted_list_item":
-        return <BulletedListItem key={detail.id} detail={detail} />;
-      case "image":
-        return <Image key={detail.id} detail={detail} />;
-      case "video":
-        return <Video key={detail.id} detail={detail} />;
-      case "column_list":
-        return <ColumnList key={detail.id} detail={detail} />;
-      case "column":
-        return <Column key={detail.id} detail={detail} />;
-      default:
-        console.warn("Unsupported Page Detail");
-        console.log({ detail });
+  return pageDetails
+    ?.reduce(
+      (
+        acc: (BlockObjectResponse | NumberedListItemBlockObjectResponse[])[],
+        detail
+      ) => {
+        if (detail.type == "numbered_list_item") {
+          const lastIdx = acc.length - 1;
+          if (Array.isArray(acc[lastIdx])) {
+            acc[lastIdx].push(detail);
+            return acc;
+          } else {
+            return [...acc, [detail]];
+          }
+        }
+        return [...acc, detail];
+      },
+      []
+    )
+    .map((detail) => {
+      if (Array.isArray(detail)) {
+        const [firstDetail] = detail;
+        if (firstDetail.type === "numbered_list_item") {
+          return <NumberedListItems key={firstDetail.id} details={detail} />;
+        }
+        console.warn("Unsupported List Page Detail:", firstDetail.type);
         return null;
-    }
-  });
+      }
+      switch (detail.type) {
+        case "heading_1":
+          return <Heading1 key={detail.id} detail={detail} />;
+        case "heading_2":
+          return <Heading2 key={detail.id} detail={detail} />;
+        case "heading_3":
+          return <Heading3 key={detail.id} detail={detail} />;
+        case "paragraph":
+          return <Paragraph key={detail.id} detail={detail} />;
+        case "bulleted_list_item":
+          return <BulletedListItem key={detail.id} detail={detail} />;
+        case "image":
+          return <Image key={detail.id} detail={detail} />;
+        case "video":
+          return <Video key={detail.id} detail={detail} />;
+        case "column_list":
+          return <ColumnList key={detail.id} detail={detail} />;
+        case "column":
+          return <Column key={detail.id} detail={detail} />;
+        default:
+          console.warn("Unsupported Page Detail:", detail.type);
+          console.log({ detail });
+          return null;
+      }
+    });
 }
 
 function Heading1({ detail }: { detail: Heading1BlockObjectResponse }) {
@@ -112,6 +139,22 @@ function BulletedListItem({
         <NotionText text={detail.bulleted_list_item?.rich_text || []} />
       </li>
     </ul>
+  );
+}
+
+function NumberedListItems({
+  details,
+}: {
+  details: NumberedListItemBlockObjectResponse[];
+}) {
+  return (
+    <ol className="list-decimal ml-4 text-xl mt-2">
+      {details.map((detail) => (
+        <li key={detail.id}>
+          <NotionText text={detail.numbered_list_item?.rich_text || []} />
+        </li>
+      ))}
+    </ol>
   );
 }
 
