@@ -244,10 +244,9 @@ function TastingItem({
         onClick();
       }}
     >
-      <div
-        className="h-52 sm:w-36 sm:h-36 rounded bg-cover shrink-0 bg-center"
-        style={{ backgroundImage: `url("${img}")` }}
-      ></div>
+      <div className="shrink-0">
+        <img src={img} alt={title} className="rounded sm:w-52" />
+      </div>
       <div className="flex flex-col gap-2">
         <h3 className="purple-light-text text-2xl">{title}</h3>
         <NotionText text={description.rich_text} />
