@@ -21,7 +21,7 @@ export async function getAllStories(): Promise<{
   const results = await getAllPublishedPagesByDbRef(db.dbName);
 
   return {
-    data: results.map(({ page }) => formatStoryRecord(page)),
+    data: results.reverse().map(({ page }) => formatStoryRecord(page)),
   };
 }
 
