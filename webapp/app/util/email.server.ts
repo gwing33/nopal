@@ -23,3 +23,28 @@ export async function sendEmail({ to, subject, react }: SendEmailBody) {
     react,
   });
 }
+
+type NewsletterSubscription = {
+  email: string;
+  firstName: string;
+  lastName: string;
+};
+
+export async function subscribeToNewsletter({
+  email,
+  firstName,
+  lastName,
+}: NewsletterSubscription) {
+  if (!resend) {
+    console.log("No RESEND_API_KEY, user not subscribed.", {
+      email,
+      firstName,
+      lastName,
+    });
+    return;
+  }
+
+  if (resend) {
+    await resend.contacts.create({ email, firstName, lastName });
+  }
+}

@@ -549,6 +549,13 @@ body {
   }
 }
 
+.green-light-text {
+  color: var(--green-light);
+  @media (prefers-color-scheme: dark) {
+    color: var(--green);
+  }
+}
+
 .red-text {
   color: var(--red);
   @media (prefers-color-scheme: dark) {
