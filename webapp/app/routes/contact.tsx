@@ -1,7 +1,34 @@
 import { Layout } from "../components/Layout";
 import { FooterDiscovery } from "../components/Footer";
+import { Form, useActionData } from "@remix-run/react";
+import { useEffect, useState } from "react";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import { subscribeToNewsletter } from "../util/email.server";
+import { useUserPrefs } from "../hooks/useUserPrefs";
+
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const email = formData.get("email") as string;
+  const firstName = formData.get("firstName") as string;
+  const lastName = formData.get("lastName") as string;
+
+  subscribeToNewsletter({ email, firstName, lastName });
+
+  return { success: true };
+}
 
 export default function Contact() {
+  const [userPrefs, setUserPrefs] = useUserPrefs();
+  const [success, setSuccess] = useState(false);
+  const actionData = useActionData<typeof action>();
+
+  useEffect(() => {
+    if (actionData?.success) {
+      setSuccess(true);
+      setUserPrefs({ ...userPrefs, newsletter: true });
+    }
+  }, [actionData]);
+
   return (
     <Layout>
       <div className="scene1">
@@ -20,6 +47,43 @@ export default function Contact() {
             <a href="mailto:human@nopal.build" className="link">
               Email us at human@nopal.build
             </a>
+          </div>
+          <div className="mt-12">
+            <Form method="post">
+              <h1 className="text-2xl purple-light-text">Nopal Newsletter</h1>
+              <div className="mt-4">
+                <input
+                  className="border border-gray-300 rounded px-2 py-1 mr-4"
+                  type="text"
+                  name="firstName"
+                  placeholder="First Name"
+                />
+                <input
+                  className="border border-gray-300 rounded px-2 py-1"
+                  type="text"
+                  name="lastName"
+                  placeholder="Last Name"
+                />
+              </div>
+              <div className="mt-4">
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Email"
+                  className="border border-gray-300 rounded px-2 py-1"
+                />
+              </div>
+              <div className="mt-4 flex">
+                <button type="submit" className="btn-secondary">
+                  Subscribe
+                </button>
+                {success || userPrefs.newsletter ? (
+                  <p className="ml-4 self-center green-light-text italic">
+                    You subscribed to the newsletter {"👍"}
+                  </p>
+                ) : null}
+              </div>
+            </Form>
           </div>
           <h2 className="purple-light-text text-2xl mt-16">Social Medias</h2>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-4">
