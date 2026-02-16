@@ -37,6 +37,18 @@ async function getAllPagesFromNotionDB(db: NotionDatabase) {
   });
 }
 
+async function getRecentlyEditedPages(db: NotionDatabase, editedAfter: string) {
+  return await notion.databases.query({
+    database_id: db.id,
+    page_size: 100,
+    filter: {
+      timestamp: "last_edited_time",
+      last_edited_time: { after: editedAfter },
+    },
+    sorts: [{ timestamp: "last_edited_time", direction: "descending" }],
+  });
+}
+
 async function getPageDetails(id: string) {
   return await notion.blocks.children.list({
     block_id: id,
@@ -136,6 +148,9 @@ async function updateNotionLinks() {
  * Handles slug resolution, file uploads, block children, and DB ref upsert.
  */
 async function syncPage(page: PageObjectResponse, db: NotionDatabase) {
+  const pageLabel = `[sync] [page ${page.id}]`;
+  console.log(`${pageLabel} Starting sync → db="${db.dbName}"`);
+
   if (
     page.properties.Slug?.type == "rich_text" &&
     page.properties.Slug?.rich_text?.[0]?.plain_text
@@ -143,25 +158,40 @@ async function syncPage(page: PageObjectResponse, db: NotionDatabase) {
     const slug = page.properties.Slug.rich_text[0].plain_text.trim();
     page.properties.Slug.rich_text[0].plain_text = slug;
     page.public_url = db.getPublicUrl(slug);
+    console.log(`${pageLabel} Slug resolved: "${slug}" → ${page.public_url}`);
+  } else {
+    console.log(`${pageLabel} No Slug property found on page`);
   }
 
+  console.log(`${pageLabel} Syncing file properties...`);
   await syncFileProperties(page);
 
+  console.log(`${pageLabel} Fetching & syncing page detail blocks...`);
   const details = await syncPageDetailImagesAndFiles(
     await getPageDetails(page.id)
   );
-  // Save block
-  const block = (await upsertBlock(details))?.[0];
 
-  // Save Page
+  console.log(
+    `${pageLabel} Upserting block (${details.results.length} children)...`
+  );
+  const block = (await upsertBlock(details))?.[0];
+  console.log(`${pageLabel} Block upserted: ${block?.id ?? "null"}`);
+
+  console.log(`${pageLabel} Upserting page...`);
   const newPage = (
     await upsertPage({ ...page, pageDetails: block?.id } as any)
   )?.[0];
 
   if (newPage) {
-    // Save reference to page on the specific DB
+    console.log(
+      `${pageLabel} Page upserted: ${newPage.id.id}, saving ref in ${db.dbName}`
+    );
     await upsert(db.dbName, { id: newPage.id.id, page: newPage.id });
+  } else {
+    console.log(`${pageLabel} ✗ Page upsert returned null`);
   }
+
+  console.log(`${pageLabel} ✓ Done`);
   return newPage;
 }
 
@@ -203,14 +233,19 @@ export async function syncAllDatabases() {
  * and syncs just that page (including files, blocks, and link updates).
  */
 export async function syncSinglePage(pageId: string) {
+  const label = `[sync] [single ${pageId}]`;
   try {
-    console.log(`Syncing single page: ${pageId}`);
+    console.log(`${label} ▶ Starting`);
     defineNotionTables();
 
     // Fetch the page from Notion
+    console.log(`${label} Fetching page from Notion API...`);
     const page = (await notion.pages.retrieve({
       page_id: pageId,
     })) as PageObjectResponse;
+    console.log(
+      `${label} Fetched page — parent.type="${page.parent.type}", last_edited="${page.last_edited_time}"`
+    );
 
     // Determine which registered DB this page belongs to
     const parentDbId =
@@ -219,25 +254,32 @@ export async function syncSinglePage(pageId: string) {
         : null;
 
     const dbs = getAllDbs();
+    console.log(
+      `${label} Registered DBs: ${dbs
+        .map((d) => `${d.dbName}(${d.id})`)
+        .join(", ")}`
+    );
+    console.log(`${label} Page parent DB ID: ${parentDbId}`);
     const db = dbs.find((d) => d.id === parentDbId);
 
     if (!db) {
-      console.log(
-        `Page ${pageId} does not belong to any registered DB (parent: ${parentDbId})`
-      );
+      console.log(`${label} ✗ No matching registered DB found — skipping`);
       return "skipped";
     }
 
+    console.log(`${label} Matched DB: ${db.dbName}`);
     defineTable(db.dbName);
     definePageField(db.dbName);
 
     await syncPage(page, db);
+
+    console.log(`${label} Updating Notion links...`);
     await updateNotionLinks();
 
-    console.log(`Done syncing page: ${pageId}`);
+    console.log(`${label} ✓ Done`);
     return "success";
   } catch (e) {
-    console.log("Error syncing single page", e);
+    console.error(`${label} ✗ Error:`, e);
     return "failed";
   }
 }
@@ -246,30 +288,104 @@ export async function syncSinglePage(pageId: string) {
  * Sync an entire registered database by its local dbName.
  */
 export async function syncDatabaseByName(dbName: string) {
+  const label = `[sync] [db ${dbName}]`;
   try {
     const db = getDbByName(dbName);
     if (!db) {
-      console.log(`No registered DB found with name: ${dbName}`);
+      console.log(`${label} ✗ No registered DB found with name: ${dbName}`);
       return "skipped";
     }
 
-    console.log(`Syncing database: ${dbName}`);
+    console.log(`${label} ▶ Starting — Notion DB ID: ${db.id}`);
     defineNotionTables();
     defineTable(db.dbName);
     definePageField(db.dbName);
 
+    console.log(`${label} Querying Notion for all pages...`);
     const pages = await getAllPagesFromNotionDB(db);
+    console.log(`${label} Found ${pages.results.length} pages`);
+
     await Promise.all(
       pages.results.map(async (_page) => {
         return syncPage(_page as PageObjectResponse, db);
       })
     );
 
+    console.log(`${label} Updating Notion links...`);
     await updateNotionLinks();
-    console.log(`Done syncing database: ${dbName}`);
+    console.log(`${label} ✓ Done`);
     return "success";
   } catch (e) {
-    console.log("Error syncing database", e);
+    console.error(`${label} ✗ Error:`, e);
     return "failed";
+  }
+}
+
+// --- In-memory last-sync timestamp (resets on deploy/restart) ---
+let _lastSyncTime: string | null = null;
+
+/**
+ * Incremental sync: queries every registered Notion DB for pages edited
+ * since the last successful sync (or the last `windowMinutes` if first run).
+ * Much cheaper than a full sync — only touches pages that actually changed.
+ *
+ * Designed to be called by a cron job every few minutes.
+ */
+export async function syncRecentlyEdited(windowMinutes = 10) {
+  const label = "[sync] [incremental]";
+  const now = new Date();
+
+  // If we've never synced, look back `windowMinutes`
+  const since =
+    _lastSyncTime ??
+    new Date(now.getTime() - windowMinutes * 60 * 1000).toISOString();
+
+  console.log(`${label} ▶ Starting — looking for edits after ${since}`);
+
+  try {
+    defineNotionTables();
+    const dbs = getAllDbs();
+    let totalSynced = 0;
+
+    await Promise.all(
+      dbs.map(async (db) => {
+        defineTable(db.dbName);
+        definePageField(db.dbName);
+
+        console.log(
+          `${label} Querying "${db.dbName}" for pages edited after ${since}`
+        );
+        const pages = await getRecentlyEditedPages(db, since);
+        console.log(
+          `${label} "${db.dbName}" returned ${pages.results.length} changed page(s)`
+        );
+
+        if (pages.results.length === 0) return;
+
+        await Promise.all(
+          pages.results.map(async (_page) => {
+            return syncPage(_page as PageObjectResponse, db);
+          })
+        );
+        totalSynced += pages.results.length;
+      })
+    );
+
+    if (totalSynced > 0) {
+      console.log(
+        `${label} Synced ${totalSynced} page(s), updating Notion links...`
+      );
+      await updateNotionLinks();
+    } else {
+      console.log(`${label} No changes found`);
+    }
+
+    // Advance the cursor so the next run only looks at newer edits
+    _lastSyncTime = now.toISOString();
+    console.log(`${label} ✓ Done — next run will check from ${_lastSyncTime}`);
+    return { result: "success", synced: totalSynced };
+  } catch (e) {
+    console.error(`${label} ✗ Error:`, e);
+    return { result: "failed", synced: 0 };
   }
 }
