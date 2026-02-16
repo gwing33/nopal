@@ -1,6 +1,7 @@
 import { Client } from "@notionhq/client";
 import {
   getAllDbs,
+  getDbByName,
   defineNotionTables,
   definePageField,
   upsertPage,
@@ -130,6 +131,40 @@ async function updateNotionLinks() {
   );
 }
 
+/**
+ * Sync a single Notion page into the local DB.
+ * Handles slug resolution, file uploads, block children, and DB ref upsert.
+ */
+async function syncPage(page: PageObjectResponse, db: NotionDatabase) {
+  if (
+    page.properties.Slug?.type == "rich_text" &&
+    page.properties.Slug?.rich_text?.[0]?.plain_text
+  ) {
+    const slug = page.properties.Slug.rich_text[0].plain_text.trim();
+    page.properties.Slug.rich_text[0].plain_text = slug;
+    page.public_url = db.getPublicUrl(slug);
+  }
+
+  await syncFileProperties(page);
+
+  const details = await syncPageDetailImagesAndFiles(
+    await getPageDetails(page.id)
+  );
+  // Save block
+  const block = (await upsertBlock(details))?.[0];
+
+  // Save Page
+  const newPage = (
+    await upsertPage({ ...page, pageDetails: block?.id } as any)
+  )?.[0];
+
+  if (newPage) {
+    // Save reference to page on the specific DB
+    await upsert(db.dbName, { id: newPage.id.id, page: newPage.id });
+  }
+  return newPage;
+}
+
 export async function syncAllDatabases() {
   try {
     console.log("Defining Notion Tables");
@@ -146,45 +181,7 @@ export async function syncAllDatabases() {
         const pages = await getAllPagesFromNotionDB(db);
         return await Promise.all(
           pages.results.map(async (_page) => {
-            const page = _page as PageObjectResponse;
-
-            // Skip page if it's already synced.
-            // DISABLED FOR NOW
-            // const dbPage = await findNopalPageById(page.id);
-            // if (dbPage && dbPage.last_edited_time == page.last_edited_time) {
-            //   console.log("Skipping page:", page.id);
-            //   return null;
-            // }
-            // console.log("Syncing page:", page.id);
-
-            const slugProp = page.properties.Slug || null;
-            if (
-              page.properties.Slug.type == "rich_text" &&
-              page.properties.Slug?.rich_text?.[0]?.plain_text
-            ) {
-              const slug = page.properties.Slug.rich_text[0].plain_text.trim();
-              page.properties.Slug.rich_text[0].plain_text = slug;
-              page.public_url = db.getPublicUrl(slug);
-            }
-
-            await syncFileProperties(page);
-
-            const details = await syncPageDetailImagesAndFiles(
-              await getPageDetails(page.id)
-            );
-            // Save block
-            const block = (await upsertBlock(details))?.[0];
-
-            // Save Page
-            const newPage = (
-              await upsertPage({ ...page, pageDetails: block?.id } as any)
-            )?.[0];
-
-            if (newPage) {
-              // Save reference to page on the specific DB
-              await upsert(db.dbName, { id: newPage.id.id, page: newPage.id });
-            }
-            return newPage;
+            return syncPage(_page as PageObjectResponse, db);
           })
         );
       })
@@ -198,4 +195,81 @@ export async function syncAllDatabases() {
   }
   console.log("Done Syncing");
   return "success";
+}
+
+/**
+ * Sync a single page by its Notion page ID.
+ * Fetches the page from Notion, determines which registered DB it belongs to,
+ * and syncs just that page (including files, blocks, and link updates).
+ */
+export async function syncSinglePage(pageId: string) {
+  try {
+    console.log(`Syncing single page: ${pageId}`);
+    defineNotionTables();
+
+    // Fetch the page from Notion
+    const page = (await notion.pages.retrieve({
+      page_id: pageId,
+    })) as PageObjectResponse;
+
+    // Determine which registered DB this page belongs to
+    const parentDbId =
+      page.parent.type === "database_id"
+        ? page.parent.database_id.replace(/-/g, "")
+        : null;
+
+    const dbs = getAllDbs();
+    const db = dbs.find((d) => d.id === parentDbId);
+
+    if (!db) {
+      console.log(
+        `Page ${pageId} does not belong to any registered DB (parent: ${parentDbId})`
+      );
+      return "skipped";
+    }
+
+    defineTable(db.dbName);
+    definePageField(db.dbName);
+
+    await syncPage(page, db);
+    await updateNotionLinks();
+
+    console.log(`Done syncing page: ${pageId}`);
+    return "success";
+  } catch (e) {
+    console.log("Error syncing single page", e);
+    return "failed";
+  }
+}
+
+/**
+ * Sync an entire registered database by its local dbName.
+ */
+export async function syncDatabaseByName(dbName: string) {
+  try {
+    const db = getDbByName(dbName);
+    if (!db) {
+      console.log(`No registered DB found with name: ${dbName}`);
+      return "skipped";
+    }
+
+    console.log(`Syncing database: ${dbName}`);
+    defineNotionTables();
+    defineTable(db.dbName);
+    definePageField(db.dbName);
+
+    const pages = await getAllPagesFromNotionDB(db);
+    await Promise.all(
+      pages.results.map(async (_page) => {
+        return syncPage(_page as PageObjectResponse, db);
+      })
+    );
+
+    await updateNotionLinks();
+    console.log(`Done syncing database: ${dbName}`);
+    return "success";
+  } catch (e) {
+    console.log("Error syncing database", e);
+    return "failed";
+  }
 }
