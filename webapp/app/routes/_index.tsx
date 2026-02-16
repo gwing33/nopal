@@ -42,7 +42,7 @@ export default function Index() {
                   physical comfort.
                 </p>
                 <p>Which factors are important to you?</p>
-                <Link className="link" to="/health">
+                <Link className="link" to="/health" prefetch="intent">
                   Learn more
                 </Link>
               </div>

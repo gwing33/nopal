@@ -37,8 +37,10 @@ type LoaderResult = {
   science: Collection<ScienceRecord>;
 };
 export const loader = async () => {
-  const stories = await getAllStories();
-  const science = await getSampleSciences();
+  const [stories, science] = await Promise.all([
+    getAllStories(),
+    getSampleSciences(),
+  ]);
   return { science, stories };
 };
 
@@ -191,6 +193,7 @@ export default function Health() {
           <div className="folder-tabs mt-12">
             <NavLink
               preventScrollReset={true}
+              prefetch="intent"
               className={() => {
                 if (/^\/health(\/assemblies)??\/?$/.test(location.pathname)) {
                   return "active";
@@ -203,7 +206,7 @@ export default function Health() {
             </NavLink>
             <NavLink
               preventScrollReset={true}
-              prefetch="render"
+              prefetch="intent"
               to={"/health/materials"}
             >
               Materials

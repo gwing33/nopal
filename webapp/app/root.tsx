@@ -6,6 +6,7 @@ import {
   ScrollRestoration,
   useRouteError,
   isRouteErrorResponse,
+  useNavigation,
 } from "@remix-run/react";
 import {
   MetaFunction,
@@ -21,7 +22,7 @@ import faviconManifest from "./images/favicon/site.webmanifest";
 import faviconSafari from "./images/favicon/safari-pinned-tab.svg";
 import favicon from "./images/favicon/favicon.ico";
 import "./tailwind.css";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import { getClientHints, type ClientHints } from "./util/getClientHints";
 import { getPublicUrl } from "./util/getPublicUrl";
 
@@ -53,6 +54,73 @@ export const headers = () => ({
   "Accept-CH": "Sec-CH-Prefers-Color-Scheme",
 });
 
+function GlobalLoadingBar() {
+  const navigation = useNavigation();
+  const isLoading = navigation.state === "loading";
+  const barRef = useRef<HTMLDivElement>(null);
+  const animationRef = useRef<number>();
+
+  useEffect(() => {
+    if (!barRef.current) return;
+    const bar = barRef.current;
+
+    if (isLoading) {
+      let width = 0;
+      bar.style.opacity = "1";
+      bar.style.width = "0%";
+
+      const animate = () => {
+        if (width < 90) {
+          // Fast at first, then slow down as it approaches 90%
+          width += (90 - width) * 0.03;
+          bar.style.width = `${width}%`;
+        }
+        animationRef.current = requestAnimationFrame(animate);
+      };
+      animationRef.current = requestAnimationFrame(animate);
+    } else {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      bar.style.width = "100%";
+      bar.style.transition = "width 200ms ease-out";
+      const timeout = setTimeout(() => {
+        bar.style.opacity = "0";
+        bar.style.transition = "opacity 300ms ease-out";
+        setTimeout(() => {
+          bar.style.width = "0%";
+          bar.style.transition = "";
+        }, 300);
+      }, 200);
+      return () => clearTimeout(timeout);
+    }
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [isLoading]);
+
+  return (
+    <div
+      ref={barRef}
+      aria-hidden="true"
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        height: "3px",
+        background: "linear-gradient(90deg, #7F5B8B, #A63B31)",
+        zIndex: 9999,
+        opacity: 0,
+        width: "0%",
+        pointerEvents: "none",
+      }}
+    />
+  );
+}
+
 export function Layout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
@@ -69,6 +137,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <Links />
       </head>
       <body>
+        <GlobalLoadingBar />
         {children}
         <Scripts />
         <ScrollRestoration />

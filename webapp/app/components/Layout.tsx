@@ -65,7 +65,7 @@ export function Layout({ children }: { children?: ReactNode }) {
       <div className="header container mx-auto pl-4 pr-4">
         <div className="py-4 flex justify-between items-center">
           <h1 className="text-6xl text-center">
-            <Link to="/" prefetch="render">
+            <Link to="/" prefetch="intent">
               <img src={isDark ? nopalDarkLogo : nopalLogo} alt="nopal" />
             </Link>
           </h1>
@@ -84,7 +84,7 @@ export function Layout({ children }: { children?: ReactNode }) {
           >
             <NavLink
               to="/health"
-              prefetch="render"
+              prefetch="intent"
               className="main-nav-item p-2"
             >
               Health
@@ -92,7 +92,7 @@ export function Layout({ children }: { children?: ReactNode }) {
             <div className="good-menu" tabIndex={0}>
               <NavLink
                 to="/good/s"
-                prefetch="render"
+                prefetch="intent"
                 onClick={handleGoods}
                 className="main-nav-item p-2"
               >
@@ -130,14 +130,14 @@ export function Layout({ children }: { children?: ReactNode }) {
             </div>
             <NavLink
               to="/sunny-home-no1"
-              prefetch="render"
+              prefetch="intent"
               className="main-nav-item p-2 text-nowrap"
             >
               Sunny Home
             </NavLink>
             <NavLink
               to="/about"
-              prefetch="render"
+              prefetch="intent"
               className="main-nav-item p-2 text-nowrap"
             >
               Collective
