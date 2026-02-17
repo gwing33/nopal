@@ -37,18 +37,6 @@ async function getAllPagesFromNotionDB(db: NotionDatabase) {
   });
 }
 
-async function getRecentlyEditedPages(db: NotionDatabase, editedAfter: string) {
-  return await notion.databases.query({
-    database_id: db.id,
-    page_size: 100,
-    filter: {
-      timestamp: "last_edited_time",
-      last_edited_time: { after: editedAfter },
-    },
-    sorts: [{ timestamp: "last_edited_time", direction: "descending" }],
-  });
-}
-
 async function getPageDetails(id: string) {
   return await notion.blocks.children.list({
     block_id: id,
@@ -318,74 +306,5 @@ export async function syncDatabaseByName(dbName: string) {
   } catch (e) {
     console.error(`${label} ✗ Error:`, e);
     return "failed";
-  }
-}
-
-// --- In-memory last-sync timestamp (resets on deploy/restart) ---
-let _lastSyncTime: string | null = null;
-
-/**
- * Incremental sync: queries every registered Notion DB for pages edited
- * since the last successful sync (or the last `windowMinutes` if first run).
- * Much cheaper than a full sync — only touches pages that actually changed.
- *
- * Designed to be called by a cron job every few minutes.
- */
-export async function syncRecentlyEdited(windowMinutes = 10) {
-  const label = "[sync] [incremental]";
-  const now = new Date();
-
-  // If we've never synced, look back `windowMinutes`
-  const since =
-    _lastSyncTime ??
-    new Date(now.getTime() - windowMinutes * 60 * 1000).toISOString();
-
-  console.log(`${label} ▶ Starting — looking for edits after ${since}`);
-
-  try {
-    defineNotionTables();
-    const dbs = getAllDbs();
-    let totalSynced = 0;
-
-    await Promise.all(
-      dbs.map(async (db) => {
-        defineTable(db.dbName);
-        definePageField(db.dbName);
-
-        console.log(
-          `${label} Querying "${db.dbName}" for pages edited after ${since}`
-        );
-        const pages = await getRecentlyEditedPages(db, since);
-        console.log(
-          `${label} "${db.dbName}" returned ${pages.results.length} changed page(s)`
-        );
-
-        if (pages.results.length === 0) return;
-
-        await Promise.all(
-          pages.results.map(async (_page) => {
-            return syncPage(_page as PageObjectResponse, db);
-          })
-        );
-        totalSynced += pages.results.length;
-      })
-    );
-
-    if (totalSynced > 0) {
-      console.log(
-        `${label} Synced ${totalSynced} page(s), updating Notion links...`
-      );
-      await updateNotionLinks();
-    } else {
-      console.log(`${label} No changes found`);
-    }
-
-    // Advance the cursor so the next run only looks at newer edits
-    _lastSyncTime = now.toISOString();
-    console.log(`${label} ✓ Done — next run will check from ${_lastSyncTime}`);
-    return { result: "success", synced: totalSynced };
-  } catch (e) {
-    console.error(`${label} ✗ Error:`, e);
-    return { result: "failed", synced: 0 };
   }
 }
