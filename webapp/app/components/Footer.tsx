@@ -48,6 +48,13 @@ export function FooterBase({ children }: { children?: ReactNode }) {
           <NavLink
             prefetch="render"
             className="ml-4 hover:underline text-nowrap"
+            to="/tools"
+          >
+            Tools
+          </NavLink>
+          <NavLink
+            prefetch="render"
+            className="ml-4 hover:underline text-nowrap"
             to="/contact"
           >
             Contact
