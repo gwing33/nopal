@@ -100,6 +100,12 @@ export default function FramesVolumeCalc() {
     formattedTotal.cubicFeet * selectedMaterial.lbsPerCubicFoot;
   const formattedWeight = formatWeight(totalWeight);
 
+  // Cumulative distance from the first frame (in feet)
+  const cumulativeDistances = frames.map((_, i) =>
+    frames.slice(0, i).reduce((sum, f) => sum + f.distanceToNext, 0)
+  );
+  const totalLength = cumulativeDistances[cumulativeDistances.length - 1] || 0;
+
   return (
     <Layout>
       <div className="scene1">
@@ -145,7 +151,7 @@ export default function FramesVolumeCalc() {
 
           {/* Total Volume & Weight Display */}
           <div className="bg-green-100 dark:bg-green-900 rounded-lg p-6 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <h3 className="text-2xl font-bold green-text mb-2">
                   Total Volume
@@ -163,6 +169,17 @@ export default function FramesVolumeCalc() {
                     </span>
                     <span className="text-lg ml-2">yd³</span>
                   </div>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold green-text mb-2">
+                  Total Length
+                </h3>
+                <div>
+                  <span className="text-3xl font-bold">
+                    {totalLength.toFixed(1)}
+                  </span>
+                  <span className="text-lg ml-2">ft</span>
                 </div>
               </div>
               <div>
@@ -236,6 +253,13 @@ export default function FramesVolumeCalc() {
                     <div className="flex justify-between items-center mb-3">
                       <h4 className="text-xl font-semibold">
                         Frame {index + 1}
+                        <span className="text-sm font-normal opacity-70 ml-3">
+                          {index === 0
+                            ? "(start)"
+                            : `${cumulativeDistances[index].toFixed(
+                                1
+                              )} ft from start`}
+                        </span>
                       </h4>
                       {frames.length > 1 && (
                         <button
