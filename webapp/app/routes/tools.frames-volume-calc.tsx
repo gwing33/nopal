@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
 import { FramesVisualPreview } from "../components/FramesVisualPreview";
+import { NumberInput } from "../components/NumberInput";
 import { useFrames, formatVolume, formatWeight } from "../hooks/useFrames";
 import type { MetaFunction } from "@remix-run/node";
 
@@ -96,9 +97,6 @@ export default function FramesVolumeCalc() {
   const totalWeight =
     formattedTotal.cubicFeet * selectedMaterial.lbsPerCubicFoot;
   const formattedWeight = formatWeight(totalWeight);
-
-  const inputClasses =
-    "w-full px-3 py-2 border border-gray-300 dark:border-[var(--dark-midground)] rounded-md bg-white dark:bg-[var(--purple)] dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--green)]";
 
   return (
     <Layout>
@@ -256,20 +254,12 @@ export default function FramesVolumeCalc() {
                         >
                           Height (inches)
                         </label>
-                        <input
+                        <NumberInput
                           id={`height-${frame.id}`}
-                          type="number"
-                          min="0"
-                          step="0.5"
+                          min={0}
+                          step={0.5}
                           value={frame.height}
-                          onChange={(e) =>
-                            updateFrame(
-                              frame.id,
-                              "height",
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          className={inputClasses}
+                          onChange={(v) => updateFrame(frame.id, "height", v)}
                         />
                       </div>
                       <div>
@@ -279,20 +269,12 @@ export default function FramesVolumeCalc() {
                         >
                           Depth (inches)
                         </label>
-                        <input
+                        <NumberInput
                           id={`depth-${frame.id}`}
-                          type="number"
-                          min="0"
-                          step="0.5"
+                          min={0}
+                          step={0.5}
                           value={frame.depth}
-                          onChange={(e) =>
-                            updateFrame(
-                              frame.id,
-                              "depth",
-                              parseFloat(e.target.value) || 0
-                            )
-                          }
-                          className={inputClasses}
+                          onChange={(v) => updateFrame(frame.id, "depth", v)}
                         />
                       </div>
                     </div>
@@ -325,20 +307,14 @@ export default function FramesVolumeCalc() {
                           >
                             Distance to Frame {index + 2} (feet)
                           </label>
-                          <input
+                          <NumberInput
                             id={`distance-${frame.id}`}
-                            type="number"
-                            min="0"
-                            step="0.5"
+                            min={0}
+                            step={0.5}
                             value={frame.distanceToNext}
-                            onChange={(e) =>
-                              updateFrame(
-                                frame.id,
-                                "distanceToNext",
-                                parseFloat(e.target.value) || 0
-                              )
+                            onChange={(v) =>
+                              updateFrame(frame.id, "distanceToNext", v)
                             }
-                            className={inputClasses}
                           />
                         </div>
                         {segmentVolumes[index] && (
