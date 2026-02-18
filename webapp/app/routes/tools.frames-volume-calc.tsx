@@ -188,7 +188,7 @@ export default function FramesVolumeCalc() {
             {/* Vertical line — from center of first dot to center of last dot */}
             {frames.length > 1 && (
               <div
-                className="absolute bg-gray-300 dark:bg-[var(--dark-midground)]"
+                className="absolute bg-[var(--moon)]"
                 style={{
                   width: "4px",
                   left: "18px",
@@ -215,18 +215,16 @@ export default function FramesVolumeCalc() {
                     className="absolute flex-shrink-0 z-10"
                     style={{
                       left: "-31px",
-                      top: "4px",
+                      top: "-3px",
                     }}
                   >
                     <div
-                      className="rounded-full bg-[var(--green)] dark:bg-[var(--green)] shadow-lg border-4 border-white dark:border-[var(--purple)] flex items-center justify-center text-sm font-bold text-white"
+                      className="rounded-full bg-[var(--moon)] border-4 border-[var(--white)] dark:border-[var(--purple)] flex items-center justify-center text-sm font-bold text-[var(--white)]"
                       style={{
                         width: "38px",
                         height: "38px",
                       }}
-                    >
-                      {index + 1}
-                    </div>
+                    ></div>
                   </div>
 
                   {/* Frame content card */}
@@ -355,7 +353,7 @@ export default function FramesVolumeCalc() {
                 }}
               >
                 <div
-                  className="rounded-full bg-[var(--green)] dark:bg-[var(--green)] shadow-lg border-4 border-white dark:border-[var(--purple)] flex items-center justify-center text-sm font-bold text-white"
+                  className="rounded-full bg-[var(--moon)] border-4 border-[var(--white)] dark:border-[var(--purple)] flex items-center justify-center text-sm font-bold text-[var(--white)]"
                   style={{
                     width: "38px",
                     height: "38px",
@@ -366,7 +364,7 @@ export default function FramesVolumeCalc() {
               </div>
               <button
                 onClick={addFrame}
-                className="btn btn-primary w-full sm:w-auto px-4 py-1 text-lg ml-0.5"
+                className="px-4 py-1 btn btn-purple w-full sm:w-auto text-lg ml-0.5"
               >
                 Add Frame
               </button>

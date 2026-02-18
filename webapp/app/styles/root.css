@@ -1,5 +1,6 @@
 :root {
   /* TODO: At some point create a more offical color spread, e.g. purple-100 to purple-900 */
+  --white: #fff;
   --purple: #3f2b46;
   --purple-light: #7f5b8b;
   --pink: #d3a0e5;
@@ -73,6 +74,16 @@ body {
   @apply btn;
   background-color: var(--btn-color, var(--purple));
   padding: 16px 32px;
+  color: white;
+  text-wrap: nowrap;
+  @media (prefers-color-scheme: dark) {
+    background-color: white;
+    color: var(--btn-color, var(--purple));
+  }
+}
+.btn-purple {
+  @apply btn;
+  background-color: var(--btn-color, var(--purple));
   color: white;
   text-wrap: nowrap;
   @media (prefers-color-scheme: dark) {
