@@ -268,16 +268,17 @@ export default function FramesVolumeCalc() {
           </div>
 
           {/* Timeline Frames List */}
-          <div className="relative mb-6">
-            {/* Continuous vertical line — spans from first circle center to last circle center */}
+          <div className="relative mb-6 pl-8">
+            {/* Vertical line — from center of first dot to center of last dot */}
             {frames.length > 1 && (
               <div
-                className="absolute bg-gray-300 dark:bg-gray-600 rounded-full"
+                className="absolute bg-gray-300 dark:bg-[var(--dark-midground)]"
                 style={{
-                  width: "6px",
-                  left: "21px",
-                  top: "24px",
-                  bottom: "24px",
+                  width: "4px",
+                  left: "18px",
+                  top: "23px",
+                  bottom: "23px",
+                  borderRadius: "2px",
                 }}
               />
             )}
@@ -286,22 +287,34 @@ export default function FramesVolumeCalc() {
               const elements = [];
 
               {
-                /* Frame Node — circle + card */
+                /* Frame Node — big dot + card */
               }
               elements.push(
                 <div
                   key={`frame-${frame.id}`}
-                  className="flex items-start gap-5 relative"
+                  className="relative flex items-start gap-6"
                 >
-                  {/* Circle on the rail */}
-                  <div className="flex-shrink-0 w-12 flex justify-center">
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold z-10 bg-green-500 text-white shadow-md">
+                  {/* Big dot on the line */}
+                  <div
+                    className="absolute flex-shrink-0 z-10"
+                    style={{
+                      left: "-31px",
+                      top: "4px",
+                    }}
+                  >
+                    <div
+                      className="rounded-full bg-[var(--green)] dark:bg-[var(--green)] shadow-lg border-4 border-white dark:border-[var(--purple)] flex items-center justify-center text-sm font-bold text-white"
+                      style={{
+                        width: "38px",
+                        height: "38px",
+                      }}
+                    >
                       {index + 1}
                     </div>
                   </div>
 
-                  {/* Frame content */}
-                  <div className="flex-1 pb-2 pt-1">
+                  {/* Frame content card */}
+                  <div className="flex-1 ml-4 pb-2 pt-0.5">
                     <div className="flex justify-between items-center mb-3">
                       <h4 className="text-xl font-semibold">
                         Frame {index + 1}
@@ -382,13 +395,10 @@ export default function FramesVolumeCalc() {
                 elements.push(
                   <div
                     key={`dist-${frame.id}`}
-                    className="flex items-start gap-5 relative"
+                    className="relative flex items-start"
                   >
-                    {/* Spacer to align with rail */}
-                    <div className="flex-shrink-0 w-12" />
-
                     {/* Distance + segment volume content */}
-                    <div className="flex-1 py-3 pl-4 my-2 border-l-2 border-dashed border-gray-300 dark:border-gray-600 rounded">
+                    <div className="flex-1 py-6 pl-4 my-2">
                       <div className="flex flex-wrap items-end gap-4">
                         <div className="w-48">
                           <label
@@ -439,15 +449,35 @@ export default function FramesVolumeCalc() {
 
               return elements;
             })}
-          </div>
 
-          {/* Insert Frame Button */}
-          <button
-            onClick={addFrame}
-            className="btn btn-primary w-full sm:w-auto px-6 py-3 text-lg"
-          >
-            + Add Frame
-          </button>
+            {/* Insert Frame Button */}
+            <div className="relative mt-8">
+              {/* Big dot on the line */}
+              <div
+                className="absolute flex-shrink-0 z-10"
+                style={{
+                  left: "-31px",
+                  top: "-1px",
+                }}
+              >
+                <div
+                  className="rounded-full bg-[var(--green)] dark:bg-[var(--green)] shadow-lg border-4 border-white dark:border-[var(--purple)] flex items-center justify-center text-sm font-bold text-white"
+                  style={{
+                    width: "38px",
+                    height: "38px",
+                  }}
+                >
+                  +
+                </div>
+              </div>
+              <button
+                onClick={addFrame}
+                className="btn btn-primary w-full sm:w-auto px-4 py-1 text-lg ml-0.5"
+              >
+                Add Frame
+              </button>
+            </div>
+          </div>
 
           {/* Visual Representation */}
           {frames.length >= 2 && (
