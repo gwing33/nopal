@@ -219,7 +219,7 @@ export default function FramesVolumeCalc() {
                     }}
                   >
                     <div
-                      className="rounded-full bg-[var(--moon)] border-4 border-[var(--white)] dark:border-[var(--purple)] flex items-center justify-center text-sm font-bold text-[var(--white)]"
+                      className="rounded-full bg-[var(--moon)] border-4 border-[var(--white)] dark:border-[var(--purple)]"
                       style={{
                         width: "38px",
                         height: "38px",
@@ -353,7 +353,7 @@ export default function FramesVolumeCalc() {
                 }}
               >
                 <div
-                  className="rounded-full bg-[var(--moon)] border-4 border-[var(--white)] dark:border-[var(--purple)] flex items-center justify-center text-sm font-bold text-[var(--white)]"
+                  className="rounded-full bg-[var(--moon)] border-4 border-[var(--white)] dark:border-[var(--purple)] flex items-center justify-center text-sm font-bold text-[var(--purple)]"
                   style={{
                     width: "38px",
                     height: "38px",
