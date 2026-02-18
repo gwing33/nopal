@@ -835,7 +835,7 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
 
   return (
     <div className="mt-8 p-4 border border-gray-300 dark:border-gray-600 rounded-lg">
-      <h3 className="text-xl font-semibold mb-4">3D Preview</h3>
+      <h3 className="text-xl font-semibold mb-4">3D Preview (testing)</h3>
       <div className="relative w-full" style={{ height: "420px" }}>
         <canvas
           ref={canvasRef}
