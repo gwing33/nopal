@@ -1,6 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
+import { FramesVisualPreview } from "../components/FramesVisualPreview";
+import { useFrames, formatVolume, formatWeight } from "../hooks/useFrames";
 import type { MetaFunction } from "@remix-run/node";
 
 export const meta: MetaFunction = () => [
@@ -10,13 +12,6 @@ export const meta: MetaFunction = () => [
     content: "Calculate backfill volumes for construction using frame slices",
   },
 ];
-
-interface Frame {
-  id: number;
-  height: number; // in inches
-  depth: number; // in inches
-  distanceToNext: number; // in feet
-}
 
 interface Material {
   id: string;
@@ -82,97 +77,20 @@ const MATERIALS: Material[] = [
   },
 ];
 
-function formatVolume(cubicInches: number): {
-  cubicFeet: number;
-  cubicYards: number;
-  cubicFeetStr: string;
-  cubicYardsStr: string;
-} {
-  const cubicFeet = cubicInches / 1728; // 12^3
-  const cubicYards = cubicFeet / 27; // 3^3
-  return {
-    cubicFeet,
-    cubicYards,
-    cubicFeetStr: cubicFeet.toFixed(2),
-    cubicYardsStr: cubicYards.toFixed(2),
-  };
-}
-
-function formatWeight(pounds: number): {
-  pounds: string;
-  tons: string;
-} {
-  return {
-    pounds: pounds.toFixed(0),
-    tons: (pounds / 2000).toFixed(2),
-  };
-}
-
-function calculateSegmentVolume(
-  frame1: Frame,
-  frame2: Frame,
-  distance: number
-): number {
-  const area1 = frame1.height * frame1.depth;
-  const area2 = frame2.height * frame2.depth;
-  const avgArea = (area1 + area2) / 2;
-  const distanceInches = distance * 12;
-  return avgArea * distanceInches;
-}
-
 export default function FramesVolumeCalc() {
-  const [frames, setFrames] = useState<Frame[]>([
-    { id: 1, height: 12, depth: 12, distanceToNext: 4 },
-    { id: 2, height: 12, depth: 12, distanceToNext: 4 },
-  ]);
+  const {
+    frames,
+    addFrame,
+    removeFrame,
+    updateFrame,
+    totalVolume,
+    segmentVolumes,
+  } = useFrames();
   const [selectedMaterialId, setSelectedMaterialId] =
     useState<string>("quarter-minus");
 
   const selectedMaterial =
     MATERIALS.find((m) => m.id === selectedMaterialId) || MATERIALS[0];
-
-  const addFrame = () => {
-    const newId = Math.max(...frames.map((f) => f.id)) + 1;
-    setFrames([
-      ...frames,
-      { id: newId, height: 12, depth: 12, distanceToNext: 4 },
-    ]);
-  };
-
-  const removeFrame = (id: number) => {
-    if (frames.length > 1) {
-      setFrames(frames.filter((f) => f.id !== id));
-    }
-  };
-
-  const updateFrame = (id: number, field: keyof Frame, value: number) => {
-    setFrames(frames.map((f) => (f.id === id ? { ...f, [field]: value } : f)));
-  };
-
-  const { totalVolume, segmentVolumes } = useMemo(() => {
-    if (frames.length < 2) {
-      return { totalVolume: 0, segmentVolumes: [] };
-    }
-
-    const segments: { from: number; to: number; volume: number }[] = [];
-    let total = 0;
-
-    for (let i = 0; i < frames.length - 1; i++) {
-      const volume = calculateSegmentVolume(
-        frames[i],
-        frames[i + 1],
-        frames[i].distanceToNext
-      );
-      segments.push({
-        from: frames[i].id,
-        to: frames[i + 1].id,
-        volume,
-      });
-      total += volume;
-    }
-
-    return { totalVolume: total, segmentVolumes: segments };
-  }, [frames]);
 
   const formattedTotal = formatVolume(totalVolume);
   const totalWeight =
@@ -480,63 +398,7 @@ export default function FramesVolumeCalc() {
           </div>
 
           {/* Visual Representation */}
-          {frames.length >= 2 && (
-            <div className="mt-8 p-4 border border-gray-300 dark:border-gray-600 rounded-lg">
-              <h3 className="text-xl font-semibold mb-4">Visual Preview</h3>
-              <div className="flex items-end gap-2 overflow-x-auto pb-4">
-                {frames.map((frame, index) => {
-                  const maxHeight = Math.max(...frames.map((f) => f.height));
-                  const scaledHeight =
-                    maxHeight > 0 ? (frame.height / maxHeight) * 100 : 30;
-                  const maxDepth = Math.max(...frames.map((f) => f.depth));
-                  const scaledWidth =
-                    maxDepth > 0
-                      ? Math.max(20, (frame.depth / maxDepth) * 60)
-                      : 30;
-
-                  return (
-                    <div key={frame.id} className="flex items-end">
-                      {/* Frame rectangle */}
-                      <div className="flex flex-col items-center">
-                        <div
-                          className="bg-green-500 dark:bg-green-600 border-2 border-green-700 dark:border-green-400 flex items-center justify-center text-xs font-bold text-white rounded-sm"
-                          style={{
-                            height: `${Math.max(30, scaledHeight)}px`,
-                            width: `${scaledWidth}px`,
-                            minWidth: "30px",
-                          }}
-                        >
-                          {index + 1}
-                        </div>
-                      </div>
-                      {/* Distance connector */}
-                      {index < frames.length - 1 && (
-                        <div className="flex flex-col items-center mx-1">
-                          <div
-                            className="bg-purple-300 dark:bg-purple-700 opacity-50"
-                            style={{
-                              height: "4px",
-                              width: `${Math.max(
-                                30,
-                                frame.distanceToNext * 10
-                              )}px`,
-                            }}
-                          />
-                          <span className="text-xs mt-1">
-                            {frame.distanceToNext}&apos;
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-sm opacity-70 mt-2">
-                Frame heights and widths are scaled proportionally. Numbers
-                indicate frame index.
-              </p>
-            </div>
-          )}
+          <FramesVisualPreview frames={frames} />
         </div>
       </div>
 
