@@ -207,7 +207,7 @@ export default function FramesVolumeCalc() {
               id="material-select"
               value={selectedMaterialId}
               onChange={(e) => setSelectedMaterialId(e.target.value)}
-              className="w-full sm:w-auto px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 text-lg"
+              className="w-full sm:w-auto px-4 py-3 border border-gray-300 dark:border-[var(--dark-midground)] rounded-md bg-white dark:bg-[var(--purple)] dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--green)] text-lg"
             >
               {MATERIALS.map((material) => (
                 <option key={material.id} value={material.id}>
@@ -316,7 +316,7 @@ export default function FramesVolumeCalc() {
                           parseFloat(e.target.value) || 0
                         )
                       }
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-[var(--dark-midground)] rounded-md bg-white dark:bg-[var(--purple)] dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--green)]"
                     />
                   </div>
 
@@ -341,7 +341,7 @@ export default function FramesVolumeCalc() {
                           parseFloat(e.target.value) || 0
                         )
                       }
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-[var(--dark-midground)] rounded-md bg-white dark:bg-[var(--purple)] dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--green)]"
                     />
                   </div>
 
@@ -367,7 +367,7 @@ export default function FramesVolumeCalc() {
                             parseFloat(e.target.value) || 0
                           )
                         }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-[var(--dark-midground)] rounded-md bg-white dark:bg-[var(--purple)] dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--green)]"
                       />
                     </div>
                   )}
