@@ -113,18 +113,17 @@ function calculateSegmentVolume(
   frame2: Frame,
   distance: number
 ): number {
-  // Average the cross-sectional areas and multiply by distance
-  // Using trapezoidal approximation
-  const area1 = frame1.height * frame1.depth; // sq inches
-  const area2 = frame2.height * frame2.depth; // sq inches
+  const area1 = frame1.height * frame1.depth;
+  const area2 = frame2.height * frame2.depth;
   const avgArea = (area1 + area2) / 2;
-  const distanceInches = distance * 12; // convert feet to inches
-  return avgArea * distanceInches; // cubic inches
+  const distanceInches = distance * 12;
+  return avgArea * distanceInches;
 }
 
 export default function FramesVolumeCalc() {
   const [frames, setFrames] = useState<Frame[]>([
     { id: 1, height: 12, depth: 12, distanceToNext: 4 },
+    { id: 2, height: 12, depth: 12, distanceToNext: 4 },
   ]);
   const [selectedMaterialId, setSelectedMaterialId] =
     useState<string>("quarter-minus");
@@ -180,6 +179,9 @@ export default function FramesVolumeCalc() {
     formattedTotal.cubicFeet * selectedMaterial.lbsPerCubicFoot;
   const formattedWeight = formatWeight(totalWeight);
 
+  const inputClasses =
+    "w-full px-3 py-2 border border-gray-300 dark:border-[var(--dark-midground)] rounded-md bg-white dark:bg-[var(--purple)] dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--green)]";
+
   return (
     <Layout>
       <div className="scene1">
@@ -224,7 +226,6 @@ export default function FramesVolumeCalc() {
           {/* Total Volume & Weight Display */}
           <div className="bg-green-100 dark:bg-green-900 rounded-lg p-6 mb-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Volume Section */}
               <div>
                 <h3 className="text-2xl font-bold green-text mb-2">
                   Total Volume
@@ -244,8 +245,6 @@ export default function FramesVolumeCalc() {
                   </div>
                 </div>
               </div>
-
-              {/* Weight Section */}
               <div>
                 <h3 className="text-2xl font-bold green-text mb-2">
                   Total Weight
@@ -266,136 +265,183 @@ export default function FramesVolumeCalc() {
                 </div>
               </div>
             </div>
-
-            {frames.length < 2 && (
-              <p className="text-sm mt-4 opacity-70">
-                Add at least 2 frames to calculate volume and weight
-              </p>
-            )}
           </div>
 
-          {/* Frames List */}
-          <div className="space-y-4 mb-6">
-            {frames.map((frame, index) => (
+          {/* Timeline Frames List */}
+          <div className="relative mb-6">
+            {/* Continuous vertical line — spans from first circle center to last circle center */}
+            {frames.length > 1 && (
               <div
-                key={frame.id}
-                className="border border-gray-300 dark:border-gray-600 rounded-lg p-4"
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="text-xl font-semibold">Frame {index + 1}</h4>
-                  {frames.length > 1 && (
-                    <button
-                      onClick={() => removeFrame(frame.id)}
-                      className="text-red-500 hover:text-red-700 text-sm px-2 py-1"
-                      aria-label={`Remove frame ${index + 1}`}
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
+                className="absolute bg-gray-300 dark:bg-gray-600 rounded-full"
+                style={{
+                  width: "6px",
+                  left: "21px",
+                  top: "24px",
+                  bottom: "24px",
+                }}
+              />
+            )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Height Input */}
-                  <div>
-                    <label
-                      htmlFor={`height-${frame.id}`}
-                      className="block text-sm font-medium mb-1"
-                    >
-                      Height (inches)
-                    </label>
-                    <input
-                      id={`height-${frame.id}`}
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={frame.height}
-                      onChange={(e) =>
-                        updateFrame(
-                          frame.id,
-                          "height",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-[var(--dark-midground)] rounded-md bg-white dark:bg-[var(--purple)] dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--green)]"
-                    />
-                  </div>
+            {frames.flatMap((frame, index) => {
+              const elements = [];
 
-                  {/* Depth Input */}
-                  <div>
-                    <label
-                      htmlFor={`depth-${frame.id}`}
-                      className="block text-sm font-medium mb-1"
-                    >
-                      Depth (inches)
-                    </label>
-                    <input
-                      id={`depth-${frame.id}`}
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={frame.depth}
-                      onChange={(e) =>
-                        updateFrame(
-                          frame.id,
-                          "depth",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-[var(--dark-midground)] rounded-md bg-white dark:bg-[var(--purple)] dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--green)]"
-                    />
-                  </div>
-
-                  {/* Distance to Next Frame */}
-                  {index < frames.length - 1 && (
-                    <div>
-                      <label
-                        htmlFor={`distance-${frame.id}`}
-                        className="block text-sm font-medium mb-1"
-                      >
-                        Distance to next (feet)
-                      </label>
-                      <input
-                        id={`distance-${frame.id}`}
-                        type="number"
-                        min="0"
-                        step="0.5"
-                        value={frame.distanceToNext}
-                        onChange={(e) =>
-                          updateFrame(
-                            frame.id,
-                            "distanceToNext",
-                            parseFloat(e.target.value) || 0
-                          )
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-[var(--dark-midground)] rounded-md bg-white dark:bg-[var(--purple)] dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--green)]"
-                      />
+              {
+                /* Frame Node — circle + card */
+              }
+              elements.push(
+                <div
+                  key={`frame-${frame.id}`}
+                  className="flex items-start gap-5 relative"
+                >
+                  {/* Circle on the rail */}
+                  <div className="flex-shrink-0 w-12 flex justify-center">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold z-10 bg-green-500 text-white shadow-md">
+                      {index + 1}
                     </div>
-                  )}
-                </div>
-
-                {/* Cross-section area */}
-                <div className="mt-3 text-sm opacity-70">
-                  Cross-section: {(frame.height * frame.depth).toFixed(1)} in² (
-                  {((frame.height * frame.depth) / 144).toFixed(2)} ft²)
-                </div>
-
-                {/* Segment Volume */}
-                {index < frames.length - 1 && segmentVolumes[index] && (
-                  <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <span className="text-sm font-medium purple-light-text">
-                      Volume to Frame {index + 2}:{" "}
-                      {formatVolume(segmentVolumes[index].volume).cubicFeetStr}{" "}
-                      ft³ (
-                      {formatVolume(segmentVolumes[index].volume).cubicYardsStr}{" "}
-                      yd³)
-                    </span>
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {/* Frame content */}
+                  <div className="flex-1 pb-2 pt-1">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="text-xl font-semibold">
+                        Frame {index + 1}
+                      </h4>
+                      {frames.length > 1 && (
+                        <button
+                          onClick={() => removeFrame(frame.id)}
+                          className="text-red-500 hover:text-red-700 text-sm px-2 py-1"
+                          aria-label={`Remove frame ${index + 1}`}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label
+                          htmlFor={`height-${frame.id}`}
+                          className="block text-sm font-medium mb-1"
+                        >
+                          Height (inches)
+                        </label>
+                        <input
+                          id={`height-${frame.id}`}
+                          type="number"
+                          min="0"
+                          step="0.5"
+                          value={frame.height}
+                          onChange={(e) =>
+                            updateFrame(
+                              frame.id,
+                              "height",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          className={inputClasses}
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor={`depth-${frame.id}`}
+                          className="block text-sm font-medium mb-1"
+                        >
+                          Depth (inches)
+                        </label>
+                        <input
+                          id={`depth-${frame.id}`}
+                          type="number"
+                          min="0"
+                          step="0.5"
+                          value={frame.depth}
+                          onChange={(e) =>
+                            updateFrame(
+                              frame.id,
+                              "depth",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          className={inputClasses}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-2 text-sm opacity-70">
+                      Cross-section: {(frame.height * frame.depth).toFixed(1)}{" "}
+                      in² ({((frame.height * frame.depth) / 144).toFixed(2)}{" "}
+                      ft²)
+                    </div>
+                  </div>
+                </div>
+              );
+
+              {
+                /* Distance Connector — between frames */
+              }
+              if (index < frames.length - 1) {
+                elements.push(
+                  <div
+                    key={`dist-${frame.id}`}
+                    className="flex items-start gap-5 relative"
+                  >
+                    {/* Spacer to align with rail */}
+                    <div className="flex-shrink-0 w-12" />
+
+                    {/* Distance + segment volume content */}
+                    <div className="flex-1 py-3 pl-4 my-2 border-l-2 border-dashed border-gray-300 dark:border-gray-600 rounded">
+                      <div className="flex flex-wrap items-end gap-4">
+                        <div className="w-48">
+                          <label
+                            htmlFor={`distance-${frame.id}`}
+                            className="block text-sm font-medium mb-1 opacity-80"
+                          >
+                            Distance to Frame {index + 2} (feet)
+                          </label>
+                          <input
+                            id={`distance-${frame.id}`}
+                            type="number"
+                            min="0"
+                            step="0.5"
+                            value={frame.distanceToNext}
+                            onChange={(e) =>
+                              updateFrame(
+                                frame.id,
+                                "distanceToNext",
+                                parseFloat(e.target.value) || 0
+                              )
+                            }
+                            className={inputClasses}
+                          />
+                        </div>
+                        {segmentVolumes[index] && (
+                          <div className="text-sm purple-light-text pb-2">
+                            Segment volume:{" "}
+                            <span className="font-semibold">
+                              {
+                                formatVolume(segmentVolumes[index].volume)
+                                  .cubicFeetStr
+                              }{" "}
+                              ft³
+                            </span>{" "}
+                            (
+                            {
+                              formatVolume(segmentVolumes[index].volume)
+                                .cubicYardsStr
+                            }{" "}
+                            yd³)
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return elements;
+            })}
           </div>
 
-          {/* Add Frame Button */}
+          {/* Insert Frame Button */}
           <button
             onClick={addFrame}
             className="btn btn-primary w-full sm:w-auto px-6 py-3 text-lg"
@@ -410,25 +456,28 @@ export default function FramesVolumeCalc() {
               <div className="flex items-end gap-2 overflow-x-auto pb-4">
                 {frames.map((frame, index) => {
                   const maxHeight = Math.max(...frames.map((f) => f.height));
-                  const scaledHeight = (frame.height / maxHeight) * 100;
+                  const scaledHeight =
+                    maxHeight > 0 ? (frame.height / maxHeight) * 100 : 30;
                   const maxDepth = Math.max(...frames.map((f) => f.depth));
-                  const scaledWidth = Math.max(
-                    20,
-                    (frame.depth / maxDepth) * 60
-                  );
+                  const scaledWidth =
+                    maxDepth > 0
+                      ? Math.max(20, (frame.depth / maxDepth) * 60)
+                      : 30;
 
                   return (
                     <div key={frame.id} className="flex items-end">
                       {/* Frame rectangle */}
-                      <div
-                        className="bg-green-500 dark:bg-green-600 border-2 border-green-700 dark:border-green-400 flex items-center justify-center text-xs font-bold text-white"
-                        style={{
-                          height: `${Math.max(30, scaledHeight)}px`,
-                          width: `${scaledWidth}px`,
-                          minWidth: "30px",
-                        }}
-                      >
-                        {index + 1}
+                      <div className="flex flex-col items-center">
+                        <div
+                          className="bg-green-500 dark:bg-green-600 border-2 border-green-700 dark:border-green-400 flex items-center justify-center text-xs font-bold text-white rounded-sm"
+                          style={{
+                            height: `${Math.max(30, scaledHeight)}px`,
+                            width: `${scaledWidth}px`,
+                            minWidth: "30px",
+                          }}
+                        >
+                          {index + 1}
+                        </div>
                       </div>
                       {/* Distance connector */}
                       {index < frames.length - 1 && (
@@ -444,7 +493,7 @@ export default function FramesVolumeCalc() {
                             }}
                           />
                           <span className="text-xs mt-1">
-                            {frame.distanceToNext}'
+                            {frame.distanceToNext}&apos;
                           </span>
                         </div>
                       )}
