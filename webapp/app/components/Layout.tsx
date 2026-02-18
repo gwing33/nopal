@@ -61,7 +61,7 @@ export function Layout({ children }: { children?: ReactNode }) {
   useClickOutside(goodsRef, handleGoodItemClick);
 
   return (
-    <>
+    <div className="page-wrapper">
       <div className="header container mx-auto pl-4 pr-4">
         <div className="py-4 flex justify-between items-center">
           <h1 className="text-6xl text-center">
@@ -151,6 +151,6 @@ export function Layout({ children }: { children?: ReactNode }) {
         </div>
       </div>
       {children}
-    </>
+    </div>
   );
 }
