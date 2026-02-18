@@ -18,15 +18,93 @@ interface Frame {
   distanceToNext: number; // in feet
 }
 
+interface Material {
+  id: string;
+  name: string;
+  description: string;
+  lbsPerCubicFoot: number; // density in pounds per cubic foot
+}
+
+const MATERIALS: Material[] = [
+  {
+    id: "ab",
+    name: "Aggregate Base (AB)",
+    description: "Compacted road base material",
+    lbsPerCubicFoot: 115,
+  },
+  {
+    id: "quarter-minus",
+    name: '1/4" Minus Rock',
+    description: "Fine crushed material, compacts well",
+    lbsPerCubicFoot: 100,
+  },
+  {
+    id: "pea-gravel",
+    name: "Pea Gravel",
+    description: '1/8" - 3/8" rounded stones',
+    lbsPerCubicFoot: 96,
+  },
+  {
+    id: "crushed-stone",
+    name: "Crushed Stone",
+    description: '1/2" - 3/4" angular aggregate',
+    lbsPerCubicFoot: 100,
+  },
+  {
+    id: "river-rock",
+    name: "River Rock",
+    description: '1" - 3" smooth rounded stones',
+    lbsPerCubicFoot: 90,
+  },
+  {
+    id: "riprap",
+    name: "Riprap",
+    description: "Large angular stones for erosion control",
+    lbsPerCubicFoot: 85,
+  },
+  {
+    id: "sand",
+    name: "Sand",
+    description: "Fine granular material",
+    lbsPerCubicFoot: 100,
+  },
+  {
+    id: "dirt",
+    name: "Dirt",
+    description: "General fill dirt/soil",
+    lbsPerCubicFoot: 75,
+  },
+  {
+    id: "concrete",
+    name: "Concrete",
+    description: "Mixed concrete",
+    lbsPerCubicFoot: 150,
+  },
+];
+
 function formatVolume(cubicInches: number): {
-  cubicFeet: string;
-  cubicYards: string;
+  cubicFeet: number;
+  cubicYards: number;
+  cubicFeetStr: string;
+  cubicYardsStr: string;
 } {
   const cubicFeet = cubicInches / 1728; // 12^3
   const cubicYards = cubicFeet / 27; // 3^3
   return {
-    cubicFeet: cubicFeet.toFixed(2),
-    cubicYards: cubicYards.toFixed(2),
+    cubicFeet,
+    cubicYards,
+    cubicFeetStr: cubicFeet.toFixed(2),
+    cubicYardsStr: cubicYards.toFixed(2),
+  };
+}
+
+function formatWeight(pounds: number): {
+  pounds: string;
+  tons: string;
+} {
+  return {
+    pounds: pounds.toFixed(0),
+    tons: (pounds / 2000).toFixed(2),
   };
 }
 
@@ -48,6 +126,11 @@ export default function FramesVolumeCalc() {
   const [frames, setFrames] = useState<Frame[]>([
     { id: 1, height: 12, depth: 12, distanceToNext: 4 },
   ]);
+  const [selectedMaterialId, setSelectedMaterialId] =
+    useState<string>("quarter-minus");
+
+  const selectedMaterial =
+    MATERIALS.find((m) => m.id === selectedMaterialId) || MATERIALS[0];
 
   const addFrame = () => {
     const newId = Math.max(...frames.map((f) => f.id)) + 1;
@@ -93,6 +176,9 @@ export default function FramesVolumeCalc() {
   }, [frames]);
 
   const formattedTotal = formatVolume(totalVolume);
+  const totalWeight =
+    formattedTotal.cubicFeet * selectedMaterial.lbsPerCubicFoot;
+  const formattedWeight = formatWeight(totalWeight);
 
   return (
     <Layout>
@@ -109,26 +195,81 @@ export default function FramesVolumeCalc() {
             calculated using trapezoidal approximation.
           </p>
 
-          {/* Total Volume Display */}
+          {/* Material Selection */}
+          <div className="mb-6">
+            <label
+              htmlFor="material-select"
+              className="block text-lg font-medium mb-2"
+            >
+              Select Material
+            </label>
+            <select
+              id="material-select"
+              value={selectedMaterialId}
+              onChange={(e) => setSelectedMaterialId(e.target.value)}
+              className="w-full sm:w-auto px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-green-500 text-lg"
+            >
+              {MATERIALS.map((material) => (
+                <option key={material.id} value={material.id}>
+                  {material.name}
+                </option>
+              ))}
+            </select>
+            <p className="text-sm opacity-70 mt-1">
+              {selectedMaterial.description} —{" "}
+              {selectedMaterial.lbsPerCubicFoot} lbs/ft³
+            </p>
+          </div>
+
+          {/* Total Volume & Weight Display */}
           <div className="bg-green-100 dark:bg-green-900 rounded-lg p-6 mb-8">
-            <h3 className="text-2xl font-bold green-text mb-2">Total Volume</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Volume Section */}
               <div>
-                <span className="text-3xl font-bold">
-                  {formattedTotal.cubicFeet}
-                </span>
-                <span className="text-lg ml-2">ft³</span>
+                <h3 className="text-2xl font-bold green-text mb-2">
+                  Total Volume
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-3xl font-bold">
+                      {formattedTotal.cubicFeetStr}
+                    </span>
+                    <span className="text-lg ml-2">ft³</span>
+                  </div>
+                  <div>
+                    <span className="text-3xl font-bold">
+                      {formattedTotal.cubicYardsStr}
+                    </span>
+                    <span className="text-lg ml-2">yd³</span>
+                  </div>
+                </div>
               </div>
+
+              {/* Weight Section */}
               <div>
-                <span className="text-3xl font-bold">
-                  {formattedTotal.cubicYards}
-                </span>
-                <span className="text-lg ml-2">yd³</span>
+                <h3 className="text-2xl font-bold green-text mb-2">
+                  Total Weight
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-3xl font-bold">
+                      {formattedWeight.pounds}
+                    </span>
+                    <span className="text-lg ml-2">lbs</span>
+                  </div>
+                  <div>
+                    <span className="text-3xl font-bold">
+                      {formattedWeight.tons}
+                    </span>
+                    <span className="text-lg ml-2">tons</span>
+                  </div>
+                </div>
               </div>
             </div>
+
             {frames.length < 2 && (
-              <p className="text-sm mt-2 opacity-70">
-                Add at least 2 frames to calculate volume
+              <p className="text-sm mt-4 opacity-70">
+                Add at least 2 frames to calculate volume and weight
               </p>
             )}
           </div>
@@ -243,8 +384,9 @@ export default function FramesVolumeCalc() {
                   <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
                     <span className="text-sm font-medium purple-light-text">
                       Volume to Frame {index + 2}:{" "}
-                      {formatVolume(segmentVolumes[index].volume).cubicFeet} ft³
-                      ({formatVolume(segmentVolumes[index].volume).cubicYards}{" "}
+                      {formatVolume(segmentVolumes[index].volume).cubicFeetStr}{" "}
+                      ft³ (
+                      {formatVolume(segmentVolumes[index].volume).cubicYardsStr}{" "}
                       yd³)
                     </span>
                   </div>
