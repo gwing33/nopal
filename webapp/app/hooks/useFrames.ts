@@ -263,9 +263,15 @@ export function useFrames(initialFrames: Frame[] = DEFAULT_FRAMES) {
 
   const addFrame = () => {
     const newId = Math.max(...frames.map((f) => f.id)) + 1;
+    const last = frames[frames.length - 1];
     setFrames([
       ...frames,
-      { id: newId, height: 12, depth: 12, distanceToNext: 4 },
+      {
+        id: newId,
+        height: last?.height ?? 12,
+        depth: last?.depth ?? 12,
+        distanceToNext: last?.distanceToNext ?? 4,
+      },
     ]);
   };
 
