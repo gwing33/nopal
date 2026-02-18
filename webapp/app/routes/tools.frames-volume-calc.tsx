@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
+import { Breadcrumb } from "../components/Breadcrumb";
 import { FramesVisualPreview } from "../components/FramesVisualPreview";
 import { NumberInput } from "../components/NumberInput";
 import { useFrames, formatVolume, formatWeight } from "../hooks/useFrames";
 import type { MetaFunction } from "@remix-run/node";
+import { Link } from "@remix-run/react";
 
 export const meta: MetaFunction = () => [
   { title: "Volume Calculator by Frames | Nopal Tools" },
@@ -102,7 +104,9 @@ export default function FramesVolumeCalc() {
     <Layout>
       <div className="scene1">
         <div className="simple-container p-4">
-          <h2 className="purple-light-text text-xl">Construction Tools</h2>
+          <Breadcrumb>
+            <Link to="/tools">All Tools</Link>
+          </Breadcrumb>
           <h1 className="text-4xl font-bold mt-8">
             Volume Calculator by Frames
           </h1>
