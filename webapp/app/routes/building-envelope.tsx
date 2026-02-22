@@ -130,25 +130,12 @@ function hasAnySelection(state: SurveyState) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Quadrant label logic
-// ---------------------------------------------------------------------------
-
-function getQuadrantLabel(score: Score, hasSelection: boolean): string {
-  if (!hasSelection) return "Make selections to place your home";
-  const { health, efficiency } = score;
-  if (health >= 0 && efficiency >= 0) return "Healthy & Efficient";
-  if (health >= 0 && efficiency < 0) return "Healthy but Inefficient";
-  if (health < 0 && efficiency >= 0) return "Efficient but Unhealthy";
-  return "Needs Improvement";
-}
-
 function getQuadrantColor(score: Score, hasSelection: boolean): string {
   if (!hasSelection) return "var(--text-subtle)";
   const { health, efficiency } = score;
   if (health >= 0 && efficiency >= 0) return "var(--green)";
-  if (health >= 0 && efficiency < 0) return "var(--yellow)";
-  if (health < 0 && efficiency >= 0) return "var(--yellow)";
+  if (health >= 0 && efficiency < 0) return "var(--green-light)";
+  if (health < 0 && efficiency >= 0) return "var(--red-light)";
   return "var(--red)";
 }
 
@@ -332,38 +319,26 @@ function QuadrantChart({
   const xPercent = hasSelection ? 50 + (score.efficiency / 50) * 45 : 50;
   const yPercent = hasSelection ? 50 - (score.health / 50) * 45 : 50;
 
-  const quadrantLabel = getQuadrantLabel(score, hasSelection);
   const quadrantColor = getQuadrantColor(score, hasSelection);
 
   return (
     <div className="flex flex-col items-center w-full">
-      {/* Quadrant status label */}
-      <div
-        className="text-center mb-4 px-4 py-2 rounded-full font-semibold text-sm"
-        style={{
-          color: quadrantColor,
-          backgroundColor: hasSelection ? undefined : "transparent",
-          border: hasSelection
-            ? `2px solid ${quadrantColor}`
-            : "2px solid var(--midground)",
-        }}
-      >
-        {quadrantLabel}
-      </div>
-
       {/* Chart container */}
-      <div
-        className="relative w-full"
-        style={{ maxWidth: 520, aspectRatio: "1 / 1" }}
-      >
+      <div className="relative w-full" style={{ aspectRatio: "1 / 1" }}>
         {/* Quadrant backgrounds */}
         <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 rounded-xl overflow-hidden">
           {/* Top-left: Healthy but Inefficient */}
           <div
-            className="flex items-start justify-start p-3"
-            style={{ backgroundColor: "rgba(255, 234, 164, 0.15)" }}
+            className="flex items-start justify-start p-4"
+            style={{
+              backgroundColor: "var(--green-light)",
+              borderTopLeftRadius: "4px",
+            }}
           >
-            <span className="text-xs opacity-40 font-medium leading-tight">
+            <span
+              className="text-xl font-mono font-bold"
+              style={{ color: "var(--white)" }}
+            >
               Healthy but
               <br />
               Inefficient
@@ -371,31 +346,49 @@ function QuadrantChart({
           </div>
           {/* Top-right: Healthy & Efficient */}
           <div
-            className="flex items-start justify-end p-3"
-            style={{ backgroundColor: "rgba(93, 160, 109, 0.12)" }}
+            className="flex items-start justify-end p-4"
+            style={{
+              backgroundColor: "var(--green)",
+              borderTopRightRadius: "4px",
+            }}
           >
-            <span className="text-xs opacity-40 font-medium text-right leading-tight">
+            <span
+              className="text-xl font-mono font-bold"
+              style={{ color: "var(--farground)" }}
+            >
               Healthy &<br />
               Efficient
             </span>
           </div>
           {/* Bottom-left: Needs Improvement */}
           <div
-            className="flex items-end justify-start p-3"
-            style={{ backgroundColor: "rgba(166, 59, 49, 0.08)" }}
+            className="flex items-end justify-start p-4"
+            style={{
+              backgroundColor: "var(--red)",
+              borderBottomLeftRadius: "4px",
+            }}
           >
-            <span className="text-xs opacity-40 font-medium leading-tight">
-              Needs
+            <span
+              className="text-xl font-mono font-bold"
+              style={{ color: "var(--red-light)" }}
+            >
+              Unhealthy &
               <br />
-              Improvement
+              Inefficient
             </span>
           </div>
           {/* Bottom-right: Efficient but Unhealthy */}
           <div
-            className="flex items-end justify-end p-3"
-            style={{ backgroundColor: "rgba(255, 234, 164, 0.15)" }}
+            className="flex items-end justify-end p-4"
+            style={{
+              backgroundColor: "var(--red-light)",
+              borderBottomRightRadius: "4px",
+            }}
           >
-            <span className="text-xs opacity-40 font-medium text-right leading-tight">
+            <span
+              className="text-xl font-mono font-bold"
+              style={{ color: "var(--red)" }}
+            >
               Efficient but
               <br />
               Unhealthy
@@ -429,10 +422,10 @@ function QuadrantChart({
           className="absolute text-xs font-semibold"
           style={{
             top: 4,
-            left: "50%",
+            left: "57%",
             transform: "translateX(-50%)",
-            color: "var(--green)",
-            opacity: 0.7,
+            color: "var(--white)",
+            // opacity: 0.7,
           }}
         >
           ↑ Healthier
@@ -442,10 +435,9 @@ function QuadrantChart({
           className="absolute text-xs font-semibold"
           style={{
             bottom: 4,
-            left: "50%",
+            right: "44%",
             transform: "translateX(-50%)",
-            color: "var(--red)",
-            opacity: 0.7,
+            color: "var(--white)",
           }}
         >
           Unhealthy ↓
@@ -455,10 +447,9 @@ function QuadrantChart({
           className="absolute text-xs font-semibold"
           style={{
             right: 4,
-            top: "50%",
+            top: "52%",
             transform: "translateY(-50%)",
-            color: "var(--green)",
-            opacity: 0.7,
+            color: "var(--purple)",
           }}
         >
           Efficient →
@@ -468,20 +459,16 @@ function QuadrantChart({
           className="absolute text-xs font-semibold"
           style={{
             left: 4,
-            top: "50%",
+            top: "48%",
             transform: "translateY(-50%)",
-            color: "var(--red)",
-            opacity: 0.7,
+            color: "var(--purple)",
           }}
         >
           ← Inefficient
         </div>
 
         {/* Outer border */}
-        <div
-          className="absolute inset-0 rounded-xl pointer-events-none"
-          style={{ border: "2px solid var(--midground)" }}
-        />
+        <div className="absolute inset-0 rounded pointer-events-none good-box-boarder" />
 
         {/* Home marker */}
         <div
@@ -500,41 +487,13 @@ function QuadrantChart({
             style={{
               width: 48,
               height: 48,
-              backgroundColor: hasSelection
-                ? quadrantColor
-                : "var(--midground)",
+              backgroundColor: "var(--white)",
               transition: "background-color 0.4s ease",
-              border: "3px solid white",
             }}
           >
-            <HomeIcon color="white" />
-          </div>
-          <div
-            className="text-xs font-bold mt-1 px-2 py-0.5 rounded-full whitespace-nowrap"
-            style={{
-              backgroundColor: "white",
-              color: hasSelection ? quadrantColor : "var(--text-subtle)",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.12)",
-              transition: "color 0.4s ease",
-            }}
-          >
-            Your Home
+            <HomeIcon color={quadrantColor} />
           </div>
         </div>
-
-        {/* Center dot */}
-        <div
-          className="absolute rounded-full"
-          style={{
-            width: 6,
-            height: 6,
-            backgroundColor: "var(--midground)",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: 5,
-          }}
-        />
       </div>
 
       {/* Score readout */}
@@ -676,138 +635,137 @@ export default function BuildingEnvelope() {
           </p>
 
           {/* Main two-column layout */}
-          <div
-            className="flex flex-col sm:flex-row gap-6 mb-12"
-            style={{ minHeight: 520 }}
-          >
+          <div className="flex flex-col sm:flex-row gap-6 mb-12">
             {/* ---- LEFT SIDEBAR: Options ---- */}
-            <div className="good-box lg:w-[280px] shrink-0 p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">Your Building</h2>
-                {selected && (
-                  <button
-                    onClick={handleReset}
-                    className="text-xs px-2 py-1 rounded-md font-medium transition-colors"
-                    style={{
-                      color: "var(--text-subtle)",
-                      border: "1px solid var(--midground)",
-                    }}
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
+            <div>
+              <div className="good-box lg:w-[280px] shrink-0 p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold">Your Building</h2>
+                  {selected && (
+                    <button
+                      onClick={handleReset}
+                      className="text-xs px-2 py-1 rounded-md font-medium transition-colors"
+                      style={{
+                        color: "var(--text-subtle)",
+                        border: "1px solid var(--midground)",
+                      }}
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
 
-              {/* Air Tightness */}
-              <SectionHeading>Air Tightness</SectionHeading>
-              <SectionDescription>
-                How well the envelope prevents uncontrolled air leakage.
-              </SectionDescription>
-              <div className="mb-4">
-                <SliderSelect
-                  options={[
-                    {
-                      value: "old-and-leaky",
-                      label: "Old & Leaky",
-                      description:
-                        "Noticeable drafts, gaps around windows/doors.",
-                    },
-                    {
-                      value: "code",
-                      label: "Code",
-                      description: "Built to current energy code standards.",
-                    },
-                    {
-                      value: "passive-house",
-                      label: "Passive House",
-                      description:
-                        "Extremely airtight, blower door tested (≤ 0.6 ACH50).",
-                    },
-                  ]}
-                  selectedValue={state.airTightness}
-                  onChange={setAirTightness}
+                {/* Air Tightness */}
+                <SectionHeading>Air Tightness</SectionHeading>
+                <SectionDescription>
+                  How well the envelope prevents uncontrolled air leakage.
+                </SectionDescription>
+                <div className="mb-4">
+                  <SliderSelect
+                    options={[
+                      {
+                        value: "old-and-leaky",
+                        label: "Old & Leaky",
+                        description:
+                          "Noticeable drafts, gaps around windows/doors.",
+                      },
+                      {
+                        value: "code",
+                        label: "Code",
+                        description: "Built to current energy code standards.",
+                      },
+                      {
+                        value: "passive-house",
+                        label: "Passive House",
+                        description:
+                          "Extremely airtight, blower door tested (≤ 0.6 ACH50).",
+                      },
+                    ]}
+                    selectedValue={state.airTightness}
+                    onChange={setAirTightness}
+                  />
+                </div>
+
+                {/* Divider */}
+                <hr
+                  style={{ borderColor: "var(--midground)" }}
+                  className="my-4"
                 />
-              </div>
 
-              {/* Divider */}
-              <hr
-                style={{ borderColor: "var(--midground)" }}
-                className="my-4"
-              />
-
-              {/* Ventilation */}
-              <SectionHeading>Ventilation</SectionHeading>
-              <SectionDescription>
-                How is fresh air managed in the building?
-              </SectionDescription>
-              <div className="mb-4">
-                <SliderSelect
-                  options={[
-                    {
-                      value: "none",
-                      label: "None",
-                      description: "No mechanical ventilation system.",
-                    },
-                    {
-                      value: "exhaust-only",
-                      label: "Exhaust Only",
-                      description:
-                        "Bath fans, range hoods — air exits but replacement is uncontrolled.",
-                    },
-                    {
-                      value: "supply-only",
-                      label: "Supply Only",
-                      description:
-                        "Fresh air is pushed in, but outgoing air is not recovered.",
-                    },
-                    {
-                      value: "balanced",
-                      label: "Balanced",
-                      description:
-                        "ERV / HRV — fresh air in, stale air out with heat/energy recovery.",
-                    },
-                  ]}
-                  selectedValue={
-                    state.ventilation === null ? "none" : state.ventilation
-                  }
-                  onChange={(v) => {
-                    if (v === "none") {
-                      setState((prev) => ({ ...prev, ventilation: null }));
-                    } else {
-                      setVentilation(v);
+                {/* Ventilation */}
+                <SectionHeading>Ventilation</SectionHeading>
+                <SectionDescription>
+                  How is fresh air managed in the building?
+                </SectionDescription>
+                <div className="mb-4">
+                  <SliderSelect
+                    options={[
+                      {
+                        value: "none",
+                        label: "None",
+                        description: "No mechanical ventilation system.",
+                      },
+                      {
+                        value: "exhaust-only",
+                        label: "Exhaust Only",
+                        description:
+                          "Bath fans, range hoods — air exits but replacement is uncontrolled.",
+                      },
+                      {
+                        value: "supply-only",
+                        label: "Supply Only",
+                        description:
+                          "Fresh air is pushed in, but outgoing air is not recovered.",
+                      },
+                      {
+                        value: "balanced",
+                        label: "Balanced",
+                        description:
+                          "ERV / HRV — fresh air in, stale air out with heat/energy recovery.",
+                      },
+                    ]}
+                    selectedValue={
+                      state.ventilation === null ? "none" : state.ventilation
                     }
-                  }}
-                />
-              </div>
+                    onChange={(v) => {
+                      if (v === "none") {
+                        setState((prev) => ({ ...prev, ventilation: null }));
+                      } else {
+                        setVentilation(v);
+                      }
+                    }}
+                  />
+                </div>
 
-              {/* Divider */}
-              <hr
-                style={{ borderColor: "var(--midground)" }}
-                className="my-4"
-              />
-
-              {/* Windows */}
-              <SectionHeading>Windows for Fresh Air?</SectionHeading>
-              <SectionDescription>
-                Do you open windows as a ventilation strategy?
-              </SectionDescription>
-              <div>
-                <SliderSelect
-                  options={[
-                    {
-                      value: "no",
-                      label: "No",
-                      description: "I rely on mechanical systems.",
-                    },
-                    {
-                      value: "yes",
-                      label: "Yes",
-                      description: "I regularly open windows for fresh air.",
-                    },
-                  ]}
-                  selectedValue={state.windowsFreshAir}
-                  onChange={setWindowsFreshAir}
+                {/* Divider */}
+                <hr
+                  style={{ borderColor: "var(--midground)" }}
+                  className="my-4"
                 />
+
+                {/* Windows */}
+                <SectionHeading>Windows for Fresh Air?</SectionHeading>
+                <SectionDescription>
+                  Do you open windows as a ventilation strategy?
+                </SectionDescription>
+                <div>
+                  <SliderSelect
+                    options={[
+                      {
+                        value: "no",
+                        label: "No",
+                        description: "I rely on mechanical systems.",
+                      },
+                      {
+                        value: "yes",
+                        label: "Yes",
+                        description: "I regularly open windows for fresh air.",
+                      },
+                    ]}
+                    selectedValue={state.windowsFreshAir}
+                    onChange={setWindowsFreshAir}
+                  />
+                </div>
               </div>
             </div>
 

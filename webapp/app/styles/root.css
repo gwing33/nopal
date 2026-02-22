@@ -112,6 +112,14 @@ body {
   }
 }
 
+.good-box-boarder {
+  border: 1px solid var(--foreground);
+  border-radius: 4px;
+  @media (prefers-color-scheme: dark) {
+    border-color: var(--dark-foreground);
+  }
+}
+
 /* Good Box */
 .good-box {
   border: 1px solid var(--foreground);
@@ -581,6 +589,12 @@ body {
   color: var(--red);
   @media (prefers-color-scheme: dark) {
     color: var(--red-light);
+  }
+}
+.red-light-text {
+  color: var(--red-light);
+  @media (prefers-color-scheme: dark) {
+    color: var(--red);
   }
 }
 
