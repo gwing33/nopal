@@ -4,7 +4,7 @@ import { Footer } from "../components/Footer";
 import type { MetaFunction } from "@remix-run/node";
 
 export const meta: MetaFunction = () => [
-  { title: "Building Envelope Survey | Nopal" },
+  { title: "Building Envelope | Nopal" },
   {
     name: "description",
     content:
@@ -22,24 +22,19 @@ type Ventilation = "exhaust-only" | "supply-only" | "balanced" | null;
 
 type WindowsFreshAir = "yes" | "no" | null;
 
-interface SurveyState {
+interface SettingsState {
   airTightness: AirTightness;
   ventilation: Ventilation;
   windowsFreshAir: WindowsFreshAir;
-}
-
-interface Insight {
-  kind: "tip" | "warning" | "info";
-  text: string;
 }
 
 // ---------------------------------------------------------------------------
 // Initial State
 // ---------------------------------------------------------------------------
 
-const INITIAL_STATE: SurveyState = {
-  airTightness: null,
-  ventilation: null,
+const INITIAL_STATE: SettingsState = {
+  airTightness: "code",
+  ventilation: "exhaust-only",
   windowsFreshAir: "no",
 };
 
@@ -54,7 +49,7 @@ interface Score {
   efficiency: number;
 }
 
-function computeScore(state: SurveyState): Score {
+function computeScore(state: SettingsState): Score {
   let health = 0;
   let efficiency = 0;
 
@@ -122,7 +117,7 @@ function computeScore(state: SurveyState): Score {
   return { health, efficiency };
 }
 
-function hasAnySelection(state: SurveyState) {
+function hasAnySelection(state: SettingsState) {
   return (
     state.airTightness !== null ||
     state.ventilation !== null ||
@@ -148,7 +143,7 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 }
 
 function SectionDescription({ children }: { children: React.ReactNode }) {
-  return <p className="text-base opacity-70 mb-2">{children}</p>;
+  return <p className="text-xs purple-light-text mb-2">{children}</p>;
 }
 
 interface SliderOption {
@@ -326,8 +321,8 @@ function QuadrantChart({
       {/* Chart container */}
       <div className="relative w-full" style={{ aspectRatio: "1 / 1" }}>
         {/* Quadrant backgrounds */}
-        <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 rounded-xl overflow-hidden">
-          {/* Top-left: Healthy but Inefficient */}
+        <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 rounded overflow-hidden">
+          {/* Top-left: Healthy & Inefficient */}
           <div
             className="flex items-start justify-start p-4"
             style={{
@@ -339,7 +334,7 @@ function QuadrantChart({
               className="text-xl font-mono font-bold"
               style={{ color: "var(--white)" }}
             >
-              Healthy but
+              Healthy &
               <br />
               Inefficient
             </span>
@@ -377,7 +372,7 @@ function QuadrantChart({
               Inefficient
             </span>
           </div>
-          {/* Bottom-right: Efficient but Unhealthy */}
+          {/* Bottom-right: Efficient & Unhealthy */}
           <div
             className="flex items-end justify-end p-4"
             style={{
@@ -389,7 +384,7 @@ function QuadrantChart({
               className="text-xl font-mono font-bold"
               style={{ color: "var(--red)" }}
             >
-              Efficient but
+              Efficient &
               <br />
               Unhealthy
             </span>
@@ -422,8 +417,8 @@ function QuadrantChart({
           className="absolute text-xs font-semibold"
           style={{
             top: 4,
-            left: "57%",
-            transform: "translateX(-50%)",
+            left: "50%",
+            transform: "translateX(4px)",
             color: "var(--white)",
             // opacity: 0.7,
           }}
@@ -435,8 +430,8 @@ function QuadrantChart({
           className="absolute text-xs font-semibold"
           style={{
             bottom: 4,
-            right: "44%",
-            transform: "translateX(-50%)",
+            right: "50%",
+            transform: "translateX(-4px)",
             color: "var(--white)",
           }}
         >
@@ -447,8 +442,8 @@ function QuadrantChart({
           className="absolute text-xs font-semibold"
           style={{
             right: 4,
-            top: "52%",
-            transform: "translateY(-50%)",
+            top: "50%",
+            transform: "translateY(4px)",
             color: "var(--purple)",
           }}
         >
@@ -459,8 +454,8 @@ function QuadrantChart({
           className="absolute text-xs font-semibold"
           style={{
             left: 4,
-            top: "48%",
-            transform: "translateY(-50%)",
+            bottom: "50%",
+            transform: "translateY(-4px)",
             color: "var(--purple)",
           }}
         >
@@ -529,10 +524,6 @@ function QuadrantChart({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Score Reference Table
-// ---------------------------------------------------------------------------
-
 const AIR_TIGHTNESS_OPTIONS: { value: AirTightness; label: string }[] = [
   { value: "old-and-leaky", label: "Old & Leaky" },
   { value: "code", label: "Code" },
@@ -551,21 +542,12 @@ const WINDOWS_OPTIONS: { value: WindowsFreshAir; label: string }[] = [
   { value: "no", label: "No" },
 ];
 
-interface ScoreRow {
-  airTightness: AirTightness;
-  ventilation: Ventilation;
-  windowsFreshAir: WindowsFreshAir;
-  health: number;
-  efficiency: number;
-  quadrant: string;
-}
-
 // ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
 export default function BuildingEnvelope() {
-  const [state, setState] = useState<SurveyState>({ ...INITIAL_STATE });
+  const [state, setState] = useState<SettingsState>({ ...INITIAL_STATE });
 
   const setAirTightness = useCallback((v: string) => {
     setState((prev) => ({ ...prev, airTightness: v as AirTightness }));
@@ -593,13 +575,17 @@ export default function BuildingEnvelope() {
           <h1 className="purple-light-text text-4xl mt-12">
             Building Envelope
           </h1>
-          <p className="text-lg mt-2 mb-6" style={{ maxWidth: 600 }}>
-            Choose your building's characteristics on the left and watch where
-            your home lands on the health vs. efficiency quadrant.
+          <p className="text-lg mt-2 mb-6">
+            Building for Efficiency may be at the cost of your health.
           </p>
 
           {/* Main two-column layout */}
-          <div className="flex flex-col sm:flex-row gap-6 mb-12">
+          <div className="flex flex-col sm:flex-row-reverse gap-6 mb-12">
+            {/* ---- RIGHT: Quadrant + Insights ---- */}
+            <div className="flex-1 flex flex-col items-center min-w-0">
+              <QuadrantChart score={score} hasSelection={selected} />
+            </div>
+
             {/* ---- LEFT SIDEBAR: Options ---- */}
             <div>
               <div className="good-box lg:w-[280px] shrink-0 p-4">
@@ -646,12 +632,6 @@ export default function BuildingEnvelope() {
                   />
                 </div>
 
-                {/* Divider */}
-                <hr
-                  style={{ borderColor: "var(--midground)" }}
-                  className="my-4"
-                />
-
                 {/* Ventilation */}
                 <SectionHeading>Ventilation</SectionHeading>
                 <SectionDescription>
@@ -697,12 +677,6 @@ export default function BuildingEnvelope() {
                   />
                 </div>
 
-                {/* Divider */}
-                <hr
-                  style={{ borderColor: "var(--midground)" }}
-                  className="my-4"
-                />
-
                 {/* Windows */}
                 <SectionHeading>Windows for Fresh Air?</SectionHeading>
                 <SectionDescription>
@@ -727,11 +701,6 @@ export default function BuildingEnvelope() {
                   />
                 </div>
               </div>
-            </div>
-
-            {/* ---- RIGHT: Quadrant + Insights ---- */}
-            <div className="flex-1 flex flex-col items-center min-w-0">
-              <QuadrantChart score={score} hasSelection={selected} />
             </div>
           </div>
         </div>
