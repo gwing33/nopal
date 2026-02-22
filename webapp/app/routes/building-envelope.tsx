@@ -157,55 +157,140 @@ function getQuadrantColor(score: Score, hasSelection: boolean): string {
 // ---------------------------------------------------------------------------
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
-  return <h3 className="text-base font-semibold mb-1">{children}</h3>;
+  return <h3 className="text-lg font-semibold mb-1">{children}</h3>;
 }
 
 function SectionDescription({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs opacity-70 mb-2">{children}</p>;
+  return <p className="text-base opacity-70 mb-2">{children}</p>;
 }
 
-function RadioOption({
-  name,
-  value,
-  checked,
-  onChange,
-  label,
-  description,
-}: {
-  name: string;
+interface SliderOption {
   value: string;
-  checked: boolean;
-  onChange: (value: string) => void;
   label: string;
   description?: string;
+}
+
+function SliderSelect({
+  options,
+  selectedValue,
+  onChange,
+}: {
+  options: SliderOption[];
+  selectedValue: string | null;
+  onChange: (value: string) => void;
 }) {
+  const selectedIndex = options.findIndex((o) => o.value === selectedValue);
+  const selectedDesc =
+    selectedIndex >= 0 ? options[selectedIndex].description : undefined;
+
   return (
-    <label
-      className="flex items-start gap-2 p-3 rounded-lg border cursor-pointer transition-all"
-      style={{
-        borderColor: checked ? "var(--green)" : "var(--midground)",
-        backgroundColor: checked ? "var(--green-light)" : "transparent",
-        opacity: checked ? 1 : 0.85,
-      }}
-    >
-      <input
-        type="radio"
-        name={name}
-        value={value}
-        checked={checked}
-        onChange={() => onChange(value)}
-        className="mt-0.5 shrink-0"
-        style={{ accentColor: "var(--green)" }}
-      />
-      <div className="min-w-0">
-        <div className="font-semibold text-sm leading-tight">{label}</div>
-        {description && (
-          <div className="text-xs opacity-70 mt-0.5 leading-snug">
-            {description}
-          </div>
+    <div>
+      {/* Track + stops */}
+      <div className="relative" style={{ padding: "8px 0" }}>
+        {/* Track line */}
+        <div
+          className="absolute"
+          style={{
+            top: "50%",
+            left: `${100 / (options.length * 2)}%`,
+            right: `${100 / (options.length * 2)}%`,
+            height: 3,
+            backgroundColor: "var(--midground)",
+            transform: "translateY(-50%)",
+            borderRadius: 2,
+          }}
+        />
+        {/* Active portion of track */}
+        {selectedIndex >= 0 && (
+          <div
+            className="absolute"
+            style={{
+              top: "50%",
+              left: `${100 / (options.length * 2)}%`,
+              width: `${
+                (selectedIndex / (options.length - 1)) *
+                (100 - 100 / options.length)
+              }%`,
+              height: 3,
+              backgroundColor: "var(--green)",
+              transform: "translateY(-50%)",
+              borderRadius: 2,
+              transition: "width 0.2s ease",
+            }}
+          />
         )}
+        {/* Stops */}
+        <div className="relative flex justify-between items-center">
+          {options.map((opt, i) => {
+            const isSelected = opt.value === selectedValue;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => onChange(opt.value)}
+                title={opt.description}
+                className="flex flex-col items-center"
+                style={{
+                  flex: "1 1 0%",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                }}
+              >
+                {/* Dot */}
+                <div
+                  style={{
+                    width: isSelected ? 18 : 12,
+                    height: isSelected ? 18 : 12,
+                    borderRadius: "50%",
+                    backgroundColor: isSelected
+                      ? "var(--green)"
+                      : "var(--midground)",
+                    border: isSelected
+                      ? "3px solid var(--green)"
+                      : "2px solid var(--midground)",
+                    transition: "all 0.15s ease",
+                    boxShadow: isSelected
+                      ? "0 0 0 3px var(--green-light)"
+                      : "none",
+                  }}
+                />
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </label>
+      {/* Labels row */}
+      <div className="flex justify-between mt-1">
+        {options.map((opt) => {
+          const isSelected = opt.value === selectedValue;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onChange(opt.value)}
+              title={opt.description}
+              className="text-center"
+              style={{
+                flex: "1 1 0%",
+                background: "none",
+                border: "none",
+                padding: "2px 0",
+                cursor: "pointer",
+                fontSize: 11,
+                fontWeight: isSelected ? 700 : 500,
+                color: isSelected ? "var(--green)" : "var(--text-subtle)",
+                transition: "all 0.15s ease",
+                lineHeight: 1.2,
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -595,160 +680,6 @@ function generateAllScores(): ScoreRow[] {
   return rows;
 }
 
-function ScoreTable({ currentState }: { currentState: SurveyState }) {
-  const [open, setOpen] = useState(false);
-  const rows = useMemo(() => generateAllScores(), []);
-
-  function isCurrentRow(row: ScoreRow): boolean {
-    return (
-      row.airTightness === currentState.airTightness &&
-      row.ventilation === currentState.ventilation &&
-      row.windowsFreshAir === currentState.windowsFreshAir
-    );
-  }
-
-  const quadrantColor = (q: string) => {
-    if (q === "Healthy & Efficient") return "var(--green)";
-    if (q === "Needs Improvement") return "var(--red)";
-    return "var(--yellow)";
-  };
-
-  return (
-    <div className="mt-8 mb-12">
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide opacity-60 hover:opacity-100 transition-opacity"
-      >
-        <span
-          style={{
-            display: "inline-block",
-            transform: open ? "rotate(90deg)" : "rotate(0deg)",
-            transition: "transform 0.2s",
-          }}
-        >
-          ▶
-        </span>
-        All Scoring Variations
-      </button>
-
-      {open && (
-        <div
-          className="mt-4 overflow-x-auto rounded-xl"
-          style={{ border: "1px solid var(--midground)" }}
-        >
-          <table
-            className="w-full text-xs"
-            style={{ minWidth: 600, borderCollapse: "collapse" }}
-          >
-            <thead>
-              <tr style={{ backgroundColor: "var(--farground)" }}>
-                <th
-                  className="text-left p-2 font-semibold"
-                  style={{ borderBottom: "2px solid var(--midground)" }}
-                >
-                  Air Tightness
-                </th>
-                <th
-                  className="text-left p-2 font-semibold"
-                  style={{ borderBottom: "2px solid var(--midground)" }}
-                >
-                  Ventilation
-                </th>
-                <th
-                  className="text-center p-2 font-semibold"
-                  style={{ borderBottom: "2px solid var(--midground)" }}
-                >
-                  Windows
-                </th>
-                <th
-                  className="text-right p-2 font-semibold"
-                  style={{ borderBottom: "2px solid var(--midground)" }}
-                >
-                  Health
-                </th>
-                <th
-                  className="text-right p-2 font-semibold"
-                  style={{ borderBottom: "2px solid var(--midground)" }}
-                >
-                  Efficiency
-                </th>
-                <th
-                  className="text-left p-2 font-semibold"
-                  style={{ borderBottom: "2px solid var(--midground)" }}
-                >
-                  Quadrant
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, i) => {
-                const isCurrent = isCurrentRow(row);
-                return (
-                  <tr
-                    key={i}
-                    style={{
-                      backgroundColor: isCurrent
-                        ? "var(--green-light)"
-                        : i % 2 === 0
-                        ? "transparent"
-                        : "var(--farground)",
-                      fontWeight: isCurrent ? 700 : 400,
-                      borderBottom: "1px solid var(--midground)",
-                    }}
-                  >
-                    <td className="p-2">
-                      {
-                        AIR_TIGHTNESS_OPTIONS.find(
-                          (o) => o.value === row.airTightness
-                        )?.label
-                      }
-                    </td>
-                    <td className="p-2">
-                      {
-                        VENTILATION_OPTIONS.find(
-                          (o) => o.value === row.ventilation
-                        )?.label
-                      }
-                    </td>
-                    <td className="p-2 text-center">
-                      {row.windowsFreshAir === "yes" ? "Yes" : "No"}
-                    </td>
-                    <td
-                      className="p-2 text-right"
-                      style={{
-                        color: row.health >= 0 ? "var(--green)" : "var(--red)",
-                      }}
-                    >
-                      {row.health > 0 ? "+" : ""}
-                      {row.health}
-                    </td>
-                    <td
-                      className="p-2 text-right"
-                      style={{
-                        color:
-                          row.efficiency >= 0 ? "var(--green)" : "var(--red)",
-                      }}
-                    >
-                      {row.efficiency > 0 ? "+" : ""}
-                      {row.efficiency}
-                    </td>
-                    <td
-                      className="p-2"
-                      style={{ color: quadrantColor(row.quadrant) }}
-                    >
-                      {row.quadrant}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
@@ -778,7 +709,7 @@ export default function BuildingEnvelope() {
   return (
     <Layout>
       <div className="scene1">
-        <div className="simple-container p-4">
+        <div className="simple-container p-4" style={{ maxWidth: 1100 }}>
           <h1 className="purple-light-text text-4xl mt-12">
             Building Envelope
           </h1>
@@ -789,20 +720,19 @@ export default function BuildingEnvelope() {
 
           {/* Main two-column layout */}
           <div
-            className="flex flex-col lg:flex-row gap-6 mb-12"
+            className="flex flex-col sm:flex-row gap-6 mb-12"
             style={{ minHeight: 520 }}
           >
             {/* ---- LEFT SIDEBAR: Options ---- */}
             <div
-              className="lg:w-[340px] shrink-0 rounded-xl p-4 overflow-y-auto"
+              className="lg:w-[280px] shrink-0 rounded p-4 overflow-y-auto"
               style={{
                 backgroundColor: "var(--farground)",
                 border: "1px solid var(--midground)",
-                maxHeight: "calc(100vh - 200px)",
               }}
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold">Your Building</h2>
+                <h2 className="text-xl font-bold">Your Building</h2>
                 {selected && (
                   <button
                     onClick={handleReset}
@@ -822,30 +752,29 @@ export default function BuildingEnvelope() {
               <SectionDescription>
                 How well the envelope prevents uncontrolled air leakage.
               </SectionDescription>
-              <div className="space-y-1.5 mb-4">
-                <RadioOption
-                  name="airTightness"
-                  value="old-and-leaky"
-                  checked={state.airTightness === "old-and-leaky"}
+              <div className="mb-4">
+                <SliderSelect
+                  options={[
+                    {
+                      value: "old-and-leaky",
+                      label: "Old & Leaky",
+                      description:
+                        "Noticeable drafts, gaps around windows/doors.",
+                    },
+                    {
+                      value: "code",
+                      label: "Code",
+                      description: "Built to current energy code standards.",
+                    },
+                    {
+                      value: "passive-house",
+                      label: "Passive House",
+                      description:
+                        "Extremely airtight, blower door tested (≤ 0.6 ACH50).",
+                    },
+                  ]}
+                  selectedValue={state.airTightness}
                   onChange={setAirTightness}
-                  label="Old & Leaky"
-                  description="Noticeable drafts, gaps around windows/doors."
-                />
-                <RadioOption
-                  name="airTightness"
-                  value="code"
-                  checked={state.airTightness === "code"}
-                  onChange={setAirTightness}
-                  label="Code"
-                  description="Built to current energy code standards."
-                />
-                <RadioOption
-                  name="airTightness"
-                  value="passive-house"
-                  checked={state.airTightness === "passive-house"}
-                  onChange={setAirTightness}
-                  label="Passive House"
-                  description="Extremely airtight, blower door tested (≤ 0.6 ACH50)."
                 />
               </div>
 
@@ -860,40 +789,43 @@ export default function BuildingEnvelope() {
               <SectionDescription>
                 How is fresh air managed in the building?
               </SectionDescription>
-              <div className="space-y-1.5 mb-4">
-                <RadioOption
-                  name="ventilation"
-                  value="none"
-                  checked={state.ventilation === null}
-                  onChange={() =>
-                    setState((prev) => ({ ...prev, ventilation: null }))
+              <div className="mb-4">
+                <SliderSelect
+                  options={[
+                    {
+                      value: "none",
+                      label: "None",
+                      description: "No mechanical ventilation system.",
+                    },
+                    {
+                      value: "exhaust-only",
+                      label: "Exhaust Only",
+                      description:
+                        "Bath fans, range hoods — air exits but replacement is uncontrolled.",
+                    },
+                    {
+                      value: "supply-only",
+                      label: "Supply Only",
+                      description:
+                        "Fresh air is pushed in, but outgoing air is not recovered.",
+                    },
+                    {
+                      value: "balanced",
+                      label: "Balanced",
+                      description:
+                        "ERV / HRV — fresh air in, stale air out with heat/energy recovery.",
+                    },
+                  ]}
+                  selectedValue={
+                    state.ventilation === null ? "none" : state.ventilation
                   }
-                  label="None"
-                  description="No mechanical ventilation system."
-                />
-                <RadioOption
-                  name="ventilation"
-                  value="exhaust-only"
-                  checked={state.ventilation === "exhaust-only"}
-                  onChange={setVentilation}
-                  label="Exhaust Only"
-                  description="Bath fans, range hoods — air exits but replacement is uncontrolled."
-                />
-                <RadioOption
-                  name="ventilation"
-                  value="supply-only"
-                  checked={state.ventilation === "supply-only"}
-                  onChange={setVentilation}
-                  label="Supply Only"
-                  description="Fresh air is pushed in, but outgoing air is not recovered."
-                />
-                <RadioOption
-                  name="ventilation"
-                  value="balanced"
-                  checked={state.ventilation === "balanced"}
-                  onChange={setVentilation}
-                  label="Balanced (ERV / HRV)"
-                  description="Fresh air in, stale air out — with heat/energy recovery."
+                  onChange={(v) => {
+                    if (v === "none") {
+                      setState((prev) => ({ ...prev, ventilation: null }));
+                    } else {
+                      setVentilation(v);
+                    }
+                  }}
                 />
               </div>
 
@@ -908,22 +840,22 @@ export default function BuildingEnvelope() {
               <SectionDescription>
                 Do you open windows as a ventilation strategy?
               </SectionDescription>
-              <div className="space-y-1.5">
-                <RadioOption
-                  name="windowsFreshAir"
-                  value="yes"
-                  checked={state.windowsFreshAir === "yes"}
+              <div>
+                <SliderSelect
+                  options={[
+                    {
+                      value: "no",
+                      label: "No",
+                      description: "I rely on mechanical systems.",
+                    },
+                    {
+                      value: "yes",
+                      label: "Yes",
+                      description: "I regularly open windows for fresh air.",
+                    },
+                  ]}
+                  selectedValue={state.windowsFreshAir}
                   onChange={setWindowsFreshAir}
-                  label="Yes"
-                  description="I regularly open windows for fresh air."
-                />
-                <RadioOption
-                  name="windowsFreshAir"
-                  value="no"
-                  checked={state.windowsFreshAir === "no"}
-                  onChange={setWindowsFreshAir}
-                  label="No"
-                  description="I rely on mechanical systems."
                 />
               </div>
             </div>
@@ -933,9 +865,6 @@ export default function BuildingEnvelope() {
               <QuadrantChart score={score} hasSelection={selected} />
             </div>
           </div>
-
-          {/* Score Reference Table */}
-          <ScoreTable currentState={state} />
         </div>
       </div>
 
