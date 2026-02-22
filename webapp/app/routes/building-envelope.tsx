@@ -139,7 +139,7 @@ function getQuadrantLabel(score: Score, hasSelection: boolean): string {
   const { health, efficiency } = score;
   if (health >= 0 && efficiency >= 0) return "Healthy & Efficient";
   if (health >= 0 && efficiency < 0) return "Healthy but Inefficient";
-  if (health < 0 && efficiency >= 0) return "Efficient but Less Healthy";
+  if (health < 0 && efficiency >= 0) return "Efficient but Unhealthy";
   return "Needs Improvement";
 }
 
@@ -294,49 +294,6 @@ function SliderSelect({
   );
 }
 
-function InsightCard({ insight }: { insight: Insight }) {
-  const styles: Record<
-    Insight["kind"],
-    { bg: string; border: string; icon: string; label: string }
-  > = {
-    warning: {
-      bg: "var(--red-light)",
-      border: "var(--red)",
-      icon: "⚠",
-      label: "Heads Up",
-    },
-    tip: {
-      bg: "var(--green-light)",
-      border: "var(--green)",
-      icon: "✦",
-      label: "Nice",
-    },
-    info: {
-      bg: "var(--yellow-light)",
-      border: "var(--yellow)",
-      icon: "ℹ",
-      label: "Note",
-    },
-  };
-
-  const s = styles[insight.kind];
-
-  return (
-    <div
-      className="rounded-lg p-3 mb-2"
-      style={{
-        backgroundColor: s.bg,
-        borderLeft: `4px solid ${s.border}`,
-      }}
-    >
-      <div className="font-semibold text-xs mb-0.5">
-        {s.icon} {s.label}
-      </div>
-      <p className="text-xs leading-relaxed">{insight.text}</p>
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Home marker SVG (simple house icon)
 // ---------------------------------------------------------------------------
@@ -433,7 +390,7 @@ function QuadrantChart({
               Improvement
             </span>
           </div>
-          {/* Bottom-right: Efficient but Less Healthy */}
+          {/* Bottom-right: Efficient but Unhealthy */}
           <div
             className="flex items-end justify-end p-3"
             style={{ backgroundColor: "rgba(255, 234, 164, 0.15)" }}
@@ -441,7 +398,7 @@ function QuadrantChart({
             <span className="text-xs opacity-40 font-medium text-right leading-tight">
               Efficient but
               <br />
-              Less Healthy
+              Unhealthy
             </span>
           </div>
         </div>
@@ -491,7 +448,7 @@ function QuadrantChart({
             opacity: 0.7,
           }}
         >
-          Less Healthy ↓
+          Unhealthy ↓
         </div>
         {/* Efficiency right */}
         <div
@@ -664,7 +621,7 @@ function generateAllScores(): ScoreRow[] {
         else if (score.health >= 0 && score.efficiency < 0)
           quadrant = "Healthy / Inefficient";
         else if (score.health < 0 && score.efficiency >= 0)
-          quadrant = "Efficient / Less Healthy";
+          quadrant = "Efficient / Unhealthy";
         else quadrant = "Needs Improvement";
         rows.push({
           airTightness: at.value,
@@ -724,13 +681,7 @@ export default function BuildingEnvelope() {
             style={{ minHeight: 520 }}
           >
             {/* ---- LEFT SIDEBAR: Options ---- */}
-            <div
-              className="lg:w-[280px] shrink-0 rounded p-4 overflow-y-auto"
-              style={{
-                backgroundColor: "var(--farground)",
-                border: "1px solid var(--midground)",
-              }}
-            >
+            <div className="good-box lg:w-[280px] shrink-0 p-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold">Your Building</h2>
                 {selected && (
