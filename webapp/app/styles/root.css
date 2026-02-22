@@ -112,6 +112,13 @@ body {
   }
 }
 
+.btn-outline {
+  border: 1px solid var(--midground);
+  @media (prefers-color-scheme: dark) {
+    border-color: var(--dark-midground);
+  }
+}
+
 .good-box-boarder {
   border: 1px solid var(--foreground);
   border-radius: 4px;
@@ -919,5 +926,20 @@ body {
   fill: var(--purple-light);
   @media (prefers-color-scheme: dark) {
     fill: var(--moon);
+  }
+}
+
+/* Background Classes */
+.midground-bg {
+  background-color: var(--midground);
+  @media (prefers-color-scheme: dark) {
+    background-color: var(--dark-midground);
+  }
+}
+
+.slider-dog {
+  border: 2px solid var(--midground);
+  @media (prefers-color-scheme: dark) {
+    border-color: var(--dark-midground);
   }
 }

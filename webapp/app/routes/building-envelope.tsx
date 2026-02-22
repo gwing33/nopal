@@ -176,13 +176,12 @@ function SliderSelect({
       <div className="relative" style={{ padding: "8px 0" }}>
         {/* Track line */}
         <div
-          className="absolute"
+          className="absolute midground-bg"
           style={{
             top: "50%",
             left: `${100 / (options.length * 2)}%`,
             right: `${100 / (options.length * 2)}%`,
             height: 3,
-            backgroundColor: "var(--midground)",
             transform: "translateY(-50%)",
             borderRadius: 2,
           }}
@@ -199,7 +198,6 @@ function SliderSelect({
                 (100 - 100 / options.length)
               }%`,
               height: 3,
-              backgroundColor: "var(--green)",
               transform: "translateY(-50%)",
               borderRadius: 2,
               transition: "width 0.2s ease",
@@ -227,16 +225,13 @@ function SliderSelect({
               >
                 {/* Dot */}
                 <div
+                  className="midground-bg slider-dog"
                   style={{
                     width: isSelected ? 18 : 12,
                     height: isSelected ? 18 : 12,
                     borderRadius: "50%",
-                    backgroundColor: isSelected
-                      ? "var(--green)"
-                      : "var(--midground)",
-                    border: isSelected
-                      ? "3px solid var(--green)"
-                      : "2px solid var(--midground)",
+                    backgroundColor: isSelected ? "var(--green)" : "",
+                    border: isSelected ? "3px solid var(--green)" : "",
                     transition: "all 0.15s ease",
                     boxShadow: isSelected
                       ? "0 0 0 3px var(--green-light)"
@@ -258,7 +253,9 @@ function SliderSelect({
               type="button"
               onClick={() => onChange(opt.value)}
               title={opt.description}
-              className="text-center"
+              className={
+                "text-center " + (isSelected ? "green-text" : "purple-text")
+              }
               style={{
                 flex: "1 1 0%",
                 background: "none",
@@ -267,7 +264,6 @@ function SliderSelect({
                 cursor: "pointer",
                 fontSize: 11,
                 fontWeight: isSelected ? 700 : 500,
-                color: isSelected ? "var(--green)" : "var(--text-subtle)",
                 transition: "all 0.15s ease",
                 lineHeight: 1.2,
               }}
@@ -318,6 +314,10 @@ function QuadrantChart({
   // When no selection, position at center (50%, 50%)
   const xPercent = hasSelection ? 50 + (score.efficiency / 50) * 45 : 50;
   const yPercent = hasSelection ? 50 - (score.health / 50) * 45 : 50;
+
+  const efficiencyTextClassName =
+    score.efficiency >= 0 ? "green-text" : "red-text";
+  const healthTextClassName = score.health >= 0 ? "green-text" : "red-text";
 
   const quadrantColor = getQuadrantColor(score, hasSelection);
 
@@ -498,15 +498,12 @@ function QuadrantChart({
 
       {/* Score readout */}
       {hasSelection && (
-        <div
-          className="flex gap-6 mt-4 text-xs font-medium"
-          style={{ color: "var(--text-subtle)" }}
-        >
+        <div className={"flex gap-6 mt-4 text-xs font-medium purple-text "}>
           <span>
             Health:{" "}
             <span
+              className={healthTextClassName}
               style={{
-                color: score.health >= 0 ? "var(--green)" : "var(--red)",
                 fontWeight: 700,
               }}
             >
@@ -517,8 +514,8 @@ function QuadrantChart({
           <span>
             Efficiency:{" "}
             <span
+              className={efficiencyTextClassName}
               style={{
-                color: score.efficiency >= 0 ? "var(--green)" : "var(--red)",
                 fontWeight: 700,
               }}
             >
@@ -561,39 +558,6 @@ interface ScoreRow {
   health: number;
   efficiency: number;
   quadrant: string;
-}
-
-function generateAllScores(): ScoreRow[] {
-  const rows: ScoreRow[] = [];
-  for (const at of AIR_TIGHTNESS_OPTIONS) {
-    for (const v of VENTILATION_OPTIONS) {
-      for (const w of WINDOWS_OPTIONS) {
-        const state: SurveyState = {
-          airTightness: at.value,
-          ventilation: v.value,
-          windowsFreshAir: w.value,
-        };
-        const score = computeScore(state);
-        let quadrant: string;
-        if (score.health >= 0 && score.efficiency >= 0)
-          quadrant = "Healthy & Efficient";
-        else if (score.health >= 0 && score.efficiency < 0)
-          quadrant = "Healthy / Inefficient";
-        else if (score.health < 0 && score.efficiency >= 0)
-          quadrant = "Efficient / Unhealthy";
-        else quadrant = "Needs Improvement";
-        rows.push({
-          airTightness: at.value,
-          ventilation: v.value,
-          windowsFreshAir: w.value,
-          health: score.health,
-          efficiency: score.efficiency,
-          quadrant,
-        });
-      }
-    }
-  }
-  return rows;
 }
 
 // ---------------------------------------------------------------------------
@@ -644,11 +608,7 @@ export default function BuildingEnvelope() {
                   {selected && (
                     <button
                       onClick={handleReset}
-                      className="text-xs px-2 py-1 rounded-md font-medium transition-colors"
-                      style={{
-                        color: "var(--text-subtle)",
-                        border: "1px solid var(--midground)",
-                      }}
+                      className="btn-outline rounded px-2 py-1 text-xs purple-text"
                     >
                       Reset
                     </button>
