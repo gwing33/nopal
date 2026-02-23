@@ -33,8 +33,8 @@ interface SettingsState {
 // ---------------------------------------------------------------------------
 
 const INITIAL_STATE: SettingsState = {
-  airTightness: "code",
-  ventilation: "exhaust-only",
+  airTightness: null,
+  ventilation: null,
   windowsFreshAir: "no",
 };
 
@@ -225,12 +225,10 @@ function SliderSelect({
                     width: isSelected ? 18 : 12,
                     height: isSelected ? 18 : 12,
                     borderRadius: "50%",
-                    backgroundColor: isSelected ? "var(--green)" : "",
-                    border: isSelected ? "3px solid var(--green)" : "",
+                    backgroundColor: isSelected ? "var(--purple-light)" : "",
+                    border: isSelected ? "3px solid var(--purple-light)" : "",
                     transition: "all 0.15s ease",
-                    boxShadow: isSelected
-                      ? "0 0 0 3px var(--green-light)"
-                      : "none",
+                    boxShadow: isSelected ? "0 0 0 3px var(--pink)" : "none",
                   }}
                 />
               </button>
@@ -249,7 +247,8 @@ function SliderSelect({
               onClick={() => onChange(opt.value)}
               title={opt.description}
               className={
-                "text-center " + (isSelected ? "green-text" : "purple-text")
+                "text-center " +
+                (isSelected ? "purple-light-text" : "purple-text")
               }
               style={{
                 flex: "1 1 0%",
@@ -258,7 +257,7 @@ function SliderSelect({
                 padding: "2px 0",
                 cursor: "pointer",
                 fontSize: 11,
-                fontWeight: isSelected ? 700 : 500,
+                fontWeight: isSelected ? 700 : 400,
                 transition: "all 0.15s ease",
                 lineHeight: 1.2,
               }}
@@ -309,11 +308,6 @@ function QuadrantChart({
   // When no selection, position at center (50%, 50%)
   const xPercent = hasSelection ? 50 + (score.efficiency / 50) * 45 : 50;
   const yPercent = hasSelection ? 50 - (score.health / 50) * 45 : 50;
-
-  const efficiencyTextClassName =
-    score.efficiency >= 0 ? "green-text" : "red-text";
-  const healthTextClassName = score.health >= 0 ? "green-text" : "red-text";
-
   const quadrantColor = getQuadrantColor(score, hasSelection);
 
   return (
@@ -384,9 +378,9 @@ function QuadrantChart({
               className="text-xl font-mono font-bold"
               style={{ color: "var(--red)" }}
             >
-              Efficient &
+              Unhealthy &
               <br />
-              Unhealthy
+              Efficient
             </span>
           </div>
         </div>
@@ -490,36 +484,6 @@ function QuadrantChart({
           </div>
         </div>
       </div>
-
-      {/* Score readout */}
-      {hasSelection && (
-        <div className={"flex gap-6 mt-4 text-xs font-medium purple-text "}>
-          <span>
-            Health:{" "}
-            <span
-              className={healthTextClassName}
-              style={{
-                fontWeight: 700,
-              }}
-            >
-              {score.health > 0 ? "+" : ""}
-              {score.health}
-            </span>
-          </span>
-          <span>
-            Efficiency:{" "}
-            <span
-              className={efficiencyTextClassName}
-              style={{
-                fontWeight: 700,
-              }}
-            >
-              {score.efficiency > 0 ? "+" : ""}
-              {score.efficiency}
-            </span>
-          </span>
-        </div>
-      )}
     </div>
   );
 }
@@ -571,7 +535,7 @@ export default function BuildingEnvelope() {
   return (
     <Layout>
       <div className="scene1">
-        <div className="simple-container p-4" style={{ maxWidth: 1100 }}>
+        <div className="simple-container p-4" style={{ maxWidth: 837 }}>
           <h1 className="purple-light-text text-4xl mt-12">
             Building Envelope
           </h1>
@@ -579,28 +543,23 @@ export default function BuildingEnvelope() {
             Building for Efficiency may be at the cost of your health.
           </p>
 
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">Your Building</h2>
+          </div>
+
           {/* Main two-column layout */}
           <div className="flex flex-col sm:flex-row-reverse gap-6 mb-12">
             {/* ---- RIGHT: Quadrant + Insights ---- */}
-            <div className="flex-1 flex flex-col items-center min-w-0">
+            <div
+              className="flex-1 flex flex-col items-center min-w-0"
+              style={{ top: 12, position: "sticky", zIndex: 10 }}
+            >
               <QuadrantChart score={score} hasSelection={selected} />
             </div>
 
             {/* ---- LEFT SIDEBAR: Options ---- */}
             <div>
               <div className="good-box lg:w-[280px] shrink-0 p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold">Your Building</h2>
-                  {selected && (
-                    <button
-                      onClick={handleReset}
-                      className="btn-outline rounded px-2 py-1 text-xs purple-text"
-                    >
-                      Reset
-                    </button>
-                  )}
-                </div>
-
                 {/* Air Tightness */}
                 <SectionHeading>Air Tightness</SectionHeading>
                 <SectionDescription>
@@ -678,7 +637,7 @@ export default function BuildingEnvelope() {
                 </div>
 
                 {/* Windows */}
-                <SectionHeading>Windows for Fresh Air?</SectionHeading>
+                <SectionHeading>Windows for Fresh Air</SectionHeading>
                 <SectionDescription>
                   Do you open windows as a ventilation strategy?
                 </SectionDescription>
@@ -699,6 +658,15 @@ export default function BuildingEnvelope() {
                     selectedValue={state.windowsFreshAir}
                     onChange={setWindowsFreshAir}
                   />
+                </div>
+
+                <div>
+                  <button
+                    onClick={handleReset}
+                    className="btn-outline rounded px-2 py-1 text-xs purple-text"
+                  >
+                    Reset
+                  </button>
                 </div>
               </div>
             </div>
