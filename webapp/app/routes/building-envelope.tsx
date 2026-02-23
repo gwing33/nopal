@@ -550,13 +550,9 @@ export default function BuildingEnvelope() {
           {/* Main two-column layout */}
           <div className="flex flex-col sm:flex-row-reverse gap-6 mb-12">
             {/* ---- RIGHT: Quadrant + Insights ---- */}
-            <div
-              className="flex-1 flex flex-col items-center min-w-0"
-              style={{ top: 12, position: "sticky", zIndex: 10 }}
-            >
+            <div className="flex-1 flex flex-col items-center min-w-0">
               <QuadrantChart score={score} hasSelection={selected} />
             </div>
-
             {/* ---- LEFT SIDEBAR: Options ---- */}
             <div>
               <div className="good-box lg:w-[280px] shrink-0 p-4">
