@@ -555,7 +555,7 @@ export default function BuildingEnvelope() {
             </div>
             {/* ---- LEFT SIDEBAR: Options ---- */}
             <div>
-              <div className="good-box lg:w-[280px] shrink-0 p-4">
+              <div className="good-box sm:w-[280px] shrink-0 p-4">
                 {/* Air Tightness */}
                 <SectionHeading>Air Tightness</SectionHeading>
                 <SectionDescription>

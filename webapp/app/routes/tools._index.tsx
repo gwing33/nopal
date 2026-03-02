@@ -30,6 +30,12 @@ const TOOLS: Tool[] = [
       "Calculate backfill volumes along a linear run using cross-section frames. Supports multiple materials with weight estimation.",
     href: "/tools/frames-volume-calc",
   },
+  {
+    name: "Building Envelope",
+    description:
+      "Evaluate your building envelope — air tightness, ventilation, and fresh air strategy — and see where your home lands on the health vs efficiency quadrant.",
+    href: "/tools/building-envelope",
+  },
 ];
 
 export default function ToolsIndex() {
