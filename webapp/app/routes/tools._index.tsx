@@ -19,6 +19,12 @@ interface Tool {
 
 const TOOLS: Tool[] = [
   {
+    name: "ERV Calculator",
+    description:
+      "Size your balanced ventilation system (ERV/HRV) based on occupancy. Calculate supply and exhaust tube counts, design base flow, boost flow, and get Zehnder and Brink unit recommendations.",
+    href: "/tools/erv-calculator",
+  },
+  {
     name: "Volume Calculator by Frames",
     description:
       "Calculate backfill volumes along a linear run using cross-section frames. Supports multiple materials with weight estimation.",
