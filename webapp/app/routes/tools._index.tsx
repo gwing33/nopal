@@ -15,6 +15,7 @@ interface Tool {
   name: string;
   description: string;
   href: string;
+  inDevelopment?: boolean;
 }
 
 const TOOLS: Tool[] = [
@@ -23,6 +24,7 @@ const TOOLS: Tool[] = [
     description:
       "Size your balanced ventilation system (ERV/HRV) based on occupancy. Calculate supply and exhaust tube counts, design base flow, boost flow, and get Zehnder and Brink unit recommendations.",
     href: "/tools/erv-calculator",
+    inDevelopment: true,
   },
   {
     name: "Volume Calculator by Frames",
@@ -58,6 +60,11 @@ export default function ToolsIndex() {
               >
                 <h2 className="text-2xl font-semibold green-text">
                   {tool.name}
+                  {tool.inDevelopment && (
+                    <span className="ml-3 align-middle inline-block text-xs font-medium px-2 py-0.5 rounded-full border border-yellow-500 text-yellow-600 dark:text-yellow-400">
+                      In Development
+                    </span>
+                  )}
                 </h2>
                 <p className="mt-2 opacity-80">{tool.description}</p>
               </Link>

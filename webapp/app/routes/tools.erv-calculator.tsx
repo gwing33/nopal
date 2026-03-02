@@ -750,7 +750,22 @@ export default function ERVCalculator() {
             </Breadcrumb>
           </div>
 
-          <h1 className="purple-light-text text-4xl mt-4">ERV Calculator</h1>
+          <h1 className="purple-light-text text-4xl mt-4">
+            ERV Calculator{" "}
+            <span
+              style={{
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                background: "var(--green)",
+                color: "#fff",
+                padding: "2px 10px",
+                borderRadius: 9999,
+                verticalAlign: "middle",
+              }}
+            >
+              In Development
+            </span>
+          </h1>
           <p className="text-lg mt-2 mb-2">
             Size your balanced ventilation system based on occupancy, not
             building size.
