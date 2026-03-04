@@ -213,21 +213,58 @@ function buildWireframeBuffer(
   positions: Float32Array,
   indices: Uint32Array
 ): Float32Array {
-  // Deduplicate edges
-  const edgeSet = new Set<string>();
-  const edgeList: [number, number][] = [];
+  // Build a map from each edge to the triangle indices that share it
+  const edgeTriMap = new Map<string, number[]>();
   for (let i = 0; i < indices.length; i += 3) {
+    const triIdx = i / 3;
     const tri = [indices[i], indices[i + 1], indices[i + 2]];
     for (let e = 0; e < 3; e++) {
       const a = tri[e];
       const b = tri[(e + 1) % 3];
       const key = a < b ? `${a}_${b}` : `${b}_${a}`;
-      if (!edgeSet.has(key)) {
-        edgeSet.add(key);
-        edgeList.push([a, b]);
+      let list = edgeTriMap.get(key);
+      if (!list) {
+        list = [];
+        edgeTriMap.set(key, list);
       }
+      list.push(triIdx);
     }
   }
+
+  // Helper: compute triangle normal (unnormalized)
+  function triNormal(triIdx: number): [number, number, number] {
+    const i0 = indices[triIdx * 3];
+    const i1 = indices[triIdx * 3 + 1];
+    const i2 = indices[triIdx * 3 + 2];
+    const ax = positions[i1 * 3] - positions[i0 * 3];
+    const ay = positions[i1 * 3 + 1] - positions[i0 * 3 + 1];
+    const az = positions[i1 * 3 + 2] - positions[i0 * 3 + 2];
+    const bx = positions[i2 * 3] - positions[i0 * 3];
+    const by = positions[i2 * 3 + 1] - positions[i0 * 3 + 1];
+    const bz = positions[i2 * 3 + 2] - positions[i0 * 3 + 2];
+    return [ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx];
+  }
+
+  // Collect edges, skipping internal diagonals of coplanar quad faces
+  const edgeList: [number, number][] = [];
+  for (const [key, tris] of edgeTriMap) {
+    if (tris.length === 2) {
+      // Shared edge — check if the two triangles are coplanar
+      const n1 = triNormal(tris[0]);
+      const n2 = triNormal(tris[1]);
+      const dot = n1[0] * n2[0] + n1[1] * n2[1] + n1[2] * n2[2];
+      const len1 = Math.sqrt(n1[0] * n1[0] + n1[1] * n1[1] + n1[2] * n1[2]);
+      const len2 = Math.sqrt(n2[0] * n2[0] + n2[1] * n2[1] + n2[2] * n2[2]);
+      if (len1 > 0 && len2 > 0 && dot / (len1 * len2) > 0.999) {
+        continue; // coplanar shared edge = quad diagonal, skip
+      }
+    }
+    const parts = key.split("_");
+    const a = parseInt(parts[0], 10);
+    const b = parseInt(parts[1], 10);
+    edgeList.push([a, b]);
+  }
+
   const verts = new Float32Array(edgeList.length * 6);
   for (let i = 0; i < edgeList.length; i++) {
     const [a, b] = edgeList[i];
