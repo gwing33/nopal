@@ -104,7 +104,8 @@ function mat4Multiply(a: Mat4, b: Mat4): Mat4 {
 
 const SHADER_SOURCE = /* wgsl */ `
 struct Uniforms {
-  mvp : mat4x4<f32>,
+  mvp    : mat4x4<f32>,
+  eyePos : vec4<f32>,
 };
 @group(0) @binding(0) var<uniform> uniforms : Uniforms;
 
@@ -138,9 +139,11 @@ struct VSOut {
 
 struct WireVSIn {
   @location(0) position : vec3<f32>,
+  @location(1) normal   : vec3<f32>,
 };
 struct WireVSOut {
   @builtin(position) clipPos : vec4<f32>,
+  @location(0) facing : f32,
 };
 
 @vertex fn vs_wire(input : WireVSIn) -> WireVSOut {
@@ -148,11 +151,16 @@ struct WireVSOut {
   out.clipPos = uniforms.mvp * vec4<f32>(input.position, 1.0);
   // Slight depth bias to draw edges on top of faces
   out.clipPos.z -= 0.0005;
+  let viewDir = normalize(uniforms.eyePos.xyz - input.position);
+  let n = normalize(input.normal);
+  out.facing = dot(n, viewDir);
   return out;
 }
 
-@fragment fn fs_wire() -> @location(0) vec4<f32> {
-  return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+@fragment fn fs_wire(input : WireVSOut) -> @location(0) vec4<f32> {
+  let t = smoothstep(-0.1, 0.3, input.facing);
+  let color = mix(vec3<f32>(0.72, 0.72, 0.72), vec3<f32>(0.0, 0.0, 0.0), t);
+  return vec4<f32>(color, 1.0);
 }
 `;
 
@@ -161,6 +169,7 @@ struct WireVSOut {
 const GRID_SHADER_SOURCE = /* wgsl */ `
 struct Uniforms {
   mvp : mat4x4<f32>,
+  eyePos : vec4<f32>,
 };
 @group(0) @binding(0) var<uniform> uniforms : Uniforms;
 
@@ -245,9 +254,32 @@ function buildWireframeBuffer(
     return [ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx];
   }
 
-  // Collect edges, skipping internal diagonals of coplanar quad faces
-  const edgeList: [number, number][] = [];
+  // Collect edges (with averaged normals), skipping internal diagonals of coplanar quad faces
+  const edgeList: {
+    a: number;
+    b: number;
+    nx: number;
+    ny: number;
+    nz: number;
+  }[] = [];
   for (const [key, tris] of edgeTriMap) {
+    // Compute average normal from adjacent triangles
+    let nx = 0,
+      ny = 0,
+      nz = 0;
+    for (const t of tris) {
+      const n = triNormal(t);
+      nx += n[0];
+      ny += n[1];
+      nz += n[2];
+    }
+    const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+    if (len > 0) {
+      nx /= len;
+      ny /= len;
+      nz /= len;
+    }
+
     if (tris.length === 2) {
       // Shared edge — check if the two triangles are coplanar
       const n1 = triNormal(tris[0]);
@@ -262,18 +294,28 @@ function buildWireframeBuffer(
     const parts = key.split("_");
     const a = parseInt(parts[0], 10);
     const b = parseInt(parts[1], 10);
-    edgeList.push([a, b]);
+    edgeList.push({ a, b, nx, ny, nz });
   }
 
-  const verts = new Float32Array(edgeList.length * 6);
+  // Interleaved: position (vec3) + normal (vec3) per vertex, 2 vertices per edge
+  const verts = new Float32Array(edgeList.length * 12);
   for (let i = 0; i < edgeList.length; i++) {
-    const [a, b] = edgeList[i];
-    verts[i * 6] = positions[a * 3];
-    verts[i * 6 + 1] = positions[a * 3 + 1];
-    verts[i * 6 + 2] = positions[a * 3 + 2];
-    verts[i * 6 + 3] = positions[b * 3];
-    verts[i * 6 + 4] = positions[b * 3 + 1];
-    verts[i * 6 + 5] = positions[b * 3 + 2];
+    const { a, b, nx, ny, nz } = edgeList[i];
+    const off = i * 12;
+    // Vertex A: position + normal
+    verts[off] = positions[a * 3];
+    verts[off + 1] = positions[a * 3 + 1];
+    verts[off + 2] = positions[a * 3 + 2];
+    verts[off + 3] = nx;
+    verts[off + 4] = ny;
+    verts[off + 5] = nz;
+    // Vertex B: position + normal
+    verts[off + 6] = positions[b * 3];
+    verts[off + 7] = positions[b * 3 + 1];
+    verts[off + 8] = positions[b * 3 + 2];
+    verts[off + 9] = nx;
+    verts[off + 10] = ny;
+    verts[off + 11] = nz;
   }
   return verts;
 }
@@ -376,7 +418,7 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
 
       // ── Uniform buffer & bind group layout ──
       const uniformBuffer = device.createBuffer({
-        size: 64, // mat4x4<f32> = 16 × 4 bytes
+        size: 80, // mat4x4<f32> (64) + vec4<f32> eyePos (16)
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
@@ -445,9 +487,10 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
           entryPoint: "vs_wire",
           buffers: [
             {
-              arrayStride: 12,
+              arrayStride: 24, // position (12) + normal (12)
               attributes: [
                 { shaderLocation: 0, offset: 0, format: "float32x3" },
+                { shaderLocation: 1, offset: 12, format: "float32x3" },
               ],
             },
           ],
@@ -600,7 +643,7 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
     gpu.normalBuffer = normBuf;
     gpu.indexBuffer = idxBuf;
     gpu.wireBuffer = wireBuf;
-    gpu.wireVertCount = wireData.length / 3;
+    gpu.wireVertCount = wireData.length / 6;
     gpu.indexCount = geo.indices.length;
 
     // Compute actual bounding box from geometry positions
@@ -742,6 +785,11 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
     const mvp = mat4Multiply(proj, view);
 
     gpu.device.queue.writeBuffer(gpu.uniformBuffer, 0, gpuBuf(mvp));
+    gpu.device.queue.writeBuffer(
+      gpu.uniformBuffer,
+      64,
+      gpuBuf(new Float32Array([eyeX, eyeY, eyeZ, 0]))
+    );
 
     const encoder = gpu.device.createCommandEncoder();
     const pass = encoder.beginRenderPass({
