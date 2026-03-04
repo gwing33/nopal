@@ -304,29 +304,26 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!navigator.gpu) {
+      console.log("GPU INIT: No Navigator GPU");
       setInitSeq(-1);
       return;
     }
-
-    let destroyed = false;
 
     async function init() {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
       const adapter = await navigator.gpu.requestAdapter();
-      if (!adapter || destroyed) {
+      if (!adapter) {
+        console.log("GPU INIT: No Adapter");
         setInitSeq(-1);
         return;
       }
       const device = await adapter.requestDevice();
-      if (destroyed) {
-        device.destroy();
-        return;
-      }
 
       const context = canvas.getContext("webgpu");
       if (!context) {
+        console.log("GPU INIT: No Context", context);
         setInitSeq(-1);
         return;
       }
@@ -489,7 +486,6 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
     init();
 
     return () => {
-      destroyed = true;
       cancelAnimationFrame(rafRef.current);
       if (gpuRef.current) {
         gpuRef.current.positionBuffer?.destroy();
