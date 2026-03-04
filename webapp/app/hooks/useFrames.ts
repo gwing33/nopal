@@ -24,7 +24,7 @@ export interface FrameGeometry {
  *
  * Coordinate system (all output in feet, right-handed):
  *   X → along the path (accumulated distance)
- *   Y → up (frame height)
+ *   Y → up (frame width)
  *   Z → lateral (frame depth, centered on 0)
  *
  * Winding order is counter-clockwise when viewed from outside (standard for
@@ -103,10 +103,10 @@ export function framesToGeometry(frames: Frame[]): FrameGeometry {
   // Corner order per frame (in Y-Z plane):
   //   0: bottom-left  (y=0,        z=-depth/2)
   //   1: bottom-right  (y=0,        z=+depth/2)
-  //   2: top-right     (y=height,   z=+depth/2)
-  //   3: top-left      (y=height,   z=-depth/2)
+  //   2: top-right     (y=width,    z=+depth/2)
+  //   3: top-left      (y=width,    z=-depth/2)
   function frameCorners(f: Frame, x: number): [number, number, number][] {
-    const h = f.height * inToFt;
+    const h = f.width * inToFt;
     const halfD = (f.depth * inToFt) / 2;
     return [
       [x, 0, -halfD],
@@ -200,7 +200,7 @@ export function framesToGeometry(frames: Frame[]): FrameGeometry {
 
 export interface Frame {
   id: number;
-  height: number; // in inches
+  width: number; // in inches
   depth: number; // in inches
   distanceToNext: number; // in feet
 }
@@ -246,16 +246,16 @@ function calculateSegmentVolume(
   frame2: Frame,
   distance: number
 ): number {
-  const area1 = frame1.height * frame1.depth;
-  const area2 = frame2.height * frame2.depth;
+  const area1 = frame1.width * frame1.depth;
+  const area2 = frame2.width * frame2.depth;
   const avgArea = (area1 + area2) / 2;
   const distanceInches = distance * 12;
   return avgArea * distanceInches;
 }
 
 const DEFAULT_FRAMES: Frame[] = [
-  { id: 1, height: 12, depth: 12, distanceToNext: 4 },
-  { id: 2, height: 12, depth: 12, distanceToNext: 4 },
+  { id: 1, width: 12, depth: 12, distanceToNext: 4 },
+  { id: 2, width: 12, depth: 12, distanceToNext: 4 },
 ];
 
 export function useFrames(initialFrames: Frame[] = DEFAULT_FRAMES) {
@@ -268,7 +268,7 @@ export function useFrames(initialFrames: Frame[] = DEFAULT_FRAMES) {
       ...frames,
       {
         id: newId,
-        height: last?.height ?? 12,
+        width: last?.width ?? 12,
         depth: last?.depth ?? 12,
         distanceToNext: last?.distanceToNext ?? 4,
       },

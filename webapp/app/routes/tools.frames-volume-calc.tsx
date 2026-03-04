@@ -275,17 +275,17 @@ export default function FramesVolumeCalc() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label
-                          htmlFor={`height-${frame.id}`}
+                          htmlFor={`width-${frame.id}`}
                           className="block text-sm font-medium mb-1"
                         >
-                          Height (inches)
+                          Width (inches)
                         </label>
                         <NumberInput
-                          id={`height-${frame.id}`}
+                          id={`width-${frame.id}`}
                           min={0}
                           step={0.5}
-                          value={frame.height}
-                          onChange={(v) => updateFrame(frame.id, "height", v)}
+                          value={frame.width}
+                          onChange={(v) => updateFrame(frame.id, "width", v)}
                         />
                       </div>
                       <div>
@@ -306,9 +306,8 @@ export default function FramesVolumeCalc() {
                     </div>
 
                     <div className="mt-2 text-sm opacity-70">
-                      Cross-section: {(frame.height * frame.depth).toFixed(1)}{" "}
-                      in² ({((frame.height * frame.depth) / 144).toFixed(2)}{" "}
-                      ft²)
+                      Cross-section: {(frame.width * frame.depth).toFixed(1)}{" "}
+                      in² ({((frame.width * frame.depth) / 144).toFixed(2)} ft²)
                     </div>
                   </div>
                 </div>

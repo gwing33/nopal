@@ -860,7 +860,7 @@ function Fallback2DPreview({ frames }: { frames: Frame[] }) {
     return null;
   }
 
-  const maxHeight = Math.max(...frames.map((f) => f.height));
+  const maxHeight = Math.max(...frames.map((f) => f.width));
   const maxDepth = Math.max(...frames.map((f) => f.depth));
 
   return (
@@ -872,7 +872,7 @@ function Fallback2DPreview({ frames }: { frames: Frame[] }) {
       <div className="flex items-end gap-2 overflow-x-auto pb-4">
         {frames.map((frame, index) => {
           const scaledHeight =
-            maxHeight > 0 ? (frame.height / maxHeight) * 100 : 30;
+            maxHeight > 0 ? (frame.width / maxHeight) * 100 : 30;
           const scaledWidth =
             maxDepth > 0 ? Math.max(20, (frame.depth / maxDepth) * 60) : 30;
 
