@@ -153,51 +153,45 @@ export default function FramesVolumeCalc() {
           <div className="bg-green-100 dark:bg-green-900 rounded-lg p-6 mb-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <h3 className="text-2xl font-bold green-text mb-2">
-                  Total Volume
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
+                <h3 className="text-xl green-text mb-1">Total Volume</h3>
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="text-3xl font-bold">
+                    <span className="text-xl font-bold">
                       {formattedTotal.cubicFeetStr}
                     </span>
-                    <span className="text-lg ml-2">ft³</span>
+                    <span className="text-lg ml-1">ft³</span>
                   </div>
                   <div>
-                    <span className="text-3xl font-bold">
+                    <span className="text-xl font-bold">
                       {formattedTotal.cubicYardsStr}
                     </span>
-                    <span className="text-lg ml-2">yd³</span>
+                    <span className="text-lg ml-1">yd³</span>
                   </div>
                 </div>
               </div>
               <div>
-                <h3 className="text-2xl font-bold green-text mb-2">
-                  Total Length
-                </h3>
+                <h3 className="text-xl green-text mb-1">Total Length</h3>
                 <div>
-                  <span className="text-3xl font-bold">
+                  <span className="text-xl font-bold">
                     {totalLength.toFixed(1)}
                   </span>
-                  <span className="text-lg ml-2">ft</span>
+                  <span className="text-lg ml-1">ft</span>
                 </div>
               </div>
               <div>
-                <h3 className="text-2xl font-bold green-text mb-2">
-                  Total Weight
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
+                <h3 className="text-xl green-text mb-1">Total Weight</h3>
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="text-3xl font-bold">
+                    <span className="text-xl font-bold">
                       {formattedWeight.pounds}
                     </span>
-                    <span className="text-lg ml-2">lbs</span>
+                    <span className="text-lg ml-1">lbs</span>
                   </div>
                   <div>
-                    <span className="text-3xl font-bold">
+                    <span className="text-xl font-bold">
                       {formattedWeight.tons}
                     </span>
-                    <span className="text-lg ml-2">tons</span>
+                    <span className="text-lg ml-1">tons</span>
                   </div>
                 </div>
               </div>
