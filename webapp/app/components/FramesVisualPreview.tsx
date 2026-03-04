@@ -715,7 +715,7 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
       colorAttachments: [
         {
           view: colorView,
-          clearValue: { r: 0.94, g: 0.94, b: 0.92, a: 1 },
+          clearValue: { r: 0, g: 0, b: 0, a: 0 },
           loadOp: "clear",
           storeOp: "store",
         },
