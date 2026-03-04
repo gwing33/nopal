@@ -178,7 +178,7 @@ struct VSOut {
 }
 
 @fragment fn fs_grid() -> @location(0) vec4<f32> {
-  return vec4<f32>(0.55, 0.55, 0.55, 1.0);
+  return vec4<f32>(0.78, 0.78, 0.78, 1.0);
 }
 `;
 
@@ -570,11 +570,29 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
     gpu.wireVertCount = wireData.length / 3;
     gpu.indexCount = geo.indices.length;
 
-    // Camera: look at origin where the test cube sits
-    const cx = 0;
-    const cy = 0;
-    const cz = 0;
-    const extent = 2; // cube goes from -1 to 1
+    // Compute actual bounding box from geometry positions
+    let minX = Infinity,
+      minY = Infinity,
+      minZ = Infinity;
+    let maxX = -Infinity,
+      maxY = -Infinity,
+      maxZ = -Infinity;
+    for (let i = 0; i < geo.vertexCount; i++) {
+      const px = geo.positions[i * 3];
+      const py = geo.positions[i * 3 + 1];
+      const pz = geo.positions[i * 3 + 2];
+      if (px < minX) minX = px;
+      if (py < minY) minY = py;
+      if (pz < minZ) minZ = pz;
+      if (px > maxX) maxX = px;
+      if (py > maxY) maxY = py;
+      if (pz > maxZ) maxZ = pz;
+    }
+
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const cz = (minZ + maxZ) / 2;
+    const extent = Math.max(maxX - minX, maxY - minY, maxZ - minZ, 0.1);
 
     boundsRef.current = {
       centerX: cx,
@@ -583,10 +601,12 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
       maxExtent: extent,
     };
     cameraRef.current.target = [cx, cy, cz];
-    cameraRef.current.distance = 5;
+    // Pull camera back enough to fit the whole mesh; factor ~1.8 gives good padding
+    cameraRef.current.distance = extent * 1.8;
 
-    // Build grid
-    const gridData = buildGridBuffer(cx, cz, 4, 1);
+    // Build grid centered under the mesh
+    const gridExtent = Math.max(extent, 4);
+    const gridData = buildGridBuffer(cx, cz, gridExtent, 1);
     const gridBuf = device.createBuffer({
       size: gridData.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
