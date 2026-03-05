@@ -248,6 +248,8 @@ interface GpuState {
   uniformBindGroup: GPUBindGroup;
   depthTexture: GPUTexture | null;
   depthTextureView: GPUTextureView | null;
+  msaaTexture: GPUTexture | null;
+  msaaTextureView: GPUTextureView | null;
   positionBuffer: GPUBuffer | null;
   normalBuffer: GPUBuffer | null;
   indexBuffer: GPUBuffer | null;
@@ -519,6 +521,7 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
           depthWriteEnabled: true,
           depthCompare: "less",
         },
+        multisample: { count: 4 },
       });
 
       // ── Wire pipeline (instanced triangle quads) ──
@@ -550,6 +553,7 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
           depthWriteEnabled: true,
           depthCompare: "less",
         },
+        multisample: { count: 4 },
       });
 
       // ── Grid pipeline (line-list) ──
@@ -578,6 +582,7 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
           depthWriteEnabled: false,
           depthCompare: "less",
         },
+        multisample: { count: 4 },
       });
 
       gpuRef.current = {
@@ -591,6 +596,8 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
         uniformBindGroup,
         depthTexture: null,
         depthTextureView: null,
+        msaaTexture: null,
+        msaaTextureView: null,
         positionBuffer: null,
         normalBuffer: null,
         indexBuffer: null,
@@ -792,8 +799,19 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
         size: [tw, th],
         format: "depth24plus",
         usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        sampleCount: 4,
       });
       gpu.depthTextureView = gpu.depthTexture.createView();
+
+      gpu.msaaTexture?.destroy();
+      gpu.msaaTexture = gpu.device.createTexture({
+        size: [tw, th],
+        format: gpu.format,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        sampleCount: 4,
+      });
+      gpu.msaaTextureView = gpu.msaaTexture.createView();
+
       gpu.canvasWidth = tw;
       gpu.canvasHeight = th;
     }
@@ -844,7 +862,8 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
     const pass = encoder.beginRenderPass({
       colorAttachments: [
         {
-          view: colorView,
+          view: gpu.msaaTextureView!,
+          resolveTarget: colorView,
           clearValue: { r: 0, g: 0, b: 0, a: 0 },
           loadOp: "clear",
           storeOp: "store",
