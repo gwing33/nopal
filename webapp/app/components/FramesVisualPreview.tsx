@@ -104,8 +104,9 @@ function mat4Multiply(a: Mat4, b: Mat4): Mat4 {
 
 const SHADER_SOURCE = /* wgsl */ `
 struct Uniforms {
-  mvp    : mat4x4<f32>,
-  eyePos : vec4<f32>,
+  mvp      : mat4x4<f32>,
+  eyePos   : vec4<f32>,
+  viewport : vec4<f32>,
 };
 @group(0) @binding(0) var<uniform> uniforms : Uniforms;
 
@@ -135,30 +136,72 @@ struct VSOut {
   return vec4<f32>(base * (ambient + diffuse), 1.0);
 }
 
-// ── Wireframe (drawn as line-list) ──
+// ── Wireframe (drawn as instanced screen-space quads) ──
 
-struct WireVSIn {
-  @location(0) position : vec3<f32>,
-  @location(1) normal   : vec3<f32>,
-};
 struct WireVSOut {
   @builtin(position) clipPos : vec4<f32>,
   @location(0) facing : f32,
 };
 
-@vertex fn vs_wire(input : WireVSIn) -> WireVSOut {
+@vertex fn vs_wire(
+  @builtin(vertex_index) vid : u32,
+  @location(0) posA      : vec3<f32>,
+  @location(1) posB      : vec3<f32>,
+  @location(2) edgeNormal : vec3<f32>,
+) -> WireVSOut {
+  // Determine quad corner from vertex index (6 verts = 2 triangles per instance)
+  let ci = vid % 6u;
+  var side : f32 = -1.0;
+  var endT : f32 = 0.0;
+  if (ci == 1u || ci == 3u || ci == 4u) { side = 1.0; }
+  if (ci == 2u || ci == 4u || ci == 5u) { endT = 1.0; }
+
+  // Transform both endpoints to clip space
+  let clipA = uniforms.mvp * vec4<f32>(posA, 1.0);
+  let clipB = uniforms.mvp * vec4<f32>(posB, 1.0);
+
+  // Screen-space positions (in pixels)
+  let screenA = (clipA.xy / clipA.w) * uniforms.viewport.xy * 0.5;
+  let screenB = (clipB.xy / clipB.w) * uniforms.viewport.xy * 0.5;
+
+  // Direction and perpendicular in screen space
+  let lineDir = screenB - screenA;
+  let lineLen = length(lineDir);
+  var perp = vec2<f32>(0.0, 1.0);
+  if (lineLen > 0.001) {
+    let dir = lineDir / lineLen;
+    perp = vec2<f32>(-dir.y, dir.x);
+  }
+
+  // Compute facing factor from averaged edge normal
+  let midPos = (posA + posB) * 0.5;
+  let viewDir = normalize(uniforms.eyePos.xyz - midPos);
+  let n = normalize(edgeNormal);
+  let facing = dot(n, viewDir);
+
+  // Width in pixels: thicker for front-facing, thinner for back-facing
+  let t = smoothstep(0.15, 0.55, facing);
+  let widthPx = mix(3, 1, t);
+
+  // Pick the interpolated clip position for this vertex
+  let clipP = mix(clipA, clipB, endT);
+
+  // Offset in screen-space pixels, then convert back to clip space
+  let offsetPx = perp * side * widthPx * 0.5;
+  let ndcOffset = offsetPx * 2.0 / uniforms.viewport.xy;
+
   var out : WireVSOut;
-  out.clipPos = uniforms.mvp * vec4<f32>(input.position, 1.0);
-  // Slight depth bias to draw edges on top of faces
-  out.clipPos.z -= 0.0005;
-  let viewDir = normalize(uniforms.eyePos.xyz - input.position);
-  let n = normalize(input.normal);
-  out.facing = dot(n, viewDir);
+  out.clipPos = clipP;
+  out.clipPos.x = out.clipPos.x + ndcOffset.x * clipP.w;
+  out.clipPos.y = out.clipPos.y + ndcOffset.y * clipP.w;
+  // Slight depth bias so edges draw on top of faces
+  out.clipPos.z = out.clipPos.z - 0.0005;
+  out.facing = facing;
   return out;
 }
 
 @fragment fn fs_wire(input : WireVSOut) -> @location(0) vec4<f32> {
-  let t = smoothstep(-0.1, 0.3, input.facing);
+  let t = smoothstep(0.15, 0.55, input.facing);
   let color = mix(vec3<f32>(0.72, 0.72, 0.72), vec3<f32>(0.0, 0.0, 0.0), t);
   return vec4<f32>(color, 1.0);
 }
@@ -168,8 +211,9 @@ struct WireVSOut {
 
 const GRID_SHADER_SOURCE = /* wgsl */ `
 struct Uniforms {
-  mvp : mat4x4<f32>,
-  eyePos : vec4<f32>,
+  mvp      : mat4x4<f32>,
+  eyePos   : vec4<f32>,
+  viewport : vec4<f32>,
 };
 @group(0) @binding(0) var<uniform> uniforms : Uniforms;
 
@@ -297,25 +341,23 @@ function buildWireframeBuffer(
     edgeList.push({ a, b, nx, ny, nz });
   }
 
-  // Interleaved: position (vec3) + normal (vec3) per vertex, 2 vertices per edge
-  const verts = new Float32Array(edgeList.length * 12);
+  // Per-edge instance data: posA (vec3) + posB (vec3) + normal (vec3) = 9 floats
+  const verts = new Float32Array(edgeList.length * 9);
   for (let i = 0; i < edgeList.length; i++) {
     const { a, b, nx, ny, nz } = edgeList[i];
-    const off = i * 12;
-    // Vertex A: position + normal
+    const off = i * 9;
+    // Endpoint A
     verts[off] = positions[a * 3];
     verts[off + 1] = positions[a * 3 + 1];
     verts[off + 2] = positions[a * 3 + 2];
-    verts[off + 3] = nx;
-    verts[off + 4] = ny;
-    verts[off + 5] = nz;
-    // Vertex B: position + normal
-    verts[off + 6] = positions[b * 3];
-    verts[off + 7] = positions[b * 3 + 1];
-    verts[off + 8] = positions[b * 3 + 2];
-    verts[off + 9] = nx;
-    verts[off + 10] = ny;
-    verts[off + 11] = nz;
+    // Endpoint B
+    verts[off + 3] = positions[b * 3];
+    verts[off + 4] = positions[b * 3 + 1];
+    verts[off + 5] = positions[b * 3 + 2];
+    // Edge normal
+    verts[off + 6] = nx;
+    verts[off + 7] = ny;
+    verts[off + 8] = nz;
   }
   return verts;
 }
@@ -418,7 +460,7 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
 
       // ── Uniform buffer & bind group layout ──
       const uniformBuffer = device.createBuffer({
-        size: 80, // mat4x4<f32> (64) + vec4<f32> eyePos (16)
+        size: 96, // mat4x4<f32> (64) + vec4<f32> eyePos (16) + vec4<f32> viewport (16)
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
       });
 
@@ -479,7 +521,7 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
         },
       });
 
-      // ── Wire pipeline (line-list) ──
+      // ── Wire pipeline (instanced triangle quads) ──
       const wirePipeline = device.createRenderPipeline({
         layout: pipelineLayout,
         vertex: {
@@ -487,10 +529,12 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
           entryPoint: "vs_wire",
           buffers: [
             {
-              arrayStride: 24, // position (12) + normal (12)
+              arrayStride: 36, // posA (12) + posB (12) + normal (12)
+              stepMode: "instance",
               attributes: [
-                { shaderLocation: 0, offset: 0, format: "float32x3" },
-                { shaderLocation: 1, offset: 12, format: "float32x3" },
+                { shaderLocation: 0, offset: 0, format: "float32x3" }, // posA
+                { shaderLocation: 1, offset: 12, format: "float32x3" }, // posB
+                { shaderLocation: 2, offset: 24, format: "float32x3" }, // normal
               ],
             },
           ],
@@ -500,7 +544,7 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
           entryPoint: "fs_wire",
           targets: [{ format }],
         },
-        primitive: { topology: "line-list" },
+        primitive: { topology: "triangle-list" },
         depthStencil: {
           format: "depth24plus",
           depthWriteEnabled: true,
@@ -643,7 +687,7 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
     gpu.normalBuffer = normBuf;
     gpu.indexBuffer = idxBuf;
     gpu.wireBuffer = wireBuf;
-    gpu.wireVertCount = wireData.length / 6;
+    gpu.wireVertCount = wireData.length / 9; // edge count (instances)
     gpu.indexCount = geo.indices.length;
 
     // Compute actual bounding box from geometry positions
@@ -790,6 +834,11 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
       64,
       gpuBuf(new Float32Array([eyeX, eyeY, eyeZ, 0]))
     );
+    gpu.device.queue.writeBuffer(
+      gpu.uniformBuffer,
+      80,
+      gpuBuf(new Float32Array([tw, th, 0, 0]))
+    );
 
     const encoder = gpu.device.createCommandEncoder();
     const pass = encoder.beginRenderPass({
@@ -832,7 +881,7 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
       pass.setPipeline(gpu.wirePipeline);
       pass.setBindGroup(0, gpu.uniformBindGroup);
       pass.setVertexBuffer(0, gpu.wireBuffer);
-      pass.draw(gpu.wireVertCount);
+      pass.draw(6, gpu.wireVertCount);
     }
 
     pass.end();
