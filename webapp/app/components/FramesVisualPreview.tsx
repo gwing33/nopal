@@ -130,9 +130,9 @@ struct VSOut {
   let lightDir = normalize(vec3<f32>(0.4, 0.9, 0.7));
   let n        = normalize(input.normal);
   let ndotl    = max(dot(n, lightDir), 0.0);
-  let ambient  = 0.18;
-  let diffuse  = ndotl * 0.82;
-  let base     = vec3<f32>(0.30, 0.72, 0.38);
+  let ambient  = 0.5;
+  let diffuse  = ndotl * 0.32;
+  let base     = vec3<f32>(0.36, 0.62, 0.42);
   return vec4<f32>(base * (ambient + diffuse), 1.0);
 }
 
@@ -181,7 +181,7 @@ struct WireVSOut {
 
   // Width in pixels: thicker for front-facing, thinner for back-facing
   let t = smoothstep(0.15, 0.55, facing);
-  let widthPx = mix(3, 1, t);
+  let widthPx = mix(2, 1, t);
 
   // Pick the interpolated clip position for this vertex
   let clipP = mix(clipA, clipB, endT);
@@ -202,7 +202,9 @@ struct WireVSOut {
 
 @fragment fn fs_wire(input : WireVSOut) -> @location(0) vec4<f32> {
   let t = smoothstep(0.15, 0.55, input.facing);
-  let color = mix(vec3<f32>(0.72, 0.72, 0.72), vec3<f32>(0.0, 0.0, 0.0), t);
+  let color = vec3<f32>(0.63, 0.89, 0.68); // extra light Green
+  // let color = vec3<f32>(0.89, 0.83, 0.77);
+  // let color = vec3<f32>(1, 0.97, 0.94), vec3<f32>(0.89, 0.83, 0.77), t);
   return vec4<f32>(color, 1.0);
 }
 `;
