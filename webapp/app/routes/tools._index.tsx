@@ -38,6 +38,13 @@ const TOOLS: Tool[] = [
       "Evaluate your building envelope — air tightness, ventilation, and fresh air strategy — and see where your home lands on the health vs efficiency quadrant.",
     href: "/tools/building-envelope",
   },
+  {
+    name: "Grade Differential",
+    description:
+      "Set elevations across a grid, build multiple grade layers, and calculate cut & fill volumes between any two surfaces. Auto-interpolates unset points using inverse-distance weighting.",
+    href: "/tools/grade-differential",
+    inDevelopment: true,
+  },
 ];
 
 export default function ToolsIndex() {
