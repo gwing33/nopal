@@ -20,7 +20,13 @@ interface Tool {
 
 const TOOLS: Tool[] = [
   {
-    name: "ERV Calculator",
+    name: "Building Envelope",
+    description:
+      "Evaluate your building envelope — air tightness, ventilation, and fresh air strategy — and see where your home lands on the health vs efficiency quadrant.",
+    href: "/tools/building-envelope",
+  },
+  {
+    name: "Fresh Air Calculator",
     description:
       "Size your balanced ventilation system (ERV/HRV) based on occupancy. Calculate supply and exhaust tube counts, design base flow, boost flow, and get Zehnder and Brink unit recommendations.",
     href: "/tools/erv-calculator",
@@ -31,12 +37,7 @@ const TOOLS: Tool[] = [
     description:
       "Calculate backfill volumes along a linear run using cross-section frames. Supports multiple materials with weight estimation.",
     href: "/tools/frames-volume-calc",
-  },
-  {
-    name: "Building Envelope",
-    description:
-      "Evaluate your building envelope — air tightness, ventilation, and fresh air strategy — and see where your home lands on the health vs efficiency quadrant.",
-    href: "/tools/building-envelope",
+    inDevelopment: true,
   },
   {
     name: "Grade Differential",
