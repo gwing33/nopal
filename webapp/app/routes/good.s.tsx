@@ -1,7 +1,7 @@
 import { Layout } from "../components/Layout";
 import {
   GoodBuildingLink,
-  GoodConsultingLink,
+  GoodGuidingLink,
   GoodArchitectureLink,
 } from "../components/GoodAssets";
 
@@ -24,7 +24,7 @@ export default function Goods() {
                 <GoodBuildingLink />
               </li>
               <li>
-                <GoodConsultingLink />
+                <GoodGuidingLink />
               </li>
             </ul>
           </div>

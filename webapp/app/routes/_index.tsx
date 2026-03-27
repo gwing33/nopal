@@ -3,7 +3,7 @@ import { Footer } from "../components/Footer";
 import {
   GoodButtonArchitecture,
   GoodButtonBuilding,
-  GoodButtonConsulting,
+  GoodButtonGuiding,
 } from "../components/GoodAssets";
 import { RandomFiveFactors } from "../components/FiveFactors";
 import { Link } from "@remix-run/react";
@@ -65,7 +65,7 @@ export default function Index() {
             >
               <GoodButtonArchitecture />
               <GoodButtonBuilding />
-              <GoodButtonConsulting />
+              <GoodButtonGuiding />
             </div>
           </div>
         </div>

@@ -65,10 +65,10 @@ export function GoodBuildingLink({ onClick }: Props) {
   );
 }
 
-export function GoodConsultingLink({ onClick }: Props) {
+export function GoodGuidingLink({ onClick }: Props) {
   return (
     <Link
-      to="/good/consulting"
+      to="/good/guides"
       prefetch="render"
       onClick={onClick}
       className="good-box good-box-hover"
@@ -136,7 +136,7 @@ export function GoodConsultingLink({ onClick }: Props) {
         />
       </svg>
       <span>
-        <span className="title">Good Consulting</span>
+        <span className="title">Good Guides</span>
         <br />
         <span className="desc">
           Optimize your building
@@ -272,10 +272,10 @@ export function GoodButtonBuilding() {
   );
 }
 
-export function GoodButtonConsulting() {
+export function GoodButtonGuiding() {
   return (
-    <GoodButton to="/good/consulting">
-      <MiniGoodConsulting /> Good Consulting
+    <GoodButton to="/good/guides">
+      <MiniGoodGuideing /> Good Guides
     </GoodButton>
   );
 }
@@ -385,7 +385,7 @@ const MiniGoodBuilding = () => (
     <circle cx="14.1734" cy="26.3863" r="0.482007" fill="#3F2B46" />
   </svg>
 );
-const MiniGoodConsulting = () => (
+const MiniGoodGuideing = () => (
   <svg
     width="34"
     height="34"

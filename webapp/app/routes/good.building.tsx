@@ -3,7 +3,7 @@ import projectStyles from "../styles/project.css?url";
 import goodsStyles from "../styles/goods.css?url";
 import { LinksFunction } from "@remix-run/node";
 import { FooterDiscovery } from "../components/Footer";
-import { GoodContact, GoodButtonConsulting } from "../components/GoodAssets";
+import { GoodContact, GoodButtonGuiding } from "../components/GoodAssets";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: projectStyles },
@@ -77,7 +77,7 @@ export default function GoodBuilding() {
           </p>
 
           <GoodContact>
-            <GoodButtonConsulting />
+            <GoodButtonGuiding />
           </GoodContact>
         </div>
       </div>

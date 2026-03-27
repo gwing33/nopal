@@ -52,8 +52,7 @@ export default function PathFAQPage() {
         Bolt-on High Performance House
       </h2>
       <Annotation>
-        We’ve consulted on many builds like this. We see the same mistakes on
-        repeat.
+        We’ve guided many builds like this. We see the same mistakes on repeat.
       </Annotation>
       <p>
         This house is built using traditional methods. You could mistake it for

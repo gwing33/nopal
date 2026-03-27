@@ -57,7 +57,7 @@ export default function PathFaqThree() {
 
       <h2 className="cacti-three-heading">
         <CactiThree />
-        Bring in the Consultant
+        Bring in the Guides
       </h2>
       <p>
         The top down focused team brings in various consultants who specialize

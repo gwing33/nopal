@@ -14,7 +14,7 @@ import { useSchemePref } from "../hooks/useSchemePref";
 import { useClickOutside } from "../hooks/useClickOutside";
 import {
   GoodBuildingLink,
-  GoodConsultingLink,
+  GoodGuidingLink,
   GoodArchitectureLink,
 } from "./GoodAssets";
 
@@ -123,7 +123,7 @@ export function Layout({ children }: { children?: ReactNode }) {
                     <GoodBuildingLink onClick={handleGoodItemClick} />
                   </li>
                   <li>
-                    <GoodConsultingLink onClick={handleGoodItemClick} />
+                    <GoodGuidingLink onClick={handleGoodItemClick} />
                   </li>
                 </ul>
               </div>
