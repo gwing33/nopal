@@ -777,10 +777,12 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
   }, [frames, initSeq]);
 
   // ── SVG export ──
-  const exportSvg = useCallback(() => {
+  const [copiedSvg, setCopiedSvg] = useState(false);
+
+  const buildSvg = useCallback((): string | null => {
     const edges = wireEdgesRef.current;
     const canvas = canvasRef.current;
-    if (!edges || !canvas) return;
+    if (!edges || !canvas) return null;
 
     const svgW = Math.max(canvas.clientWidth, 400);
     const svgH = Math.max(canvas.clientHeight, 300);
@@ -932,7 +934,7 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
           ]
         : [];
 
-    const svg = [
+    return [
       `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">`,
       `  <rect width="${svgW}" height="${svgH}" fill="white"/>`,
       `  <g stroke="#222222" fill="none" opacity="0.2" stroke-dasharray="3 3">`,
@@ -944,7 +946,11 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
       ...scaleBarSvg,
       `</svg>`,
     ].join("\n");
+  }, []);
 
+  const exportSvg = useCallback(() => {
+    const svg = buildSvg();
+    if (!svg) return;
     const blob = new Blob([svg], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
@@ -952,7 +958,16 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
     anchor.download = "frame-preview.svg";
     anchor.click();
     URL.revokeObjectURL(url);
-  }, []);
+  }, [buildSvg]);
+
+  const copySvg = useCallback(() => {
+    const svg = buildSvg();
+    if (!svg) return;
+    navigator.clipboard.writeText(svg).then(() => {
+      setCopiedSvg(true);
+      setTimeout(() => setCopiedSvg(false), 2000);
+    });
+  }, [buildSvg]);
 
   // ── Render function ──
   const renderCountRef = useRef(0);
@@ -1220,6 +1235,12 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
       </div>
       <div className="flex items-center gap-4 mt-2">
         <p className="text-sm opacity-70">Drag to orbit · Scroll to zoom</p>
+        <button
+          onClick={copySvg}
+          className="text-sm opacity-60 hover:opacity-100 underline underline-offset-2 transition-opacity"
+        >
+          {copiedSvg ? "Copied!" : "Copy SVG"}
+        </button>
         <button
           onClick={exportSvg}
           className="text-sm opacity-60 hover:opacity-100 underline underline-offset-2 transition-opacity"
