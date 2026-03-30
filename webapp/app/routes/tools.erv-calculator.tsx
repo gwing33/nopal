@@ -93,6 +93,99 @@ function CFMGauge({ targetCFM }: { targetCFM: number }) {
 }
 
 // ---------------------------------------------------------------------------
+// Party scenario note
+// ---------------------------------------------------------------------------
+
+function PartyScenarioNote({
+  totalPeople,
+  targetCFM,
+}: {
+  totalPeople: number;
+  targetCFM: number;
+}) {
+  const scenarios = [
+    {
+      label: "Your estimate",
+      multiplier: 1,
+      co2: 1000,
+      qualityNote: "comfortable, clear-headed",
+      dotColor: "#22c55e",
+    },
+    {
+      label: "2× the crowd",
+      multiplier: 2,
+      co2: 1600,
+      qualityNote: "stuffy, some may feel drowsy",
+      dotColor: "#f59e0b",
+    },
+    {
+      label: "3× the crowd",
+      multiplier: 3,
+      co2: 2200,
+      qualityNote: "noticeable stuffiness, impaired focus",
+      dotColor: "#ef4444",
+    },
+  ];
+
+  return (
+    <div className="good-box p-5">
+      <h3 className="text-sm font-bold mb-1">What if the party grows?</h3>
+      <p className="text-xs opacity-60 mb-4">
+        If your ERV stays at {targetCFM} CFM but attendance doubles or triples,
+        CO₂ rises linearly — and you'll feel it.
+      </p>
+
+      <div className="flex flex-col gap-3">
+        {scenarios.map((s) => (
+          <div
+            key={s.label}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "8px 1fr auto",
+              gap: "0 10px",
+              alignItems: "start",
+            }}
+          >
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: s.dotColor,
+                marginTop: 3,
+                flexShrink: 0,
+              }}
+            />
+            <div>
+              <span className="text-xs font-semibold">{s.label}</span>
+              <span className="text-xs opacity-50 ml-2">
+                {totalPeople * s.multiplier} people &middot;{" "}
+                {(35 / s.multiplier).toFixed(1)} CFM/person
+              </span>
+              <div className="text-xs opacity-50 mt-0.5">{s.qualityNote}</div>
+            </div>
+            <div
+              className="text-sm font-bold text-right"
+              style={{
+                color: s.dotColor,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              ~{s.co2.toLocaleString()} ppm
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-xs mt-4 leading-relaxed" style={{ opacity: 0.35 }}>
+        Steady-state estimates calibrated to the 35 CFM/person rule. Actual CO₂
+        varies with room volume, outdoor air quality, and activity level.
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
@@ -282,6 +375,12 @@ export default function ERVCalculator() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Party scenario */}
+              <PartyScenarioNote
+                totalPeople={totalPeople}
+                targetCFM={targetCFM}
+              />
             </div>
           </div>
         </div>
