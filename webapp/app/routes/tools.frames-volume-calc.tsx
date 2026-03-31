@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
 import { Breadcrumb } from "../components/Breadcrumb";
-import { FramesVisualPreview } from "../components/FramesVisualPreview";
+import { FramesVisualPreview } from "../features/ViewFinder/FramesVisualPreview";
 import { NumberInput } from "../components/NumberInput";
 import { useFrames, formatVolume, formatWeight } from "../hooks/useFrames";
 import type { MetaFunction } from "@remix-run/node";

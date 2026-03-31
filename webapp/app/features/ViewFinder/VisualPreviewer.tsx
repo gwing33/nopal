@@ -1,103 +1,15 @@
 import { useRef, useEffect, useState, useCallback } from "react";
-import type { Frame } from "../hooks/useFrames";
-import { framesToGeometry } from "../hooks/useFrames";
+import type { FrameGeometry } from "../../hooks/useFrames";
+import { mat4Perspective, mat4LookAt, mat4Multiply } from "./mat4";
+import {
+  buildSvg as buildSvgFn,
+  triggerSvgDownload,
+  copySvgToClipboard,
+} from "./exportSvg";
 
 // Cast typed arrays to satisfy @webgpu/types expecting ArrayBuffer (not ArrayBufferLike)
 function gpuBuf(data: Float32Array | Uint32Array): BufferSource {
   return data as unknown as BufferSource;
-}
-
-// ── Minimal mat4 math (column-major, WebGPU clip-space Z ∈ [0,1]) ──────────
-
-type Mat4 = Float32Array; // always length 16
-
-function mat4Identity(): Mat4 {
-  const m = new Float32Array(16);
-  m[0] = 1;
-  m[5] = 1;
-  m[10] = 1;
-  m[15] = 1;
-  return m;
-}
-
-function mat4Perspective(
-  fovY: number,
-  aspect: number,
-  near: number,
-  far: number
-): Mat4 {
-  const f = 1 / Math.tan(fovY / 2);
-  const rangeInv = 1 / (near - far);
-  const m = new Float32Array(16);
-  m[0] = f / aspect;
-  m[5] = f;
-  m[10] = far * rangeInv;
-  m[11] = -1;
-  m[14] = near * far * rangeInv;
-  return m;
-}
-
-function mat4LookAt(
-  eye: [number, number, number],
-  target: [number, number, number],
-  up: [number, number, number]
-): Mat4 {
-  let zx = eye[0] - target[0];
-  let zy = eye[1] - target[1];
-  let zz = eye[2] - target[2];
-  let len = Math.hypot(zx, zy, zz) || 1;
-  zx /= len;
-  zy /= len;
-  zz /= len;
-
-  let xx = up[1] * zz - up[2] * zy;
-  let xy = up[2] * zx - up[0] * zz;
-  let xz = up[0] * zy - up[1] * zx;
-  len = Math.hypot(xx, xy, xz) || 1;
-  xx /= len;
-  xy /= len;
-  xz /= len;
-
-  const yx = zy * xz - zz * xy;
-  const yy = zz * xx - zx * xz;
-  const yz = zx * xy - zy * xx;
-
-  const m = new Float32Array(16);
-  // column 0
-  m[0] = xx;
-  m[1] = yx;
-  m[2] = zx;
-  m[3] = 0;
-  // column 1
-  m[4] = xy;
-  m[5] = yy;
-  m[6] = zy;
-  m[7] = 0;
-  // column 2
-  m[8] = xz;
-  m[9] = yz;
-  m[10] = zz;
-  m[11] = 0;
-  // column 3
-  m[12] = -(xx * eye[0] + xy * eye[1] + xz * eye[2]);
-  m[13] = -(yx * eye[0] + yy * eye[1] + yz * eye[2]);
-  m[14] = -(zx * eye[0] + zy * eye[1] + zz * eye[2]);
-  m[15] = 1;
-  return m;
-}
-
-function mat4Multiply(a: Mat4, b: Mat4): Mat4 {
-  const out = new Float32Array(16);
-  for (let col = 0; col < 4; col++) {
-    for (let row = 0; row < 4; row++) {
-      out[col * 4 + row] =
-        a[row] * b[col * 4] +
-        a[4 + row] * b[col * 4 + 1] +
-        a[8 + row] * b[col * 4 + 2] +
-        a[12 + row] * b[col * 4 + 3];
-    }
-  }
-  return out;
 }
 
 // ── WGSL Shaders ────────────────────────────────────────────────────────────
@@ -203,8 +115,6 @@ struct WireVSOut {
 @fragment fn fs_wire(input : WireVSOut) -> @location(0) vec4<f32> {
   let t = smoothstep(0.15, 0.55, input.facing);
   let color = vec3<f32>(0.63, 0.89, 0.68); // extra light Green
-  // let color = vec3<f32>(0.89, 0.83, 0.77);
-  // let color = vec3<f32>(1, 0.97, 0.94), vec3<f32>(0.89, 0.83, 0.77), t);
   return vec4<f32>(color, 1.0);
 }
 `;
@@ -392,30 +302,13 @@ function buildGridBuffer(
   return new Float32Array(lines);
 }
 
-// ── SVG export helper ────────────────────────────────────────────────────────
-
-function projectPoint(
-  mvp: Mat4,
-  x: number,
-  y: number,
-  z: number
-): { clipX: number; clipY: number; clipZ: number; clipW: number } {
-  // Column-major mat4 × vec4(x, y, z, 1)
-  return {
-    clipX: mvp[0] * x + mvp[4] * y + mvp[8] * z + mvp[12],
-    clipY: mvp[1] * x + mvp[5] * y + mvp[9] * z + mvp[13],
-    clipZ: mvp[2] * x + mvp[6] * y + mvp[10] * z + mvp[14],
-    clipW: mvp[3] * x + mvp[7] * y + mvp[11] * z + mvp[15],
-  };
-}
-
 // ── React component ─────────────────────────────────────────────────────────
 
-interface FramesVisualPreviewProps {
-  frames: Frame[];
+interface VisualPreviewerProps {
+  geometry: FrameGeometry;
 }
 
-export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
+export function VisualPreviewer({ geometry }: VisualPreviewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gpuRef = useRef<GpuState | null>(null);
   const rafRef = useRef<number>(0);
@@ -653,13 +546,11 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Upload geometry when frames change or GPU (re-)initializes ──
+  // ── Upload geometry when geometry changes or GPU (re-)initializes ──
   useEffect(() => {
     if (initSeq <= 0) return;
     const gpu = gpuRef.current;
     if (!gpu) return;
-
-    const geo = framesToGeometry(frames);
 
     // Destroy old buffers
     gpu.positionBuffer?.destroy();
@@ -668,7 +559,7 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
     gpu.wireBuffer?.destroy();
     gpu.gridBuffer?.destroy();
 
-    if (geo.vertexCount === 0) {
+    if (geometry.vertexCount === 0) {
       gpu.positionBuffer = null;
       gpu.normalBuffer = null;
       gpu.indexBuffer = null;
@@ -685,27 +576,27 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
 
     // Position buffer
     const posBuf = device.createBuffer({
-      size: geo.positions.byteLength,
+      size: geometry.positions.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     });
-    device.queue.writeBuffer(posBuf, 0, gpuBuf(geo.positions));
+    device.queue.writeBuffer(posBuf, 0, gpuBuf(geometry.positions));
 
     // Normal buffer
     const normBuf = device.createBuffer({
-      size: geo.normals.byteLength,
+      size: geometry.normals.byteLength,
       usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
     });
-    device.queue.writeBuffer(normBuf, 0, gpuBuf(geo.normals));
+    device.queue.writeBuffer(normBuf, 0, gpuBuf(geometry.normals));
 
     // Index buffer
     const idxBuf = device.createBuffer({
-      size: geo.indices.byteLength,
+      size: geometry.indices.byteLength,
       usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
     });
-    device.queue.writeBuffer(idxBuf, 0, gpuBuf(geo.indices));
+    device.queue.writeBuffer(idxBuf, 0, gpuBuf(geometry.indices));
 
     // Wireframe buffer
-    const wireData = buildWireframeBuffer(geo.positions, geo.indices);
+    const wireData = buildWireframeBuffer(geometry.positions, geometry.indices);
     wireEdgesRef.current = wireData; // keep a CPU-side copy for SVG export
     const wireBuf = device.createBuffer({
       size: wireData.byteLength,
@@ -718,7 +609,7 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
     gpu.indexBuffer = idxBuf;
     gpu.wireBuffer = wireBuf;
     gpu.wireVertCount = wireData.length / 9; // edge count (instances)
-    gpu.indexCount = geo.indices.length;
+    gpu.indexCount = geometry.indices.length;
 
     // Compute actual bounding box from geometry positions
     let minX = Infinity,
@@ -727,10 +618,10 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
     let maxX = -Infinity,
       maxY = -Infinity,
       maxZ = -Infinity;
-    for (let i = 0; i < geo.vertexCount; i++) {
-      const px = geo.positions[i * 3];
-      const py = geo.positions[i * 3 + 1];
-      const pz = geo.positions[i * 3 + 2];
+    for (let i = 0; i < geometry.vertexCount; i++) {
+      const px = geometry.positions[i * 3];
+      const py = geometry.positions[i * 3 + 1];
+      const pz = geometry.positions[i * 3 + 2];
       if (px < minX) minX = px;
       if (py < minY) minY = py;
       if (pz < minZ) minZ = pz;
@@ -774,7 +665,7 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
       gpu.gridVertCount
     );
     cameraRef.current.needsRender = true;
-  }, [frames, initSeq]);
+  }, [geometry, initSeq]);
 
   // ── SVG export ──
   const [copiedSvg, setCopiedSvg] = useState(false);
@@ -783,187 +674,21 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
     const edges = wireEdgesRef.current;
     const canvas = canvasRef.current;
     if (!edges || !canvas) return null;
-
     const svgW = Math.max(canvas.clientWidth, 400);
     const svgH = Math.max(canvas.clientHeight, 300);
-    const aspect = svgW / svgH;
-
-    const cam = cameraRef.current;
-    const proj = mat4Perspective(Math.PI / 4, aspect, 0.01, 500);
-    const eyeX =
-      cam.target[0] + cam.distance * Math.cos(cam.phi) * Math.sin(cam.theta);
-    const eyeY = cam.target[1] + cam.distance * Math.sin(cam.phi);
-    const eyeZ =
-      cam.target[2] + cam.distance * Math.cos(cam.phi) * Math.cos(cam.theta);
-    const view = mat4LookAt([eyeX, eyeY, eyeZ], cam.target, [0, 1, 0]);
-    const mvp = mat4Multiply(proj, view);
-
-    const numEdges = edges.length / 9;
-    const frontLines: string[] = [];
-    const backLines: string[] = [];
-
-    for (let i = 0; i < numEdges; i++) {
-      const off = i * 9;
-      const ax = edges[off],
-        ay = edges[off + 1],
-        az = edges[off + 2];
-      const bx = edges[off + 3],
-        by = edges[off + 4],
-        bz = edges[off + 5];
-      const nx = edges[off + 6],
-        ny = edges[off + 7],
-        nz = edges[off + 8];
-
-      const pa = projectPoint(mvp, ax, ay, az);
-      const pb = projectPoint(mvp, bx, by, bz);
-
-      // Skip edges behind camera
-      if (pa.clipW <= 0 || pb.clipW <= 0) continue;
-
-      const sax = ((pa.clipX / pa.clipW) * 0.5 + 0.5) * svgW;
-      const say = ((-pa.clipY / pa.clipW) * 0.5 + 0.5) * svgH;
-      const sbx = ((pb.clipX / pb.clipW) * 0.5 + 0.5) * svgW;
-      const sby = ((-pb.clipY / pb.clipW) * 0.5 + 0.5) * svgH;
-
-      // Facing: dot(edgeNormal, normalize(eye - midpoint)) — same logic as shader
-      const midX = (ax + bx) / 2,
-        midY = (ay + by) / 2,
-        midZ = (az + bz) / 2;
-      const vx = eyeX - midX,
-        vy = eyeY - midY,
-        vz = eyeZ - midZ;
-      const vLen = Math.sqrt(vx * vx + vy * vy + vz * vz) || 1;
-      const facing = (nx * vx + ny * vy + nz * vz) / vLen;
-
-      // smoothstep(0.15, 0.55, facing) — matches shader
-      const t = Math.max(0, Math.min(1, (facing - 0.15) / 0.4));
-      const strokeW = (0.8 + t * 1.2).toFixed(2);
-
-      const line = `<line x1="${sax.toFixed(1)}" y1="${say.toFixed(
-        1
-      )}" x2="${sbx.toFixed(1)}" y2="${sby.toFixed(
-        1
-      )}" stroke-width="${strokeW}"/>`;
-
-      if (facing > 0.15) {
-        backLines.push(line);
-      } else {
-        frontLines.push(line);
-      }
-    }
-
-    // ── Scale bar ────────────────────────────────────────────────────────────
-    // Project two world-space points separated by `worldLen` feet at the
-    // camera-target depth so we know how many SVG pixels equal that distance.
-    const scaleTarget = cam.target;
-    function scaleBarPixels(worldLen: number): number {
-      const p1 = projectPoint(
-        mvp,
-        scaleTarget[0] - worldLen / 2,
-        scaleTarget[1],
-        scaleTarget[2]
-      );
-      const p2 = projectPoint(
-        mvp,
-        scaleTarget[0] + worldLen / 2,
-        scaleTarget[1],
-        scaleTarget[2]
-      );
-      if (p1.clipW <= 0 || p2.clipW <= 0) return 0;
-      const sx1 = (p1.clipX / p1.clipW) * 0.5 * svgW + svgW * 0.5;
-      const sx2 = (p2.clipX / p2.clipW) * 0.5 * svgW + svgW * 0.5;
-      return Math.abs(sx2 - sx1);
-    }
-
-    // Pick the "nicest" world length that projects to roughly 50–180 px
-    const scaleCandidates = [0.25, 0.5, 1, 2, 5, 10, 20, 50, 100];
-    let scaleWorldLen = scaleCandidates[0];
-    let scalePx = scaleBarPixels(scaleWorldLen);
-    for (const c of scaleCandidates) {
-      const px = scaleBarPixels(c);
-      if (px >= 50 && px <= 180) {
-        scaleWorldLen = c;
-        scalePx = px;
-        break;
-      }
-      // Keep the candidate closest to 100 px as a fallback
-      if (Math.abs(px - 100) < Math.abs(scalePx - 100)) {
-        scaleWorldLen = c;
-        scalePx = px;
-      }
-    }
-
-    // Format label: sub-foot values → inches, whole feet → feet notation
-    let scaleLabel: string;
-    if (scaleWorldLen < 1) {
-      scaleLabel = `${Math.round(scaleWorldLen * 12)}"`;
-    } else {
-      scaleLabel = `${scaleWorldLen}'`;
-    }
-
-    // Build scale-bar SVG elements (bottom-right corner)
-    const sbMargin = 24;
-    const sbBarY = svgH - sbMargin;
-    const sbBarX2 = svgW - sbMargin;
-    const sbBarX1 = sbBarX2 - scalePx;
-    const sbTickH = 6;
-    const sbLabelY = sbBarY + sbTickH + 14;
-    const sbMidX = (sbBarX1 + sbBarX2) / 2;
-
-    const scaleBarSvg =
-      scalePx > 0
-        ? [
-            `  <g stroke="#444444" stroke-width="1.5" fill="none" stroke-linecap="round">`,
-            `    <line x1="${sbBarX1.toFixed(1)}" y1="${sbBarY.toFixed(
-              1
-            )}" x2="${sbBarX2.toFixed(1)}" y2="${sbBarY.toFixed(1)}"/>`,
-            `    <line x1="${sbBarX1.toFixed(1)}" y1="${(
-              sbBarY - sbTickH
-            ).toFixed(1)}" x2="${sbBarX1.toFixed(1)}" y2="${(
-              sbBarY + sbTickH
-            ).toFixed(1)}"/>`,
-            `    <line x1="${sbBarX2.toFixed(1)}" y1="${(
-              sbBarY - sbTickH
-            ).toFixed(1)}" x2="${sbBarX2.toFixed(1)}" y2="${(
-              sbBarY + sbTickH
-            ).toFixed(1)}"/>`,
-            `  </g>`,
-            `  <text x="${sbMidX.toFixed(1)}" y="${sbLabelY.toFixed(
-              1
-            )}" text-anchor="middle" font-family="monospace" font-size="11" fill="#444444">${scaleLabel}</text>`,
-          ]
-        : [];
-
-    return [
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">`,
-      `  <rect width="${svgW}" height="${svgH}" fill="white"/>`,
-      `  <g stroke="#222222" fill="none" opacity="0.2" stroke-dasharray="3 3">`,
-      ...backLines.map((l) => `    ${l}`),
-      `  </g>`,
-      `  <g stroke="#222222" fill="none">`,
-      ...frontLines.map((l) => `    ${l}`),
-      `  </g>`,
-      ...scaleBarSvg,
-      `</svg>`,
-    ].join("\n");
+    return buildSvgFn(edges, svgW, svgH, cameraRef.current);
   }, []);
 
   const exportSvg = useCallback(() => {
     const svg = buildSvg();
     if (!svg) return;
-    const blob = new Blob([svg], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "frame-preview.svg";
-    anchor.click();
-    URL.revokeObjectURL(url);
+    triggerSvgDownload(svg);
   }, [buildSvg]);
 
   const copySvg = useCallback(() => {
     const svg = buildSvg();
     if (!svg) return;
-    navigator.clipboard.writeText(svg).then(() => {
+    copySvgToClipboard(svg).then(() => {
       setCopiedSvg(true);
       setTimeout(() => setCopiedSvg(false), 2000);
     });
@@ -1209,13 +934,16 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
     return () => observer.disconnect();
   }, []);
 
-  // ── Fallback 2D preview when WebGPU is not available ──
+  // ── WebGPU not available fallback ──
   if (initSeq < 0) {
-    return <Fallback2DPreview frames={frames} />;
-  }
-
-  if (frames.length < 2) {
-    return null;
+    return (
+      <div className="mt-8 p-4 border border-gray-300 dark:border-gray-600 rounded-lg">
+        <h3 className="text-xl font-semibold mb-2">3D Preview</h3>
+        <p className="text-sm opacity-60">
+          WebGPU is not available in this browser.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -1248,69 +976,6 @@ export function FramesVisualPreview({ frames }: FramesVisualPreviewProps) {
           Export SVG
         </button>
       </div>
-    </div>
-  );
-}
-
-// ── Fallback 2D preview (when WebGPU is unavailable) ────────────────────────
-
-function Fallback2DPreview({ frames }: { frames: Frame[] }) {
-  if (frames.length < 2) {
-    return null;
-  }
-
-  const maxHeight = Math.max(...frames.map((f) => f.width));
-  const maxDepth = Math.max(...frames.map((f) => f.depth));
-
-  return (
-    <div className="mt-8 p-4 border border-gray-300 dark:border-gray-600 rounded-lg">
-      <h3 className="text-xl font-semibold mb-4">Visual Preview</h3>
-      <p className="text-xs opacity-50 mb-2">
-        WebGPU is not available — showing 2D fallback.
-      </p>
-      <div className="flex items-end gap-2 overflow-x-auto pb-4">
-        {frames.map((frame, index) => {
-          const scaledHeight =
-            maxHeight > 0 ? (frame.width / maxHeight) * 100 : 30;
-          const scaledWidth =
-            maxDepth > 0 ? Math.max(20, (frame.depth / maxDepth) * 60) : 30;
-
-          return (
-            <div key={frame.id} className="flex items-end">
-              <div className="flex flex-col items-center">
-                <div
-                  className="bg-green-500 dark:bg-green-600 border-2 border-green-700 dark:border-green-400 flex items-center justify-center text-xs font-bold text-white rounded-sm"
-                  style={{
-                    height: `${Math.max(30, scaledHeight)}px`,
-                    width: `${scaledWidth}px`,
-                    minWidth: "30px",
-                  }}
-                >
-                  {index + 1}
-                </div>
-              </div>
-              {index < frames.length - 1 && (
-                <div className="flex flex-col items-center mx-1">
-                  <div
-                    className="bg-purple-300 dark:bg-purple-700 opacity-50"
-                    style={{
-                      height: "4px",
-                      width: `${Math.max(30, frame.distanceToNext * 10)}px`,
-                    }}
-                  />
-                  <span className="text-xs mt-1">
-                    {frame.distanceToNext}&apos;
-                  </span>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <p className="text-sm opacity-70 mt-2">
-        Frame heights and widths are scaled proportionally. Numbers indicate
-        frame index.
-      </p>
     </div>
   );
 }
