@@ -4,6 +4,7 @@ import {
   ActionFunctionArgs,
   LoaderFunctionArgs,
 } from "@remix-run/node";
+import { authenticator } from "../modules/auth/auth.server";
 import {
   Form,
   useActionData,
@@ -124,6 +125,10 @@ async function checkChannelAccess(
 // ── Loader ────────────────────────────────────────────────────────────────────
 
 export async function loader({ request }: LoaderFunctionArgs) {
+  await authenticator.isAuthenticated(request, {
+    failureRedirect: "/mrgnt/login",
+  });
+
   const url = new URL(request.url);
   const threadId =
     url.searchParams.get("threadId") ?? process.env.DISCORD_THREAD_ID ?? null;
@@ -231,6 +236,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 // ── Action ────────────────────────────────────────────────────────────────────
 
 export async function action({ request }: ActionFunctionArgs) {
+  await authenticator.isAuthenticated(request, {
+    failureRedirect: "/mrgnt/login",
+  });
+
   const botToken = process.env.DISCORD_BOT_TOKEN;
   const channelId = process.env.DISCORD_CHANNEL_ID;
 
