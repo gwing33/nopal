@@ -6,6 +6,11 @@ import {
   triggerSvgDownload,
   copySvgToClipboard,
 } from "./exportSvg";
+import {
+  geometryToOBJ,
+  triggerObjDownload,
+  copyObjToClipboard,
+} from "./exportObj";
 
 // Cast typed arrays to satisfy @webgpu/types expecting ArrayBuffer (not ArrayBufferLike)
 function gpuBuf(data: Float32Array | Uint32Array): BufferSource {
@@ -667,6 +672,20 @@ export function VisualPreviewer({ geometry }: VisualPreviewerProps) {
     cameraRef.current.needsRender = true;
   }, [geometry, initSeq]);
 
+  // ── OBJ export ──
+  const [copiedObj, setCopiedObj] = useState(false);
+
+  const exportObj = useCallback(() => {
+    triggerObjDownload(geometryToOBJ(geometry));
+  }, [geometry]);
+
+  const copyObj = useCallback(() => {
+    copyObjToClipboard(geometryToOBJ(geometry)).then(() => {
+      setCopiedObj(true);
+      setTimeout(() => setCopiedObj(false), 2000);
+    });
+  }, [geometry]);
+
   // ── SVG export ──
   const [copiedSvg, setCopiedSvg] = useState(false);
 
@@ -974,6 +993,18 @@ export function VisualPreviewer({ geometry }: VisualPreviewerProps) {
           className="text-sm opacity-60 hover:opacity-100 underline underline-offset-2 transition-opacity"
         >
           Export SVG
+        </button>
+        <button
+          onClick={copyObj}
+          className="text-sm opacity-60 hover:opacity-100 underline underline-offset-2 transition-opacity"
+        >
+          {copiedObj ? "Copied!" : "Copy OBJ"}
+        </button>
+        <button
+          onClick={exportObj}
+          className="text-sm opacity-60 hover:opacity-100 underline underline-offset-2 transition-opacity"
+        >
+          Export OBJ
         </button>
       </div>
     </div>
