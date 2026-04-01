@@ -1,4 +1,4 @@
-import type { FrameGeometry } from "../../hooks/useFrames";
+import type { PearGeo } from "./PearGeo";
 
 /**
  * Converts a FrameGeometry into a Wavefront .obj file string.
@@ -16,10 +16,7 @@ import type { FrameGeometry } from "../../hooks/useFrames";
  *       Z → lateral (feet)
  *   - Smoothing is disabled (`s off`) since normals are already flat per face.
  */
-export function geometryToOBJ(
-  geo: FrameGeometry,
-  objectName = "frames"
-): string {
+export function geometryToOBJ(geo: PearGeo, objectName = "frames"): string {
   if (geo.vertexCount === 0 || geo.triangleCount === 0) {
     return `# Nopal – empty geometry\no ${objectName}\n`;
   }

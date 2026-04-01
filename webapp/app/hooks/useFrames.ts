@@ -1,19 +1,5 @@
 import { useState, useMemo } from "react";
-
-// ── WebGPU 3D Geometry Types ────────────────────────────────────────────────
-
-export interface FrameGeometry {
-  /** Flat Float32Array of vertex positions [x,y,z, x,y,z, ...] in feet */
-  positions: Float32Array;
-  /** Flat Float32Array of per-vertex normals [nx,ny,nz, ...] */
-  normals: Float32Array;
-  /** Triangle index buffer (3 indices per triangle) */
-  indices: Uint32Array;
-  /** Total number of vertices */
-  vertexCount: number;
-  /** Total number of triangles */
-  triangleCount: number;
-}
+import type { PearGeo } from "../features/ViewFinder/PearGeo";
 
 /**
  * Generates WebGPU-ready 3D geometry from a list of frames.
@@ -30,7 +16,7 @@ export interface FrameGeometry {
  * Winding order is counter-clockwise when viewed from outside (standard for
  * front-face culling in WebGPU).
  */
-export function framesToGeometry(frames: Frame[]): FrameGeometry {
+export function framesToGeometry(frames: Frame[]): PearGeo {
   if (frames.length < 2) {
     return {
       positions: new Float32Array(0),

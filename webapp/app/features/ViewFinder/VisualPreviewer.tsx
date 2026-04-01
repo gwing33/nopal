@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from "react";
-import type { FrameGeometry } from "../../hooks/useFrames";
+import type { PearGeo } from "./PearGeo";
 import { mat4Perspective, mat4LookAt, mat4Multiply } from "./mat4";
 import {
   buildSvg as buildSvgFn,
@@ -310,7 +310,7 @@ function buildGridBuffer(
 // ── React component ─────────────────────────────────────────────────────────
 
 interface VisualPreviewerProps {
-  geometry: FrameGeometry;
+  geometry: PearGeo;
 }
 
 export function VisualPreviewer({ geometry }: VisualPreviewerProps) {
