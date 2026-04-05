@@ -1,7 +1,7 @@
-import { Link } from "@remix-run/react";
+import { Link } from "react-router";
 import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
-import type { MetaFunction } from "@remix-run/node";
+import type { MetaFunction } from "react-router";
 
 export const meta: MetaFunction = () => [
   { title: "Construction Tools | Nopal" },

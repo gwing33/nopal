@@ -1,23 +1,22 @@
 import { useEffect, useState } from "react";
-import { json, ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import { Form, useActionData, useNavigation } from "@remix-run/react";
-import { authenticator } from "../modules/auth/auth.server";
+import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from "react-router";
+import { Form, useActionData, useNavigation } from "react-router";
+import { getUser } from "../modules/auth/auth.server";
 import { syncAllDatabases } from "../data/notion/sync.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const user = await authenticator.isAuthenticated(request, {
-    failureRedirect: "/mrgnt/login",
-  });
-  return json({ user });
+  const user = await getUser(request);
+  if (!user) return redirect("/mrgnt/login");
+  return { user };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
   try {
     const response = await syncAllDatabases();
-    return json({ error: null, response });
+    return { error: null, response };
   } catch (error) {
     console.error(error);
-    return json({ error: "Failed to sync." });
+    return { error: "Failed to sync." };
   }
 }
 

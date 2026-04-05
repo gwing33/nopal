@@ -1,6 +1,6 @@
-import { Link, Outlet } from "@remix-run/react";
+import { Link, Outlet } from "react-router";
 import mrgntStyles from "../styles/mrgnt.css?url";
-import { LinksFunction } from "@remix-run/node";
+import { LinksFunction } from "react-router";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: mrgntStyles },

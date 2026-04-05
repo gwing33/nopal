@@ -1,6 +1,6 @@
 import { Layout } from "../components/Layout";
 import goodsStyles from "../styles/goods.css?url";
-import { LinksFunction } from "@remix-run/node";
+import { LinksFunction } from "react-router";
 import { FooterDiscovery } from "../components/Footer";
 import { Carousel } from "../components/Carousel";
 import { GoodContact, GoodButtonBuilding } from "../components/GoodAssets";

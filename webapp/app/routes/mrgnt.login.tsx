@@ -1,33 +1,25 @@
 import { useState } from "react";
 import { Input } from "../components/Input";
-import { useLoaderData, useActionData, Form } from "@remix-run/react";
+import { useLoaderData, useActionData, Form } from "react-router";
 import {
-  json,
+  data,
   redirect,
   ActionFunctionArgs,
   LoaderFunctionArgs,
-} from "@remix-run/node";
-import { authenticator } from "../modules/auth/auth.server";
-import { getSession, commitSession } from "../modules/auth/session.server";
+} from "react-router";
+import {
+  authenticator,
+  getUser,
+  getAuthError,
+} from "../modules/auth/auth.server";
 import { getHumanByEmail } from "../data/humans.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  await authenticator.isAuthenticated(request, {
-    successRedirect: "/mrgnt",
-  });
+  const user = await getUser(request);
+  if (user) return redirect("/mrgnt");
 
-  const session = await getSession(request.headers.get("Cookie"));
-  const authError = session.get(authenticator.sessionErrorKey);
-
-  // Commit session to clear any `flash` error message.
-  return json(
-    { authError },
-    {
-      headers: {
-        "set-cookie": await commitSession(session),
-      },
-    }
-  );
+  const authError = getAuthError(request);
+  return data({ authError });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -36,21 +28,14 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const user = await getHumanByEmail(email);
   if (!user) {
-    return json(
+    return data(
       { error: "No account found for that email address." },
       { status: 400 }
     );
   }
 
-  await authenticator.authenticate("TOTP", request, {
-    // The `successRedirect` route will be used to verify the OTP code.
-    // This could be the current pathname or any other route that renders the verification form.
-    successRedirect: "/mrgnt/verify",
-
-    // The `failureRedirect` route will be used to render any possible error.
-    // This could be the current pathname or any other route that renders the login form.
-    failureRedirect: "/mrgnt/login",
-  });
+  // Strategy sends TOTP and throws redirect to /mrgnt/verify
+  await authenticator.authenticate("TOTP", request);
 }
 
 export default function MrgntLogin() {
@@ -68,7 +53,7 @@ export default function MrgntLogin() {
           </button>
         </div>
       </Form>
-      <span>{actionData?.error ?? authError?.message}</span>
+      <span>{actionData?.error ?? authError}</span>
     </div>
   );
 }
