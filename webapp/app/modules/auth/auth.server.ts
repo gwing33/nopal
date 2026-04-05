@@ -2,10 +2,10 @@ import { Authenticator } from "remix-auth";
 import { TOTPStrategy } from "remix-auth-totp";
 import { sessionStorage } from "./session.server";
 import { sendEmail } from "../../util/email.server";
-import { User, getUserByEmail } from "../../data/users.server";
+import { Human, getHumanByEmail } from "../../data/humans.server";
 import { LoginCode } from "../../emails/loginCode";
 
-export let authenticator = new Authenticator<User | undefined>(sessionStorage);
+export let authenticator = new Authenticator<Human | undefined>(sessionStorage);
 
 authenticator.use(
   new TOTPStrategy(
@@ -22,8 +22,8 @@ authenticator.use(
       },
     },
     async ({ email }) => {
-      const user = getUserByEmail(email);
-      return user;
+      const human = getHumanByEmail(email);
+      return human;
     }
   ),
   "TOTP"

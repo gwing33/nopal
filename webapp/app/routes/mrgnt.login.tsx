@@ -9,7 +9,7 @@ import {
 } from "@remix-run/node";
 import { authenticator } from "../modules/auth/auth.server";
 import { getSession, commitSession } from "../modules/auth/session.server";
-import { getUserByEmail } from "../data/users.server";
+import { getHumanByEmail } from "../data/humans.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   await authenticator.isAuthenticated(request, {
@@ -34,7 +34,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.clone().formData();
   const email = formData.get("email") as string;
 
-  const user = await getUserByEmail(email);
+  const user = await getHumanByEmail(email);
   if (!user) {
     return json(
       { error: "No account found for that email address." },

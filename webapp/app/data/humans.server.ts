@@ -9,21 +9,23 @@ import {
 
 export type Role = "Super" | "Admin" | "Human";
 
-export type User = Data & {
+export type Human = Data & {
   email: string;
   name: string;
   role: Role;
 };
 
-export type Users = Collection<User>;
+export type Humans = Collection<Human>;
 
-export async function getUsers(): Promise<Users | undefined> {
-  return select<User>(`users`);
+export async function getHumans(): Promise<Humans | undefined> {
+  return select<Human>(`humans`);
 }
 
-export async function getUserByEmail(email: string): Promise<User | undefined> {
-  const result = await query<[User[]]>(
-    `SELECT * FROM users WHERE email = $email;`,
+export async function getHumanByEmail(
+  email: string
+): Promise<Human | undefined> {
+  const result = await query<[Human[]]>(
+    `SELECT * FROM humans WHERE email = $email;`,
     {
       email,
     }
