@@ -12,6 +12,7 @@ dev:
 	@echo ""
 	@echo "  ✓ SurrealDB  →  http://localhost:8080"
 	@echo "  ✓ Webapp     →  http://localhost:3000"
+	@echo "  ✓ Logs       →  http://localhost:9999"
 	@echo ""
 	@echo "  DB users:"
 	@echo "    root   user: $$DB_USER        pass: $$DB_PASS"
@@ -26,6 +27,7 @@ seed:
 		--user $(DB_USER) \
 		--pass $(DB_PASS) \
 		--pretty
+	cd webapp && npm run seed:data
 
 ## Stop all containers (data is preserved in named volumes).
 down:

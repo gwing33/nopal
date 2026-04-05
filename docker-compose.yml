@@ -38,10 +38,32 @@ services:
       DATABASE_URL: http://db:8080/rpc
       DATABASE_USERNAME: ${APP_USER:-root}
       DATABASE_PASSWORD: ${APP_PASS:-root}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
     command: sh -c "npm install && npm run dev"
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+  dozzle:
+    image: amir20/dozzle:latest
+    ports:
+      - "9999:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      DOZZLE_NO_ANALYTICS: true
 
 volumes:
   surreal_data:

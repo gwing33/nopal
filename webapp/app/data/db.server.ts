@@ -13,7 +13,7 @@ interface DbConfig {
 const DEFAULT_CONFIG: DbConfig = {
   url: process.env.DATABASE_URL || "http://localhost:8080/rpc",
   namespace: "nopal",
-  database: process.env.NODE_ENV == "production" ? "prod" : "staging",
+  database: process.env.NODE_ENV == "production" ? "prod" : "dev",
   auth: {
     username: process.env.DATABASE_USERNAME || "",
     password: process.env.DATABASE_PASSWORD || "",
