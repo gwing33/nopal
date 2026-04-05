@@ -1,0 +1,48 @@
+services:
+  db:
+    image: surrealdb/surrealdb:latest
+    user: root
+    ports:
+      - "8080:8080"
+    volumes:
+      - surreal_data:/data
+    environment:
+      SURREAL_LOG: info
+    command: start --bind 0.0.0.0:8080 --user ${DB_USER:-root} --pass ${DB_PASS:-root} surrealkv://data/srdb.db
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/surreal",
+          "is-ready",
+          "--endpoint",
+          "http://localhost:8080",
+          "--log",
+          "none",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 5s
+
+  webapp:
+    image: node:20-slim
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./webapp:/app
+      - webapp_node_modules:/app/node_modules
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: http://db:8080/rpc
+      DATABASE_USERNAME: ${APP_USER:-root}
+      DATABASE_PASSWORD: ${APP_PASS:-root}
+    command: sh -c "npm install && npm run dev"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  surreal_data:
+  webapp_node_modules:

@@ -3,6 +3,43 @@ I opted to go with surrealDB as it has more specific database types and seems mo
 
 On top of that I was never great at traditional SQL so this also should help me reset expectations and approach it with a beginners mind.
 
+## Dev Environment
+
+To stand up a local database with default users, run:
+
+```
+make dev
+```
+
+This starts SurrealDB via Docker Compose, waits for it to be healthy, then runs `seed.surql` to set up the default namespace, database, and users.
+
+### Default users
+
+| User    | Scope          | Password        | Role   |
+|---------|----------------|-----------------|--------|
+| `root`  | Root           | `root`          | Owner  |
+| `admin` | NS `nopal`     | `adminpassword` | Owner  |
+| `app`   | DB `nopal/dev` | `apppassword`   | Editor |
+
+The `app` user is what the backend service should connect with. The `admin` user is useful for exploring the database in a tool like [Surrealist](https://surrealdb.com/surrealist).
+
+Override the root credentials at any time with environment variables:
+
+```
+DB_USER=myuser DB_PASS=mypass make dev
+```
+
+### Other targets
+
+| Command       | Description                                      |
+|---------------|--------------------------------------------------|
+| `make seed`   | Re-run `seed.surql` against the running database |
+| `make down`   | Stop the container (data is preserved)           |
+| `make reset`  | Destroy all data and start fresh                 |
+| `make clean`  | Stop the container and delete the data volume    |
+
+---
+
 ## Pagination
 One of the first concepts I need to tackle is pagination.
 
