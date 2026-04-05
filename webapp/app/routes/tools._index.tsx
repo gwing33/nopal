@@ -20,6 +20,12 @@ interface Tool {
 
 const TOOLS: Tool[] = [
   {
+    name: "Print a DO NOT USE list",
+    description:
+      "Print or customize your own DO NOT USE list for your building.",
+    href: "/tools/do-not-use",
+  },
+  {
     name: "Building Envelope",
     description:
       "Evaluate your building envelope — air tightness, ventilation, and fresh air strategy — and see where your home lands on the health vs efficiency quadrant.",
