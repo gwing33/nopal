@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Input } from "../components/Input";
-import { useLoaderData, Form } from "@remix-run/react";
+import { useLoaderData, useActionData, Form } from "@remix-run/react";
 import {
   json,
   redirect,
@@ -9,6 +9,7 @@ import {
 } from "@remix-run/node";
 import { authenticator } from "../modules/auth/auth.server";
 import { getSession, commitSession } from "../modules/auth/session.server";
+import { getUserByEmail } from "../data/users.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   await authenticator.isAuthenticated(request, {
@@ -30,6 +31,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.clone().formData();
+  const email = formData.get("email") as string;
+
+  const user = await getUserByEmail(email);
+  if (!user) {
+    return json(
+      { error: "No account found for that email address." },
+      { status: 400 }
+    );
+  }
+
   await authenticator.authenticate("TOTP", request, {
     // The `successRedirect` route will be used to verify the OTP code.
     // This could be the current pathname or any other route that renders the verification form.
@@ -43,6 +55,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function MrgntLogin() {
   let { authError } = useLoaderData<typeof loader>();
+  let actionData = useActionData<typeof action>();
 
   return (
     <div>
@@ -55,7 +68,7 @@ export default function MrgntLogin() {
           </button>
         </div>
       </Form>
-      <span>{authError?.message}</span>
+      <span>{actionData?.error ?? authError?.message}</span>
     </div>
   );
 }

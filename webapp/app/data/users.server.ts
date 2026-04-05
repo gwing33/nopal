@@ -7,9 +7,12 @@ import {
   formatRecord,
 } from "./generic.server";
 
+export type Role = "Super" | "Admin" | "Human";
+
 export type User = Data & {
   email: string;
   name: string;
+  role: Role;
 };
 
 export type Users = Collection<User>;
