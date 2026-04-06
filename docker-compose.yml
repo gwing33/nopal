@@ -30,6 +30,7 @@ services:
     working_dir: /app
     ports:
       - "3000:3000"
+
     volumes:
       - ./webapp:/app
       - webapp_node_modules:/app/node_modules

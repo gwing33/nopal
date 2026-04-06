@@ -6,6 +6,7 @@ import {
   select,
   formatRecord,
   upsert,
+  remove,
 } from "./generic.server";
 
 export type Role = "Super" | "Admin" | "Human";
@@ -56,5 +57,5 @@ export async function updateHuman(
 }
 
 export async function deleteHuman(id: string): Promise<void> {
-  await query(`DELETE type::thing('humans', $id);`, { id });
+  await remove("humans", id);
 }

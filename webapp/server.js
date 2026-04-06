@@ -1,16 +1,23 @@
 import { createRequestHandler } from "@react-router/express";
 import express from "express";
+import { createServer } from "http";
+
+const app = express();
+
+const httpServer = createServer(app);
 
 const viteDevServer =
   process.env.NODE_ENV === "production"
     ? null
     : await import("vite").then((vite) =>
         vite.createServer({
-          server: { middlewareMode: true },
+          server: {
+            middlewareMode: true,
+            hmr: { server: httpServer },
+          },
         })
       );
 
-const app = express();
 app.use(
   viteDevServer ? viteDevServer.middlewares : express.static("build/client")
 );
@@ -21,6 +28,6 @@ const build = viteDevServer
 
 app.all("*", createRequestHandler({ build }));
 
-app.listen(3000, () => {
+httpServer.listen(3000, () => {
   console.log("App listening on http://localhost:3000");
 });

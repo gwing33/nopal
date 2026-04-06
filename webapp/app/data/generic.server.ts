@@ -1,4 +1,4 @@
-import { RecordId } from "surrealdb";
+import Surreal, { RecordId } from "surrealdb";
 import { getDb } from "./db.server";
 
 export type AllQueryOptions = {
@@ -136,6 +136,24 @@ export async function defineTable(name: string) {
   return await query(
     `DEFINE TABLE IF NOT EXISTS ${name} TYPE ANY SCHEMALESS PERMISSIONS NONE`
   );
+}
+
+export async function remove(tb: string, id: string) {
+  const db = await getDb();
+  if (!db) {
+    console.error("Database not initialized");
+    return undefined;
+  }
+
+  try {
+    const result = await db.delete(new RecordId(tb, id));
+    return result;
+  } catch (err) {
+    console.error("Failed to delete data:", err);
+  } finally {
+    await db.close();
+  }
+  return undefined;
 }
 
 export async function upsert(name: string, record: any) {

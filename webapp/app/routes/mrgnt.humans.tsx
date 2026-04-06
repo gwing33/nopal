@@ -38,12 +38,20 @@ export async function action({ request }: ActionFunctionArgs) {
         const role = formData.get("role") as Role;
         const result = await createHuman({ email, name, role });
         if (!result) {
-          return { ok: false, error: "Failed to create human.", intent: "create" };
+          return {
+            ok: false,
+            error: "Failed to create human.",
+            intent: "create",
+          };
         }
         return { ok: true, error: null, intent: "create" };
       } catch (err) {
         console.error(err);
-        return { ok: false, error: "Failed to create human.", intent: "create" };
+        return {
+          ok: false,
+          error: "Failed to create human.",
+          intent: "create",
+        };
       }
     }
 
@@ -55,12 +63,20 @@ export async function action({ request }: ActionFunctionArgs) {
         const role = formData.get("role") as Role;
         const result = await updateHuman(id, { email, name, role });
         if (!result) {
-          return { ok: false, error: "Failed to update human.", intent: "update" };
+          return {
+            ok: false,
+            error: "Failed to update human.",
+            intent: "update",
+          };
         }
         return { ok: true, error: null, intent: "update" };
       } catch (err) {
         console.error(err);
-        return { ok: false, error: "Failed to update human.", intent: "update" };
+        return {
+          ok: false,
+          error: "Failed to update human.",
+          intent: "update",
+        };
       }
     }
 
@@ -71,7 +87,11 @@ export async function action({ request }: ActionFunctionArgs) {
         return { ok: true, error: null, intent: "delete" };
       } catch (err) {
         console.error(err);
-        return { ok: false, error: "Failed to delete human.", intent: "delete" };
+        return {
+          ok: false,
+          error: "Failed to delete human.",
+          intent: "delete",
+        };
       }
     }
 
@@ -175,9 +195,11 @@ export default function MrgntHumans() {
         {actionData && !actionData.ok && actionData.error && (
           <p className="text-red-500 text-sm">{actionData.error}</p>
         )}
-        {deleteFetcher.data && !deleteFetcher.data.ok && deleteFetcher.data.error && (
-          <p className="text-red-500 text-sm">{deleteFetcher.data.error}</p>
-        )}
+        {deleteFetcher.data &&
+          !deleteFetcher.data.ok &&
+          deleteFetcher.data.error && (
+            <p className="text-red-500 text-sm">{deleteFetcher.data.error}</p>
+          )}
 
         {/*
           key=... forces React to remount the form whenever the selection
@@ -235,25 +257,28 @@ export default function MrgntHumans() {
             </select>
           </div>
 
-          <div className="flex flex-row gap-4 items-center">
+          <div>
             <button type="submit" className="btn-primary">
               {isEditing ? "Update" : "Save"}
             </button>
-
-            {isEditing && (
-              <deleteFetcher.Form method="post">
-                <input type="hidden" name="intent" value="delete" />
-                <input type="hidden" name="id" value={selectedHuman._id} />
-                <button
-                  type="submit"
-                  className="text-red-500 text-sm underline hover:no-underline"
-                >
-                  Delete
-                </button>
-              </deleteFetcher.Form>
-            )}
           </div>
         </Form>
+
+        {isEditing && (
+          <deleteFetcher.Form
+            method="post"
+            className="flex flex-row gap-4 items-center"
+          >
+            <input type="hidden" name="intent" value="delete" />
+            <input type="hidden" name="id" value={selectedHuman._id} />
+            <button
+              type="submit"
+              className="text-red-500 text-sm underline hover:no-underline"
+            >
+              Delete
+            </button>
+          </deleteFetcher.Form>
+        )}
       </div>
     </div>
   );
