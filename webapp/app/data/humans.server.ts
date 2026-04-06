@@ -5,6 +5,7 @@ import {
   query,
   select,
   formatRecord,
+  upsert,
 } from "./generic.server";
 
 export type Role = "Super" | "Admin" | "Human";
@@ -33,4 +34,27 @@ export async function getHumanByEmail(
 
   const record = result?.[0]?.[0] || undefined;
   return record ? formatRecord(record) : undefined;
+}
+
+export async function createHuman(data: {
+  email: string;
+  name: string;
+  role: Role;
+}): Promise<Human | undefined> {
+  const result = await upsert("humans", data);
+  const record = Array.isArray(result) ? result[0] : result;
+  return record ? formatRecord(record as unknown as Human) : undefined;
+}
+
+export async function updateHuman(
+  id: string,
+  data: { email: string; name: string; role: Role }
+): Promise<Human | undefined> {
+  const result = await upsert(`humans:${id}`, data);
+  const record = Array.isArray(result) ? result[0] : result;
+  return record ? formatRecord(record as unknown as Human) : undefined;
+}
+
+export async function deleteHuman(id: string): Promise<void> {
+  await query(`DELETE type::thing('humans', $id);`, { id });
 }

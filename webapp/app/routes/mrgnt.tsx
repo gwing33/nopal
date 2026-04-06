@@ -19,6 +19,11 @@ export default function Mrgnt() {
                   +Materials & Assemblies
                 </Link>
               </li>
+              <li>
+                <Link to="/mrgnt/humans" className="link">
+                  +Humans
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
