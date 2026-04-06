@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { Input } from "../components/Input";
+import { Layout } from "../components/Layout";
 import { useLoaderData, useActionData, Form } from "react-router";
 import {
   data,
@@ -38,22 +38,29 @@ export async function action({ request }: ActionFunctionArgs) {
   await authenticator.authenticate("TOTP", request);
 }
 
-export default function MrgntLogin() {
+export default function Login() {
   let { authError } = useLoaderData<typeof loader>();
   let actionData = useActionData<typeof action>();
 
   return (
-    <div>
-      <h1 className="font-bold mb-4"># MRGNT Login</h1>
-      <Form method="POST" className="w-72 flex flex-col gap-4">
-        <Input label="Email" name="email" required />
-        <div>
-          <button className="btn-secondary" type="submit">
-            Send Code
-          </button>
-        </div>
-      </Form>
-      <span>{actionData?.error ?? authError}</span>
-    </div>
+    <Layout>
+      <div className="container mx-auto px-4 py-12">
+        <h1 className="font-bold mb-4">Login</h1>
+        <Form method="POST" className="w-72 flex flex-col gap-4 good-box p-4">
+          <Input
+            label="Email"
+            name="email"
+            required
+            className={"border border-gray-300 rounded px-2 py-1"}
+          />
+          <div>
+            <button className="btn-secondary" type="submit">
+              Send Code
+            </button>
+          </div>
+        </Form>
+        <span>{actionData?.error ?? authError}</span>
+      </div>
+    </Layout>
   );
 }

@@ -6,7 +6,7 @@ import { syncAllDatabases } from "../data/notion/sync.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUser(request);
-  if (!user) return redirect("/mrgnt/login");
+  if (!user) return redirect("/login");
   return { user };
 }
 

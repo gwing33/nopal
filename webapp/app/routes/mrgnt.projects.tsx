@@ -26,7 +26,7 @@ import { generateProjectName } from "../util/generateProjectName";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUser(request);
-  if (!user) return redirect("/mrgnt/login");
+  if (!user) return redirect("/login");
 
   const [projectsResult, humansResult] = await Promise.all([
     getProjects(),
@@ -41,7 +41,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: ActionFunctionArgs) {
   const user = await getUser(request);
-  if (!user) return redirect("/mrgnt/login");
+  if (!user) return redirect("/login");
 
   const actorId = user._id;
   const formData = await request.formData();

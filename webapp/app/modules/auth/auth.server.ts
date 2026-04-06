@@ -13,9 +13,9 @@ authenticator.use(
     {
       secret: process.env.ENCRYPTION_SECRET || "NOT_A_STRONG_SECRET",
       magicLinkPath: "/mrgnt/magic-link",
-      emailSentRedirect: "/mrgnt/verify",
+      emailSentRedirect: "/verify",
       successRedirect: "/mrgnt",
-      failureRedirect: "/mrgnt/login",
+      failureRedirect: "/login",
       sendTOTP: async ({ email, code, magicLink }) => {
         await sendEmail({
           to: [email],
@@ -25,7 +25,7 @@ authenticator.use(
       },
     },
     async ({ email, request }) => {
-      const human = getHumanByEmail(email);
+      const human = await getHumanByEmail(email);
       if (!human) throw new Error("No account found for that email address.");
       // Set user in session; strategy will catch this Response, add _totp clearing cookie, and re-throw
       const session = await sessionStorage.getSession(

@@ -127,7 +127,7 @@ async function checkChannelAccess(
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUser(request);
-  if (!user) return redirect("/mrgnt/login");
+  if (!user) return redirect("/login");
 
   const url = new URL(request.url);
   const threadId =
@@ -237,7 +237,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: ActionFunctionArgs) {
   const user = await getUser(request);
-  if (!user) return redirect("/mrgnt/login");
+  if (!user) return redirect("/login");
 
   const botToken = process.env.DISCORD_BOT_TOKEN;
   const channelId = process.env.DISCORD_CHANNEL_ID;

@@ -9,6 +9,7 @@ import {
   getAuthEmail,
 } from "../modules/auth/auth.server";
 import { Input } from "../components/Input";
+import { Layout } from "../components/Layout";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUser(request);
@@ -16,7 +17,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const authEmail = getAuthEmail(request);
   const authError = getAuthError(request);
-  if (!authEmail) return redirect("/mrgnt/login");
+  if (!authEmail) return redirect("/login");
 
   return data({ authError });
 }
@@ -30,26 +31,33 @@ export default function Verify() {
   const { authError } = useLoaderData<typeof loader>();
 
   return (
-    <div>
-      <h1 className="font-bold mb-4"># MRGNT Login</h1>
-      <Form method="POST" className="w-72 flex flex-col gap-4">
-        <Input label="Code" name="code" required />
-        <div>
-          <button className="btn-secondary" type="submit">
-            Continue
-          </button>
-        </div>
-      </Form>
-      <div className="mt-8">
-        ...or{" "}
-        <Form method="POST" className="inline-flex">
-          <button className="link" type="submit">
-            request new code
-          </button>
+    <Layout>
+      <div className="container mx-auto px-4 py-12">
+        <h1 className="font-bold mb-4">Verify Login Code</h1>
+        <Form method="POST" className="w-72 flex flex-col gap-4 good-box p-4">
+          <Input
+            label="Code"
+            name="code"
+            required
+            className="border border-gray-300 rounded px-2 py-1"
+          />
+          <div>
+            <button className="btn-secondary" type="submit">
+              Continue
+            </button>
+          </div>
         </Form>
-        .
+        <div className="mt-8">
+          ...or{" "}
+          <Form method="POST" className="inline-flex">
+            <button className="link" type="submit">
+              request new code
+            </button>
+          </Form>
+          .
+        </div>
+        <span>{authError}</span>
       </div>
-      <span>{authError}</span>
-    </div>
+    </Layout>
   );
 }

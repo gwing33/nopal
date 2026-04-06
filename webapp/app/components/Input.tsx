@@ -12,6 +12,7 @@ type InputProps = {
   required?: boolean;
   onFocus?: FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
   onBlur?: FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
+  className?: string;
 };
 
 export function Input(props: InputProps) {
@@ -26,6 +27,7 @@ export function Input(props: InputProps) {
     onBlur: props.onBlur,
     autoComplete: "off",
     required: props.required,
+    className: props.className,
   };
 
   return (

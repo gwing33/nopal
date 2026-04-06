@@ -21,7 +21,7 @@ import { Input } from "../components/Input";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUser(request);
-  if (!user) return redirect("/mrgnt/login");
+  if (!user) return redirect("/login");
   const humans = await getHumans();
   return { humans: humans?.data ?? [] };
 }
