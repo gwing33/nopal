@@ -108,6 +108,9 @@ type Pages = {
   "/mrgnt/magic-link": {
     params: {};
   };
+  "/mrgnt/projects": {
+    params: {};
+  };
   "/mrgnt/discord": {
     params: {};
   };
@@ -155,7 +158,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/tools/erv-calculator" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/scc-demo" | "/contact" | "/explore" | "/good/s" | "/health" | "/health/:key?" | "/about" | "/mrgnt" | "/mrgnt/magic-link" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/logout" | "/mrgnt/verify" | "/mrgnt/login" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
+    page: "/" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/tools/erv-calculator" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/scc-demo" | "/contact" | "/explore" | "/good/s" | "/health" | "/health/:key?" | "/about" | "/mrgnt" | "/mrgnt/magic-link" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/logout" | "/mrgnt/verify" | "/mrgnt/login" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
   };
   "routes/tools.frames-volume-calc.tsx": {
     id: "routes/tools.frames-volume-calc";
@@ -267,11 +270,15 @@ type RouteFiles = {
   };
   "routes/mrgnt.tsx": {
     id: "routes/mrgnt";
-    page: "/mrgnt" | "/mrgnt/magic-link" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/logout" | "/mrgnt/verify" | "/mrgnt/login" | "/mrgnt/gbs";
+    page: "/mrgnt" | "/mrgnt/magic-link" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/logout" | "/mrgnt/verify" | "/mrgnt/login" | "/mrgnt/gbs";
   };
   "routes/mrgnt.magic-link.tsx": {
     id: "routes/mrgnt.magic-link";
     page: "/mrgnt/magic-link";
+  };
+  "routes/mrgnt.projects.tsx": {
+    id: "routes/mrgnt.projects";
+    page: "/mrgnt/projects";
   };
   "routes/mrgnt.discord.tsx": {
     id: "routes/mrgnt.discord";
@@ -370,6 +377,7 @@ type RouteModules = {
   "routes/about": typeof import("./app/routes/about.tsx");
   "routes/mrgnt": typeof import("./app/routes/mrgnt.tsx");
   "routes/mrgnt.magic-link": typeof import("./app/routes/mrgnt.magic-link.tsx");
+  "routes/mrgnt.projects": typeof import("./app/routes/mrgnt.projects.tsx");
   "routes/mrgnt.discord": typeof import("./app/routes/mrgnt.discord.tsx");
   "routes/mrgnt._index": typeof import("./app/routes/mrgnt._index.tsx");
   "routes/mrgnt.humans": typeof import("./app/routes/mrgnt.humans.tsx");
