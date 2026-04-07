@@ -156,7 +156,7 @@ export async function remove(tb: string, id: string) {
   return undefined;
 }
 
-export async function upsert(name: string, record: any) {
+export async function upsert(name: string | RecordId, record: any) {
   const db = await getDb();
   if (!db) {
     console.error("Database not initialized");

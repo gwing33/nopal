@@ -92,7 +92,7 @@ export async function updateProject(
   const existing = await getProjectById(id);
   if (!existing) return undefined;
 
-  const result = await upsert(`projects:${id}`, {
+  const result = await upsert(new RecordId("projects", id), {
     ...existing,
     ...fields,
     updatedAt: new Date().toISOString(),
