@@ -106,3 +106,11 @@ export async function updateProject(
 export async function deleteProject(id: string): Promise<void> {
   await remove("projects", id);
 }
+
+export async function getProjectsByHumanId(
+  humanId: string
+): Promise<Project[]> {
+  const result = await getProjects();
+  const all = result?.data ?? [];
+  return all.filter((p) => p.humans.some((h) => h.humanId === humanId));
+}

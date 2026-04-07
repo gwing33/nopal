@@ -169,16 +169,28 @@ export default function MrgntProjects() {
   // Project name (controlled so the generator can populate it)
   const [projectName, setProjectName] = useState<string>("");
 
-  // Sync dynamic state whenever the selected project changes
+  // Sync form state when the selected project changes
   useEffect(() => {
     setProjectName(selectedProject?.name ?? "");
     setProjectHumans(selectedProject?.humans ?? []);
     setProjectTimeline(selectedProject?.timeline ?? []);
     setCostMin(selectedProject?.costRange?.[0] ?? 0);
     setCostMax(selectedProject?.costRange?.[1] ?? 0);
-    setPendingHumanId(humans[0]?._id ?? "");
     setPendingRole("Client");
-  }, [selectedProject, humans]);
+  }, [selectedProject]);
+
+  // Keep pendingHumanId pointing at a valid human when the list changes
+  useEffect(() => {
+    setPendingHumanId(humans[0]?._id ?? "");
+  }, [humans]);
+
+  // Keep selectedProject in sync with fresh loader data after an update action
+  useEffect(() => {
+    if (!selectedProject) return;
+    const fresh = projects.find((p) => p._id === selectedProject._id);
+    if (fresh && fresh !== selectedProject) setSelectedProject(fresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projects]);
 
   // Clear selection after a successful delete
   useEffect(() => {

@@ -16,7 +16,7 @@ import { getHumanByEmail } from "../data/humans.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUser(request);
-  if (user) return redirect("/mrgnt");
+  if (user) return redirect("/fruits");
 
   const authError = getAuthError(request);
   return data({ authError });

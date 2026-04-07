@@ -14,7 +14,7 @@ authenticator.use(
       secret: process.env.ENCRYPTION_SECRET || "NOT_A_STRONG_SECRET",
       magicLinkPath: "/mrgnt/magic-link",
       emailSentRedirect: "/verify",
-      successRedirect: "/mrgnt",
+      successRedirect: "/fruits",
       failureRedirect: "/login",
       sendTOTP: async ({ email, code, magicLink }) => {
         await sendEmail({

@@ -88,6 +88,9 @@ type Pages = {
   "/explore": {
     params: {};
   };
+  "/fruits": {
+    params: {};
+  };
   "/good/s": {
     params: {};
   };
@@ -158,7 +161,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/tools/erv-calculator" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/scc-demo" | "/contact" | "/explore" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/magic-link" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
+    page: "/" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/tools/erv-calculator" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/magic-link" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
   };
   "routes/tools.frames-volume-calc.tsx": {
     id: "routes/tools.frames-volume-calc";
@@ -251,6 +254,10 @@ type RouteFiles = {
   "routes/_index.tsx": {
     id: "routes/_index";
     page: "/";
+  };
+  "routes/fruits.tsx": {
+    id: "routes/fruits";
+    page: "/fruits";
   };
   "routes/good.s.tsx": {
     id: "routes/good.s";
@@ -371,6 +378,7 @@ type RouteModules = {
   "routes/contact": typeof import("./app/routes/contact.tsx");
   "routes/explore": typeof import("./app/routes/explore.tsx");
   "routes/_index": typeof import("./app/routes/_index.tsx");
+  "routes/fruits": typeof import("./app/routes/fruits.tsx");
   "routes/good.s": typeof import("./app/routes/good.s.tsx");
   "routes/health": typeof import("./app/routes/health.tsx");
   "routes/health.($key)": typeof import("./app/routes/health.($key).tsx");

@@ -13,7 +13,7 @@ import { Layout } from "../components/Layout";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUser(request);
-  if (user) return redirect("/mrgnt");
+  if (user) return redirect("/fruits");
 
   const authEmail = getAuthEmail(request);
   const authError = getAuthError(request);
