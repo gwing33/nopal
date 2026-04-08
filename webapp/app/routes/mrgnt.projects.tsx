@@ -18,7 +18,7 @@ import {
   type ProjectHuman,
   type ProjectRole,
   type ProjectType,
-  type Timeline,
+  type Phases,
 } from "../data/projects.server";
 import { getHumans, type Human } from "../data/humans.server";
 import { Input } from "../components/Input";
@@ -52,7 +52,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const northStar = formData.get("northStar") as string;
     const type = formData.get("type") as ProjectType;
     const address = formData.get("address") as string;
-    const timelineJson = formData.get("timelineJson") as string;
+    const phasesJson = formData.get("phasesJson") as string;
     const costMin = Number(formData.get("costMin") ?? 0);
     const costMax = Number(formData.get("costMax") ?? 0);
     const humansJson = formData.get("humansJson") as string;
@@ -62,7 +62,7 @@ export async function action({ request }: ActionFunctionArgs) {
       northStar,
       type,
       address,
-      timeline: (timelineJson ? JSON.parse(timelineJson) : []) as Timeline,
+      timeline: (phasesJson ? JSON.parse(phasesJson) : []) as Timeline,
       costRange: [costMin, costMax] as [number, number],
       humans,
       actorId,
@@ -162,7 +162,7 @@ export default function MrgntProjects() {
   const [costMax, setCostMax] = useState<number>(0);
 
   // Timeline phases
-  const [projectTimeline, setProjectTimeline] = useState<Timeline>([]);
+  const [projectPhases, setProjectPhases] = useState<Phases>([]);
   const [pendingPhaseStart, setPendingPhaseStart] = useState<string>("");
   const [pendingPhaseEnd, setPendingPhaseEnd] = useState<string>("");
 
@@ -173,7 +173,7 @@ export default function MrgntProjects() {
   useEffect(() => {
     setProjectName(selectedProject?.name ?? "");
     setProjectHumans(selectedProject?.humans ?? []);
-    setProjectTimeline(selectedProject?.timeline ?? []);
+    setProjectPhases(selectedProject?.phases ?? []);
     setCostMin(selectedProject?.costRange?.[0] ?? 0);
     setCostMax(selectedProject?.costRange?.[1] ?? 0);
     setPendingRole("Client");
@@ -216,16 +216,13 @@ export default function MrgntProjects() {
 
   function addPhase() {
     if (!pendingPhaseStart && !pendingPhaseEnd) return;
-    setProjectTimeline((prev) => [
-      ...prev,
-      [pendingPhaseStart, pendingPhaseEnd],
-    ]);
+    setProjectPhases((prev) => [...prev, [pendingPhaseStart, pendingPhaseEnd]]);
     setPendingPhaseStart("");
     setPendingPhaseEnd("");
   }
 
   function removePhase(index: number) {
-    setProjectTimeline((prev) => prev.filter((_, i) => i !== index));
+    setProjectPhases((prev) => prev.filter((_, i) => i !== index));
   }
 
   return (
@@ -336,8 +333,8 @@ export default function MrgntProjects() {
           />
           <input
             type="hidden"
-            name="timelineJson"
-            value={JSON.stringify(projectTimeline)}
+            name="phasesJson"
+            value={JSON.stringify(projectPhases)}
           />
 
           {/* ── Name ── */}
@@ -408,9 +405,9 @@ export default function MrgntProjects() {
           <div className="flex flex-col gap-2">
             <span className="text-sm">Timeline</span>
 
-            {projectTimeline.length > 0 && (
+            {projectPhases.length > 0 && (
               <ul className="flex flex-col gap-1">
-                {projectTimeline.map((phase, i) => (
+                {projectPhases.map((phase, i) => (
                   <li
                     key={i}
                     className="flex flex-row items-center justify-between text-sm rounded px-3 py-2"

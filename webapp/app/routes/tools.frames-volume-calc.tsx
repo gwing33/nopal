@@ -198,7 +198,7 @@ export default function FramesVolumeCalc() {
             </div>
           </div>
 
-          {/* Timeline Frames List */}
+          {/* Frames List */}
           <div className="relative mb-6 pl-8">
             {/* Vertical line — from center of first dot to center of last dot */}
             {frames.length > 1 && (

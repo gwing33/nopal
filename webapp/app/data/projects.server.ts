@@ -19,7 +19,7 @@ export type ProjectHuman = {
 };
 
 /** Array of [startDate, endDate] phase pairs */
-export type Timeline = [string, string][];
+export type Phases = [string, string][];
 
 /** [minCost, maxCost] */
 export type CostRange = [number, number];
@@ -29,7 +29,7 @@ export type Project = Data & {
   northStar: string;
   type: ProjectType;
   address: string;
-  timeline: Timeline;
+  phases: Phases;
   humans: ProjectHuman[];
   costRange: CostRange;
   createdAt: string;
@@ -45,7 +45,7 @@ export type ProjectInput = {
   northStar: string;
   type: ProjectType;
   address: string;
-  timeline: Timeline;
+  phases: Phases;
   humans: ProjectHuman[];
   costRange: CostRange;
   actorId: string;

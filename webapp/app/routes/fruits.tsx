@@ -42,12 +42,12 @@ function ProjectCard({
 }) {
   const [costMin, costMax] = project.costRange ?? [0, 0];
   const hasCost = costMin > 0 || costMax > 0;
-  const hasTimeline = project.timeline?.length > 0;
+  const hasPhases = project.phases?.length > 0;
 
   // Overall start = first phase start, overall end = last phase end
-  const firstStart = hasTimeline ? project.timeline[0][0] : null;
-  const lastEnd = hasTimeline
-    ? project.timeline[project.timeline.length - 1][1]
+  const firstStart = hasPhases ? project.phases[0][0] : null;
+  const lastEnd = hasPhases
+    ? project.phases[project.phases.length - 1][1]
     : null;
 
   return (
@@ -97,7 +97,7 @@ function ProjectCard({
       />
 
       {/* Timeline */}
-      {hasTimeline && firstStart && lastEnd && (
+      {hasPhases && firstStart && lastEnd && (
         <div
           className="flex gap-4 text-xs"
           style={{ color: "var(--text-subtle)" }}
