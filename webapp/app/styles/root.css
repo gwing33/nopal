@@ -929,6 +929,78 @@ body {
   }
 }
 
+/* === App Layout === */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--foreground);
+  background: var(--farground);
+  display: flex;
+  flex-direction: column;
+  padding: 28px 16px;
+  gap: 40px;
+  @media (prefers-color-scheme: dark) {
+    background: var(--dark-farground);
+    border-color: var(--dark-foreground);
+  }
+}
+
+.app-topnav {
+  display: none;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+}
+
+@media (max-width: 799px) {
+  .app-layout {
+    flex-direction: column;
+  }
+
+  .app-sidebar {
+    display: none;
+  }
+
+  .app-topnav {
+    display: block;
+    background: var(--farground);
+    border-bottom: 1px solid var(--foreground);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    @media (prefers-color-scheme: dark) {
+      background: var(--dark-farground);
+      border-color: var(--dark-foreground);
+    }
+  }
+
+  .app-topnav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+  }
+
+  .app-topnav-menu {
+    border-top: 1px solid var(--foreground);
+    padding: 8px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    @media (prefers-color-scheme: dark) {
+      border-color: var(--dark-foreground);
+    }
+  }
+}
+
 /* Background Classes */
 .midground-bg {
   background-color: var(--midground);

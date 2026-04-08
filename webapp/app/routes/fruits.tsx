@@ -1,13 +1,13 @@
 // app/routes/fruits.tsx
 import type { LoaderFunctionArgs } from "react-router";
-import { redirect, useLoaderData, Link } from "react-router";
+import { redirect, useLoaderData } from "react-router";
 import { getUser } from "../modules/auth/auth.server";
 import {
   getProjectsByHumanId,
   type Project,
   type ProjectRole,
 } from "../data/projects.server";
-import { Layout } from "../components/Layout";
+import { AppLayout } from "../components/AppLayout";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUser(request);
@@ -33,7 +33,13 @@ function formatCost(value: number): string {
   return value > 0 ? `$${value.toLocaleString()}` : "";
 }
 
-function ProjectCard({ project, myRole }: { project: Project; myRole: ProjectRole }) {
+function ProjectCard({
+  project,
+  myRole,
+}: {
+  project: Project;
+  myRole: ProjectRole;
+}) {
   const [costMin, costMax] = project.costRange ?? [0, 0];
   const hasCost = costMin > 0 || costMax > 0;
   const hasTimeline = project.timeline?.length > 0;
@@ -45,7 +51,10 @@ function ProjectCard({ project, myRole }: { project: Project; myRole: ProjectRol
     : null;
 
   return (
-    <div className="good-box flex flex-col gap-3 p-5" style={{ maxWidth: "420px" }}>
+    <div
+      className="good-box flex flex-col gap-3 p-5"
+      style={{ maxWidth: "420px" }}
+    >
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <h2 className="font-bold text-lg leading-tight">{project.name}</h2>
@@ -83,11 +92,16 @@ function ProjectCard({ project, myRole }: { project: Project; myRole: ProjectRol
         <div className="text-sm font-mono">{project.address}</div>
       )}
 
-      <hr style={{ borderColor: "currentColor", opacity: 0.12, margin: "0 -4px" }} />
+      <hr
+        style={{ borderColor: "currentColor", opacity: 0.12, margin: "0 -4px" }}
+      />
 
       {/* Timeline */}
       {hasTimeline && firstStart && lastEnd && (
-        <div className="flex gap-4 text-xs" style={{ color: "var(--text-subtle)" }}>
+        <div
+          className="flex gap-4 text-xs"
+          style={{ color: "var(--text-subtle)" }}
+        >
           <span>
             <span className="font-bold" style={{ color: "var(--purple)" }}>
               Start
@@ -122,7 +136,7 @@ export default function Fruits() {
   const { user, projects } = useLoaderData<typeof loader>();
 
   return (
-    <Layout>
+    <AppLayout>
       <div className="container mx-auto px-4 py-12">
         {/* Greeting */}
         <div className="mb-8 flex items-center justify-between">
@@ -134,9 +148,6 @@ export default function Fruits() {
               Here are the projects you're part of.
             </p>
           </div>
-          <Link to="/logout" className="link text-sm">
-            log out →
-          </Link>
         </div>
 
         {/* Project list */}
@@ -150,7 +161,9 @@ export default function Fruits() {
         ) : (
           <div className="flex flex-col gap-4">
             {projects.map((project) => {
-              const myHuman = project.humans.find((h) => h.humanId === user._id);
+              const myHuman = project.humans.find(
+                (h) => h.humanId === user._id
+              );
               return (
                 <ProjectCard
                   key={project._id}
@@ -162,6 +175,6 @@ export default function Fruits() {
           </div>
         )}
       </div>
-    </Layout>
+    </AppLayout>
   );
 }
