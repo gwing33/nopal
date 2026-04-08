@@ -52,7 +52,13 @@ const logoutStyle: React.CSSProperties = {
   display: "block",
 };
 
-export function AppLayout({ children }: { children?: ReactNode }) {
+export function AppLayout({
+  children,
+  isAdmin,
+}: {
+  children?: ReactNode;
+  isAdmin?: boolean;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
@@ -76,6 +82,15 @@ export function AppLayout({ children }: { children?: ReactNode }) {
           <NavLink to="/fruits" prefetch="intent" end style={navLinkStyle}>
             Dashboard
           </NavLink>
+          {isAdmin && (
+            <NavLink
+              to="/fruits/all-projects"
+              prefetch="intent"
+              style={navLinkStyle}
+            >
+              All Projects
+            </NavLink>
+          )}
         </nav>
 
         <div style={{ marginTop: "auto" }}>
@@ -123,6 +138,16 @@ export function AppLayout({ children }: { children?: ReactNode }) {
             >
               Dashboard
             </NavLink>
+            {isAdmin && (
+              <NavLink
+                to="/fruits/all-projects"
+                prefetch="intent"
+                style={navLinkStyle}
+                onClick={closeMenu}
+              >
+                All Projects
+              </NavLink>
+            )}
             <Link to="/logout" style={logoutStyle} onClick={closeMenu}>
               log out
             </Link>

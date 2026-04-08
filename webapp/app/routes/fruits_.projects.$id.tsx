@@ -16,10 +16,12 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   const project = await getProjectById(id);
   if (!project) throw new Response("Project not found", { status: 404 });
 
+  const isAdmin = user.role === "Admin" || user.role === "Super";
   const myHuman = project.humans.find((h) => h.humanId === user._id);
-  if (!myHuman) throw new Response("Not authorized", { status: 403 });
+  if (!myHuman && !isAdmin)
+    throw new Response("Not authorized", { status: 403 });
 
-  return { user, project, myRole: myHuman.role };
+  return { user, project, myRole: (myHuman?.role ?? "Admin") as ProjectRole };
 }
 
 function roleLabel(role: ProjectRole): string {
@@ -52,7 +54,10 @@ export default function FruitsProjectDetail() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-12" style={{ maxWidth: "640px" }}>
+      <div
+        className="container mx-auto px-4 py-12"
+        style={{ maxWidth: "640px" }}
+      >
         {/* Back link */}
         <div className="mb-8">
           <Link

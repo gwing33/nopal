@@ -1,54 +1,44 @@
-// app/routes/fruits.tsx
+// app/routes/fruits_.all-projects.tsx
 import type { LoaderFunctionArgs } from "react-router";
-import { redirect, useLoaderData, Link } from "react-router";
+import { redirect, data, useLoaderData, Link } from "react-router";
 import { getUser } from "../modules/auth/auth.server";
-import {
-  getProjectsByHumanId,
-  type Project,
-  type ProjectRole,
-} from "../data/projects.server";
+import { getProjects, type Project } from "../data/projects.server";
 import { AppLayout } from "../components/AppLayout";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUser(request);
   if (!user) return redirect("/login");
 
-  const projects = await getProjectsByHumanId(user._id);
+  if (user.role !== "Admin" && user.role !== "Super") {
+    throw data("Forbidden", { status: 403 });
+  }
 
-  return { user, projects };
+  const result = await getProjects();
+  return { user, projects: result?.data ?? [] };
 }
 
-function roleLabel(role: ProjectRole): string {
-  return role;
-}
-
-function formatDate(iso: string): string {
+function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", {
     month: "short",
     year: "numeric",
   });
 }
 
-function formatCost(value: number): string {
-  return value > 0 ? `$${value.toLocaleString()}` : "";
+function formatCost(v: number) {
+  return v > 0 ? `$${v.toLocaleString()}` : "";
 }
 
-function ProjectCard({
-  project,
-  myRole,
-}: {
-  project: Project;
-  myRole: ProjectRole;
-}) {
+function ProjectCard({ project }: { project: Project }) {
   const [costMin, costMax] = project.costRange ?? [0, 0];
   const hasCost = costMin > 0 || costMax > 0;
   const hasPhases = project.phases?.length > 0;
 
-  // Overall start = first phase start, overall end = last phase end
   const firstStart = hasPhases ? (project.phases[0] as any)[0] : null;
   const lastEnd = hasPhases
     ? (project.phases[project.phases.length - 1] as any)[1]
     : null;
+
+  const teamCount = project.humans?.length ?? 0;
 
   return (
     <div
@@ -70,16 +60,6 @@ function ProjectCard({
         </span>
       </div>
 
-      {/* Role badge */}
-      <div>
-        <span
-          className="text-xs font-mono"
-          style={{ color: "var(--purple-light)" }}
-        >
-          your role: {roleLabel(myRole)}
-        </span>
-      </div>
-
       {/* North star */}
       {project.northStar && (
         <p className="text-sm" style={{ color: "var(--text-subtle)" }}>
@@ -95,6 +75,22 @@ function ProjectCard({
       <hr
         style={{ borderColor: "currentColor", opacity: 0.12, margin: "0 -4px" }}
       />
+
+      {/* Team count */}
+      <div className="text-xs" style={{ color: "var(--text-subtle)" }}>
+        {teamCount} {teamCount === 1 ? "team member" : "team members"}
+      </div>
+
+      {/* Budget */}
+      {hasCost && (
+        <div className="text-xs" style={{ color: "var(--text-subtle)" }}>
+          <span className="font-bold" style={{ color: "var(--purple)" }}>
+            Budget
+          </span>{" "}
+          {formatCost(costMin)}
+          {costMax > costMin ? ` – ${formatCost(costMax)}` : ""}
+        </div>
+      )}
 
       {/* Timeline */}
       {hasPhases && firstStart && lastEnd && (
@@ -117,37 +113,33 @@ function ProjectCard({
           </span>
         </div>
       )}
-
-      {/* Cost */}
-      {hasCost && (
-        <div className="text-xs" style={{ color: "var(--text-subtle)" }}>
-          <span className="font-bold" style={{ color: "var(--purple)" }}>
-            Budget
-          </span>{" "}
-          {formatCost(costMin)}
-          {costMax > costMin ? ` – ${formatCost(costMax)}` : ""}
-        </div>
-      )}
     </div>
   );
 }
 
-export default function Fruits() {
-  const { user, projects } = useLoaderData<typeof loader>();
+export default function AllProjects() {
+  const { projects } = useLoaderData<typeof loader>();
 
   return (
-    <AppLayout isAdmin={user.role === "Admin" || user.role === "Super"}>
+    <AppLayout isAdmin={true}>
       <div className="container mx-auto px-4 py-12">
-        {/* Greeting */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="font-bold text-2xl mb-1">
-              Hello, {user.name ?? user.email}
-            </h1>
-            <p className="text-sm" style={{ color: "var(--text-subtle)" }}>
-              Here are the projects you're part of.
-            </p>
-          </div>
+        {/* Back link */}
+        <div className="mb-8">
+          <Link
+            to="/fruits"
+            className="text-sm font-mono"
+            style={{ color: "var(--purple-light)" }}
+          >
+            ← back to dashboard
+          </Link>
+        </div>
+
+        {/* Page heading */}
+        <div className="mb-8">
+          <h1 className="font-bold text-2xl mb-1">All Projects</h1>
+          <p className="text-sm" style={{ color: "var(--text-subtle)" }}>
+            Admin view · all projects in the system
+          </p>
         </div>
 
         {/* Project list */}
@@ -156,32 +148,24 @@ export default function Fruits() {
             className="good-box p-6 text-sm"
             style={{ color: "var(--text-subtle)", maxWidth: "420px" }}
           >
-            You haven't been assigned to any projects yet.
+            No projects in the system yet.
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            {projects.map((project) => {
-              const myHuman = project.humans.find(
-                (h) => h.humanId === user._id
-              );
-              return (
-                <Link
-                  key={project._id}
-                  to={`/fruits/projects/${project._id}`}
-                  prefetch="intent"
-                  style={{
-                    display: "block",
-                    textDecoration: "none",
-                    color: "inherit",
-                  }}
-                >
-                  <ProjectCard
-                    project={project}
-                    myRole={myHuman?.role ?? "Client"}
-                  />
-                </Link>
-              );
-            })}
+            {projects.map((project) => (
+              <Link
+                key={project._id}
+                to={`/fruits/projects/${project._id}`}
+                prefetch="intent"
+                style={{
+                  display: "block",
+                  textDecoration: "none",
+                  color: "inherit",
+                }}
+              >
+                <ProjectCard project={project} />
+              </Link>
+            ))}
           </div>
         )}
       </div>
