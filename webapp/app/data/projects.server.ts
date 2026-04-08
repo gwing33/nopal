@@ -18,8 +18,9 @@ export type ProjectHuman = {
   role: ProjectRole;
 };
 
-/** Array of [startDate, endDate] phase pairs */
-export type Phases = [string, string][];
+export type Phase = { startDate: string; endDate: string; status: string };
+
+export type Phases = Phase[];
 
 /** [minCost, maxCost] */
 export type CostRange = [number, number];

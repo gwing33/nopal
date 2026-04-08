@@ -1,6 +1,6 @@
 // app/routes/fruits.tsx
 import type { LoaderFunctionArgs } from "react-router";
-import { redirect, useLoaderData } from "react-router";
+import { redirect, useLoaderData, Link } from "react-router";
 import { getUser } from "../modules/auth/auth.server";
 import {
   getProjectsByHumanId,
@@ -45,9 +45,9 @@ function ProjectCard({
   const hasPhases = project.phases?.length > 0;
 
   // Overall start = first phase start, overall end = last phase end
-  const firstStart = hasPhases ? project.phases[0][0] : null;
+  const firstStart = hasPhases ? (project.phases[0] as any)[0] : null;
   const lastEnd = hasPhases
-    ? project.phases[project.phases.length - 1][1]
+    ? (project.phases[project.phases.length - 1] as any)[1]
     : null;
 
   return (
@@ -165,11 +165,21 @@ export default function Fruits() {
                 (h) => h.humanId === user._id
               );
               return (
-                <ProjectCard
+                <Link
                   key={project._id}
-                  project={project}
-                  myRole={myHuman?.role ?? "Client"}
-                />
+                  to={`/fruits/projects/${project._id}`}
+                  prefetch="intent"
+                  style={{
+                    display: "block",
+                    textDecoration: "none",
+                    color: "inherit",
+                  }}
+                >
+                  <ProjectCard
+                    project={project}
+                    myRole={myHuman?.role ?? "Client"}
+                  />
+                </Link>
               );
             })}
           </div>
