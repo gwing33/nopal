@@ -13,10 +13,10 @@ interface DbConfig {
 const DEFAULT_CONFIG: DbConfig = {
   url: process.env.DATABASE_URL || "http://localhost:8080/rpc",
   namespace: "nopal",
-  database: process.env.NODE_ENV == "production" ? "prod" : "dev",
+  database: "opuntia",
   auth: {
-    username: process.env.DATABASE_USERNAME || "",
-    password: process.env.DATABASE_PASSWORD || "",
+    username: process.env.SURREAL_USER || "",
+    password: process.env.SURREAL_PASS || "",
   },
 };
 
