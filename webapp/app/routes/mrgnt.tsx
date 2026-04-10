@@ -12,7 +12,6 @@ import { getUser } from "../modules/auth/auth.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUser(request);
-  console.log("Current user", { user });
   if (!user) return redirect("/login");
   if (user.role != "Admin" && user.role != "Super") {
     throw data("Forbidden", { status: 403 });

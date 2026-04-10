@@ -88,6 +88,14 @@ export function AppLayout({ children }: { children?: ReactNode }) {
               All Projects
             </NavLink>
           )}
+          <NavLink
+            to="/fruits/good-building-system"
+            prefetch="intent"
+            end
+            style={navLinkStyle}
+          >
+            Good Building
+          </NavLink>
         </nav>
 
         <div style={{ marginTop: "auto" }}>

@@ -44,7 +44,7 @@ down:
 	docker compose down
 
 ## Destroy all data and start fresh.
-reset: clean dev
+reset: clean dev migrate seed
 
 ## Stop all containers and delete all named volumes — all data will be lost.
 clean:

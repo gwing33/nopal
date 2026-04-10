@@ -14,6 +14,17 @@ type Pages = {
   "/": {
     params: {};
   };
+  "/fruits/good-building-system/:id": {
+    params: {
+      "id": string;
+    };
+  };
+  "/fruits/good-building-system/new": {
+    params: {};
+  };
+  "/fruits/good-building-system": {
+    params: {};
+  };
   "/tools/frames-volume-calc": {
     params: {};
   };
@@ -169,7 +180,19 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/magic-link" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
+    page: "/" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/fruits/good-building-system" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/magic-link" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
+  };
+  "routes/fruits_.good-building-system_.$id.tsx": {
+    id: "routes/fruits_.good-building-system_.$id";
+    page: "/fruits/good-building-system/:id";
+  };
+  "routes/fruits_.good-building-system_.new.tsx": {
+    id: "routes/fruits_.good-building-system_.new";
+    page: "/fruits/good-building-system/new";
+  };
+  "routes/fruits_.good-building-system.tsx": {
+    id: "routes/fruits_.good-building-system";
+    page: "/fruits/good-building-system";
   };
   "routes/tools.frames-volume-calc.tsx": {
     id: "routes/tools.frames-volume-calc";
@@ -371,6 +394,9 @@ type RouteFiles = {
 
 type RouteModules = {
   "root": typeof import("./app/root.tsx");
+  "routes/fruits_.good-building-system_.$id": typeof import("./app/routes/fruits_.good-building-system_.$id.tsx");
+  "routes/fruits_.good-building-system_.new": typeof import("./app/routes/fruits_.good-building-system_.new.tsx");
+  "routes/fruits_.good-building-system": typeof import("./app/routes/fruits_.good-building-system.tsx");
   "routes/tools.frames-volume-calc": typeof import("./app/routes/tools.frames-volume-calc.tsx");
   "routes/tools.grade-differential": typeof import("./app/routes/tools.grade-differential.tsx");
   "routes/tools.building-envelope": typeof import("./app/routes/tools.building-envelope.tsx");
