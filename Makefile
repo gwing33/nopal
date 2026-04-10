@@ -8,6 +8,7 @@ SURREAL_PASS ?= root
 ## Run unit tests and deploy the webapp to Fly.io.
 deploy:
 	cd webapp && npm test -- --run
+	cd db && fly deploy
 	cd webapp && fly deploy
 
 ## Start the database and webapp together, then seed the database.
