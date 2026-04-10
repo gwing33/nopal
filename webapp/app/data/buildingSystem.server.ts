@@ -22,7 +22,6 @@ export type Block = MarkdownBlock;
 
 export type BsCategory = Data & {
   name: string;
-  slug: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -72,12 +71,12 @@ export async function getCategoryById(
   return record ? formatRecord(record) : undefined;
 }
 
-export async function getCategoryBySlug(
-  slug: string
+export async function getCategoryByName(
+  name: string
 ): Promise<BsCategory | undefined> {
   const result = await query<[BsCategory[]]>(
-    `SELECT * FROM bs_categories WHERE slug = $slug LIMIT 1;`,
-    { slug }
+    `SELECT * FROM bs_categories WHERE name = $name LIMIT 1;`,
+    { name }
   );
 
   const record = result?.[0]?.[0] || undefined;
@@ -97,6 +96,15 @@ export async function createCategory(
 
   const record = Array.isArray(result) ? result[0] : result;
   return record ? formatRecord(record as unknown as BsCategory) : undefined;
+}
+
+export async function getOrCreateCategoryByName(
+  name: string
+): Promise<BsCategory | undefined> {
+  const existing = await getCategoryByName(name);
+  if (existing) return existing;
+
+  return createCategory({ name, slug: name });
 }
 
 export async function updateCategory(

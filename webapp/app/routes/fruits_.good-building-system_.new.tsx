@@ -2,7 +2,10 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import { getUser } from "../modules/auth/auth.server";
-import { createBuildingSystem } from "../data/buildingSystem.server";
+import {
+  createBuildingSystem,
+  getOrCreateCategoryByName,
+} from "../data/buildingSystem.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUser(request);
@@ -11,14 +14,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const isAdmin = user.role === "Admin" || user.role === "Super";
   if (!isAdmin) return redirect("/fruits/good-building-system");
 
+  const unpublishedCategory = await getOrCreateCategoryByName("Unpublished");
+
   const bs = await createBuildingSystem({
-    name: "Untitled",
+    name: "",
     slug: "",
     blocks: [{ type: "markdown", md: "" }],
-    categoryId: "",
+    categoryId: unpublishedCategory?.id?.id || "",
   });
 
-  if (!bs) throw new Response("Failed to create building system", { status: 500 });
+  if (!bs)
+    throw new Response("Failed to create building system", { status: 500 });
 
   return redirect(`/fruits/good-building-system/${bs._id}`);
 }
