@@ -96,6 +96,11 @@ export function AppLayout({ children }: { children?: ReactNode }) {
           >
             Good Building
           </NavLink>
+          {isAdmin && (
+            <NavLink to="/fruits/styles" prefetch="intent" style={navLinkStyle}>
+              Styles
+            </NavLink>
+          )}
         </nav>
 
         <div style={{ marginTop: "auto" }}>
@@ -151,6 +156,16 @@ export function AppLayout({ children }: { children?: ReactNode }) {
                 onClick={closeMenu}
               >
                 All Projects
+              </NavLink>
+            )}
+            {isAdmin && (
+              <NavLink
+                to="/fruits/styles"
+                prefetch="intent"
+                style={navLinkStyle}
+                onClick={closeMenu}
+              >
+                Styles
               </NavLink>
             )}
             <Link to="/logout" style={logoutStyle} onClick={closeMenu}>

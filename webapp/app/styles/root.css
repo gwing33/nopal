@@ -161,6 +161,12 @@ body {
   }
 }
 
+.good-white-box {
+  border: 1px solid var(--foreground);
+  background: var(--white);
+  border-radius: 4px;
+}
+
 /* Five Factors */
 .five-factors {
   @apply font-mono;
@@ -602,6 +608,12 @@ body {
   color: var(--red-light);
   @media (prefers-color-scheme: dark) {
     color: var(--red);
+  }
+}
+.subtle-text {
+  color: var(--text-subtle);
+  @media (prefers-color-scheme: dark) {
+    color: var(--text-subtle-dark);
   }
 }
 

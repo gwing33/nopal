@@ -62,6 +62,9 @@ type Pages = {
       "id": string;
     };
   };
+  "/fruits/styles": {
+    params: {};
+  };
   "/good/sunny-no1": {
     params: {};
   };
@@ -180,7 +183,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/fruits/good-building-system" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/magic-link" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
+    page: "/" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/fruits/good-building-system" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/fruits/styles" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/magic-link" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
   };
   "routes/fruits_.good-building-system_.$id.tsx": {
     id: "routes/fruits_.good-building-system_.$id";
@@ -237,6 +240,10 @@ type RouteFiles = {
   "routes/assemblies.$id.tsx": {
     id: "routes/assemblies.$id";
     page: "/assemblies/:id";
+  };
+  "routes/fruits_.styles.tsx": {
+    id: "routes/fruits_.styles";
+    page: "/fruits/styles";
   };
   "routes/good.sunny-no1.tsx": {
     id: "routes/good.sunny-no1";
@@ -408,6 +415,7 @@ type RouteModules = {
   "routes/tools.do-not-use": typeof import("./app/routes/tools.do-not-use.tsx");
   "routes/good.consulting": typeof import("./app/routes/good.consulting.tsx");
   "routes/assemblies.$id": typeof import("./app/routes/assemblies.$id.tsx");
+  "routes/fruits_.styles": typeof import("./app/routes/fruits_.styles.tsx");
   "routes/good.sunny-no1": typeof import("./app/routes/good.sunny-no1.tsx");
   "routes/sunny-home-no1": typeof import("./app/routes/sunny-home-no1.tsx");
   "routes/good.building": typeof import("./app/routes/good.building.tsx");
