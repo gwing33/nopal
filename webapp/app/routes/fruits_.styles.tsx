@@ -1,6 +1,7 @@
 // app/routes/fruits_.styles.tsx
-import { PublicAccessBlockConfiguration$ } from "@aws-sdk/client-s3";
 import { AppLayout } from "../components/AppLayout";
+import { Badge } from "../components/Badge";
+import { Chip } from "../components/Chip";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -450,16 +451,7 @@ export default function FruitsStyles() {
                   <h2 className="font-bold text-lg leading-tight">
                     Example Project
                   </h2>
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full shrink-0"
-                    style={{
-                      background: "var(--farground)",
-                      border: "1px solid var(--midground)",
-                      color: "var(--purple-light)",
-                    }}
-                  >
-                    Residential
-                  </span>
+                  <Chip>Residential</Chip>
                 </div>
                 <span className="text-xs font-mono purple-light-text">
                   your role: Architect
@@ -495,91 +487,58 @@ export default function FruitsStyles() {
         <Section id="badges" title="05 · Badges & Chips">
           <div className="flex flex-col gap-6">
             <p className="text-xs font-mono subtle-text">
-              No dedicated badge component — compose inline with{" "}
-              <Code>{"<span>"}</Code> + Tailwind + CSS vars.
+              Use <Code>{"<Chip />"}</Code> for category / filter tags and{" "}
+              <Code>{"<Badge variant='...' />"}</Code> for semantic status
+              labels. Both live in <Code>components/</Code>.
             </p>
 
-            <Row>
-              <Tile>
-                <Label>Type chip — rounded-full, midground border</Label>
-                <span
-                  className="text-xs px-2 py-0.5 rounded-full"
-                  style={{
-                    background: "var(--farground)",
-                    border: "1px solid var(--midground)",
-                    color: "var(--purple-light)",
-                  }}
-                >
-                  Residential
-                </span>
-              </Tile>
+            <div>
+              <div className="text-xs font-mono mb-3 font-bold purple-text">
+                {"<Chip>"} — category tag, neutral outline style
+              </div>
+              <Row>
+                <Tile>
+                  <Label>default</Label>
+                  <Chip>Residential</Chip>
+                </Tile>
+                <Tile>
+                  <Label>active</Label>
+                  <Chip active>Commercial</Chip>
+                </Tile>
+                <Tile>
+                  <Label>interactive (onClick)</Label>
+                  <Chip onClick={() => {}}>Toggle me</Chip>
+                </Tile>
+              </Row>
+            </div>
 
-              <Tile>
-                <Label>Status pill — farground bg, midground border</Label>
-                <span
-                  className="px-1.5 py-0.5 rounded-full font-mono text-xs"
-                  style={{
-                    background: "var(--farground)",
-                    border: "1px solid var(--midground)",
-                    color: "var(--purple-light)",
-                  }}
-                >
-                  In Progress
-                </span>
-              </Tile>
-
-              <Tile>
-                <Label>Success — green</Label>
-                <span
-                  className="text-xs px-1.5 py-0.5 rounded-full font-mono"
-                  style={{
-                    background: "var(--green-light)",
-                    color: "var(--purple)",
-                  }}
-                >
-                  Complete
-                </span>
-              </Tile>
-
-              <Tile>
-                <Label>Warning — yellow</Label>
-                <span
-                  className="text-xs px-2 py-0.5 rounded-full font-mono"
-                  style={{
-                    background: "var(--yellow)",
-                    color: "var(--purple)",
-                  }}
-                >
-                  Pending
-                </span>
-              </Tile>
-
-              <Tile>
-                <Label>Danger — red-light</Label>
-                <span
-                  className="text-xs px-2 py-0.5 rounded-full font-mono"
-                  style={{
-                    background: "var(--red-light)",
-                    color: "var(--red)",
-                  }}
-                >
-                  Overdue
-                </span>
-              </Tile>
-
-              <Tile>
-                <Label>Purple accent — moon</Label>
-                <span
-                  className="text-xs px-2 py-0.5 rounded-full font-mono"
-                  style={{
-                    background: "var(--moon)",
-                    color: "var(--purple)",
-                  }}
-                >
-                  New
-                </span>
-              </Tile>
-            </Row>
+            <div>
+              <div className="text-xs font-mono mb-3 font-bold purple-text">
+                {"<Badge variant='...'>"} — semantic status indicator
+              </div>
+              <Row>
+                <Tile>
+                  <Label>neutral (default)</Label>
+                  <Badge>In Progress</Badge>
+                </Tile>
+                <Tile>
+                  <Label>success</Label>
+                  <Badge variant="success">Complete</Badge>
+                </Tile>
+                <Tile>
+                  <Label>warning</Label>
+                  <Badge variant="warning">Pending</Badge>
+                </Tile>
+                <Tile>
+                  <Label>danger</Label>
+                  <Badge variant="danger">Overdue</Badge>
+                </Tile>
+                <Tile>
+                  <Label>accent</Label>
+                  <Badge variant="accent">New</Badge>
+                </Tile>
+              </Row>
+            </div>
 
             <div className="good-box p-4">
               <div className="text-xs font-mono mb-3 font-bold purple-text">
