@@ -1,6 +1,7 @@
 // app/components/AppLayout.tsx
 import { Link, NavLink } from "react-router";
 import { ReactNode, useState, useCallback } from "react";
+import { useUser } from "../hooks/useUser";
 import nopalLogo from "../images/nopal-v2.svg";
 
 function HamburgerIcon({ open }: { open: boolean }) {
@@ -52,13 +53,9 @@ const logoutStyle: React.CSSProperties = {
   display: "block",
 };
 
-export function AppLayout({
-  children,
-  isAdmin,
-}: {
-  children?: ReactNode;
-  isAdmin?: boolean;
-}) {
+export function AppLayout({ children }: { children?: ReactNode }) {
+  const user = useUser();
+  const isAdmin = user?.role === "Admin" || user?.role === "Super";
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 

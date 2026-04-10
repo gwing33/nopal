@@ -121,7 +121,7 @@ export default function AllProjects() {
   const { projects } = useLoaderData<typeof loader>();
 
   return (
-    <AppLayout isAdmin={true}>
+    <AppLayout>
       <div className="container mx-auto px-4 py-12">
         {/* Back link */}
         <div className="mb-8">

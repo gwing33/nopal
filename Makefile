@@ -1,9 +1,14 @@
-.PHONY: dev seed migrate down reset clean
+.PHONY: dev seed migrate down reset clean deploy
 
 SURREAL_USER ?= root
 SURREAL_PASS ?= root
 
 # ── Full-stack dev lifecycle ───────────────────────────────────────────────────
+
+## Run unit tests and deploy the webapp to Fly.io.
+deploy:
+	cd webapp && npm test -- --run
+	cd webapp && fly deploy
 
 ## Start the database and webapp together, then seed the database.
 dev:

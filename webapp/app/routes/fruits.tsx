@@ -136,7 +136,7 @@ export default function Fruits() {
   const { user, projects } = useLoaderData<typeof loader>();
 
   return (
-    <AppLayout isAdmin={user.role === "Admin" || user.role === "Super"}>
+    <AppLayout>
       <div className="container mx-auto px-4 py-12">
         {/* Greeting */}
         <div className="mb-8 flex items-center justify-between">
