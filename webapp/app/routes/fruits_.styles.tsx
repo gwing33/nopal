@@ -1,7 +1,17 @@
 // app/routes/fruits_.styles.tsx
+import type { LoaderFunctionArgs } from "react-router";
+import { redirect, data } from "react-router";
+import { getUser } from "../modules/auth/auth.server";
 import { AppLayout } from "../components/AppLayout";
 import { Badge } from "../components/Badge";
 import { Chip } from "../components/Chip";
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const user = await getUser(request);
+  if (!user) return redirect("/login");
+
+  return { user };
+}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -702,7 +712,7 @@ export default function FruitsStyles() {
                     borderRadius: "4px",
                     fontWeight: 700,
                     color: "var(--purple)",
-                    background: "var(--midground)",
+                    background: "var(--farground)",
                     display: "inline-block",
                   }}
                 >
@@ -713,7 +723,7 @@ export default function FruitsStyles() {
               <Tile>
                 <Label>NavLink default — text-subtle, transparent bg</Label>
                 <div
-                  className="subtle-text"
+                  className="purple-light-text"
                   style={{
                     fontSize: "0.875rem",
                     padding: "8px 12px",
@@ -805,23 +815,6 @@ export default function FruitsStyles() {
                   </span>{" "}
                   — standard page wrapper (always use)
                 </div>
-              </div>
-            </div>
-
-            <div className="good-box p-5">
-              <div className="text-xs font-mono mb-3 font-bold purple-text">
-                App layout breakpoint
-              </div>
-              <div className="text-xs font-mono subtle-text">
-                <span className="purple-text" style={{ fontWeight: 600 }}>
-                  {"≥ 800px"}
-                </span>{" "}
-                — sidebar visible, <Code>.app-sidebar</Code> shown
-                <br />
-                <span className="purple-text" style={{ fontWeight: 600 }}>
-                  {"< 800px"}
-                </span>{" "}
-                — top nav with hamburger, <Code>.app-topnav</Code> shown
               </div>
             </div>
           </div>

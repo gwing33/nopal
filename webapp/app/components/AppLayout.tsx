@@ -1,8 +1,10 @@
 // app/components/AppLayout.tsx
 import { Link, NavLink } from "react-router";
 import { ReactNode, useState, useCallback } from "react";
-import { useUser } from "../hooks/useUser";
+import { useUser, permissions } from "../hooks/useUser";
 import nopalLogo from "../images/nopal-v2.svg";
+import nopalDarkLogo from "../images/nopal-dark-v2.svg";
+import { useSchemePref } from "../hooks/useSchemePref";
 
 function HamburgerIcon({ open }: { open: boolean }) {
   return (
@@ -31,58 +33,53 @@ function HamburgerIcon({ open }: { open: boolean }) {
   );
 }
 
+const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+  `text-sm font-mono px-3 py-2 rounded block ${
+    isActive ? "font-bold" : "purple-light-text"
+  }`;
+
 const navLinkStyle = ({ isActive }: { isActive: boolean }) =>
   ({
-    fontSize: "0.875rem",
-    padding: "8px 12px",
-    borderRadius: "4px",
-    fontWeight: isActive ? 700 : 400,
-    color: isActive ? "var(--purple)" : "var(--text-subtle)",
-    background: isActive ? "var(--midground)" : "transparent",
+    ...(isActive
+      ? { color: "var(--purple)", background: "var(--farground)" }
+      : {}),
     textDecoration: "none",
     transition: "background 150ms, color 150ms",
-    display: "block",
   } as React.CSSProperties);
 
-const logoutStyle: React.CSSProperties = {
-  fontSize: "0.875rem",
-  padding: "8px 12px",
-  borderRadius: "4px",
-  color: "var(--text-subtle)",
-  textDecoration: "none",
-  display: "block",
-};
-
 export function AppLayout({ children }: { children?: ReactNode }) {
+  const schemePref = useSchemePref();
+  const isDark = schemePref === "dark";
   const user = useUser();
-  const isAdmin = user?.role === "Admin" || user?.role === "Super";
+  const isSuper = permissions.isSuper(user);
+  const isAdmin = permissions.isAdmin(user);
+
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   return (
     <div className="app-layout">
-      {/* ===== SIDEBAR (desktop ≥800px) ===== */}
+      {/* ===== SIDEBAR (desktop ≥860px) ===== */}
       <aside className="app-sidebar">
-        <Link
-          to="/fruits"
-          prefetch="intent"
-          style={{ display: "inline-block" }}
-        >
-          <img
-            src={nopalLogo}
-            alt="Nopal"
-            style={{ width: "80px", display: "block" }}
-          />
+        <Link to="/" prefetch="intent">
+          <img src={isDark ? nopalDarkLogo : nopalLogo} alt="nopal" />
         </Link>
 
         <nav style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          <NavLink to="/fruits" prefetch="intent" end style={navLinkStyle}>
+          <NavLink
+            to="/fruits"
+            prefetch="intent"
+            end
+            className={navLinkClass}
+            style={navLinkStyle}
+          >
             Dashboard
           </NavLink>
           {isAdmin && (
             <NavLink
               to="/fruits/all-projects"
               prefetch="intent"
+              className={navLinkClass}
               style={navLinkStyle}
             >
               All Projects
@@ -92,25 +89,35 @@ export function AppLayout({ children }: { children?: ReactNode }) {
             to="/fruits/good-building-system"
             prefetch="intent"
             end
+            className={navLinkClass}
             style={navLinkStyle}
           >
             Good Building
           </NavLink>
-          {isAdmin && (
-            <NavLink to="/fruits/styles" prefetch="intent" style={navLinkStyle}>
+          {isSuper && (
+            <NavLink
+              to="/fruits/styles"
+              prefetch="intent"
+              className={navLinkClass}
+              style={navLinkStyle}
+            >
               Styles
             </NavLink>
           )}
         </nav>
 
         <div style={{ marginTop: "auto" }}>
-          <Link to="/logout" style={logoutStyle}>
+          <Link
+            to="/logout"
+            className="text-sm font-mono px-3 py-2 rounded block purple-light-text"
+            style={{ textDecoration: "none" }}
+          >
             log out
           </Link>
         </div>
       </aside>
 
-      {/* ===== TOP NAV (mobile <800px) ===== */}
+      {/* ===== TOP NAV (mobile <860px) ===== */}
       <div className="app-topnav">
         <div className="app-topnav-bar">
           <Link to="/fruits" prefetch="intent">
@@ -123,11 +130,11 @@ export function AppLayout({ children }: { children?: ReactNode }) {
           <button
             onClick={() => setMenuOpen((o) => !o)}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
+            className="purple-text"
             style={{
               background: "none",
               border: "none",
               cursor: "pointer",
-              color: "var(--purple)",
               padding: "4px",
               display: "flex",
               alignItems: "center",
@@ -143,6 +150,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
               to="/fruits"
               prefetch="intent"
               end
+              className={navLinkClass}
               style={navLinkStyle}
               onClick={closeMenu}
             >
@@ -152,6 +160,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
               <NavLink
                 to="/fruits/all-projects"
                 prefetch="intent"
+                className={navLinkClass}
                 style={navLinkStyle}
                 onClick={closeMenu}
               >
@@ -162,13 +171,19 @@ export function AppLayout({ children }: { children?: ReactNode }) {
               <NavLink
                 to="/fruits/styles"
                 prefetch="intent"
+                className={navLinkClass}
                 style={navLinkStyle}
                 onClick={closeMenu}
               >
                 Styles
               </NavLink>
             )}
-            <Link to="/logout" style={logoutStyle} onClick={closeMenu}>
+            <Link
+              to="/logout"
+              className="text-sm font-mono px-3 py-2 rounded block subtle-text"
+              style={{ textDecoration: "none" }}
+              onClick={closeMenu}
+            >
               log out
             </Link>
           </div>

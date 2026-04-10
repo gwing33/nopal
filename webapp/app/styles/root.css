@@ -954,7 +954,7 @@ body {
   background: var(--farground);
   display: flex;
   flex-direction: column;
-  padding: 28px 16px;
+  padding: 24px 1rem;
   gap: 40px;
   @media (prefers-color-scheme: dark) {
     background: var(--dark-farground);
@@ -972,7 +972,7 @@ body {
   overflow: auto;
 }
 
-@media (max-width: 799px) {
+@media (max-width: 859px) {
   .app-layout {
     flex-direction: column;
   }

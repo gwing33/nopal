@@ -240,8 +240,7 @@ function CategoryPicker({
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           placeholder="Search categories…"
-          className="w-full text-sm font-mono outline-none bg-transparent"
-          style={{ color: "var(--purple)" }}
+          className="w-full text-sm font-mono outline-none bg-transparent purple-text"
           onKeyDown={(e) => {
             if (e.key === "Escape") onClose();
             if (e.key === "Enter" && showAddNew) {
@@ -258,11 +257,10 @@ function CategoryPicker({
         <li>
           <button
             type="button"
-            className="w-full text-left px-3 py-2 text-sm font-mono flex items-center gap-2"
+            className="w-full text-left px-3 py-2 text-sm font-mono flex items-center gap-2 subtle-text"
             style={{
               background:
                 currentCategoryId === "" ? "var(--midground)" : "transparent",
-              color: "var(--text-subtle)",
             }}
             onClick={() => {
               onSelect("");
@@ -287,10 +285,9 @@ function CategoryPicker({
             <li key={cat._id}>
               <button
                 type="button"
-                className="w-full text-left px-3 py-2 text-sm font-mono flex items-center gap-2"
+                className="w-full text-left px-3 py-2 text-sm font-mono flex items-center gap-2 purple-text"
                 style={{
                   background: isActive ? "var(--midground)" : "transparent",
-                  color: "var(--purple)",
                 }}
                 onClick={() => {
                   onSelect(cat._id);
@@ -311,8 +308,7 @@ function CategoryPicker({
           <li>
             <button
               type="button"
-              className="w-full text-left px-3 py-2 text-sm font-mono"
-              style={{ color: "var(--purple-light)" }}
+              className="w-full text-left px-3 py-2 text-sm font-mono purple-light-text"
               onClick={() => {
                 onAddNew(trimmedFilter);
                 onClose();
@@ -498,8 +494,7 @@ export default function GoodBuildingSystemDetail() {
         <div className="mb-8">
           <Link
             to="/fruits/good-building-system"
-            className="text-sm font-mono"
-            style={{ color: "var(--purple-light)" }}
+            className="text-sm font-mono purple-light-text"
           >
             ← back to good building
           </Link>
@@ -557,8 +552,8 @@ export default function GoodBuildingSystemDetail() {
         {/* ── Slug ──────────────────────────────────────────────────────── */}
         <div className="mb-10 flex items-center gap-0.5">
           <span
-            className="text-xs font-mono select-none"
-            style={{ color: "var(--text-subtle)", opacity: 0.5 }}
+            className="text-xs font-mono select-none subtle-text"
+            style={{ opacity: 0.5 }}
           >
             /
           </span>
@@ -576,10 +571,7 @@ export default function GoodBuildingSystemDetail() {
               }}
             />
           ) : (
-            <span
-              className="text-xs font-mono"
-              style={{ color: "var(--text-subtle)" }}
-            >
+            <span className="text-xs font-mono subtle-text">
               {effectiveSlug}
             </span>
           )}
@@ -599,12 +591,7 @@ export default function GoodBuildingSystemDetail() {
           isClient ? (
             <Suspense
               fallback={
-                <div
-                  className="text-sm"
-                  style={{ color: "var(--text-subtle)" }}
-                >
-                  Loading editor…
-                </div>
+                <div className="text-sm subtle-text">Loading editor…</div>
               }
             >
               <div
@@ -621,16 +608,12 @@ export default function GoodBuildingSystemDetail() {
               </div>
             </Suspense>
           ) : (
-            <div className="text-sm" style={{ color: "var(--text-subtle)" }}>
-              Loading editor…
-            </div>
+            <div className="text-sm subtle-text">Loading editor…</div>
           )
         ) : markdown ? (
           renderedMarkdown
         ) : (
-          <p className="text-sm" style={{ color: "var(--text-subtle)" }}>
-            No content yet.
-          </p>
+          <p className="text-sm subtle-text">No content yet.</p>
         )}
 
         {/* Saving indicator */}

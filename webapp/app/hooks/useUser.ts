@@ -12,3 +12,21 @@ export function useUser(): Human | null {
   }
   return null;
 }
+
+function isSuper(user: Human | null): boolean {
+  return user?.role === "Super";
+}
+
+function isAdmin(user: Human | null): boolean {
+  return user?.role === "Admin" || isSuper(user);
+}
+
+function isHuman(user: Human | null): boolean {
+  return user?.role === "Human";
+}
+
+export const permissions = {
+  isSuper,
+  isAdmin,
+  isHuman,
+};
