@@ -50,7 +50,7 @@ printf "${USER} and ${PASS}"
 # Locally the SurrealDB container has no shell, so the script runs on the host
 # and invokes /surreal through docker compose exec.
 if [ -n "$FLY_APP_NAME" ]; then
-  ENDPOINT="http://${FLY_APP_NAME}.flycast:8080"
+  ENDPOINT="${SURREAL_ENDPOINT:-http://${FLY_APP_NAME}.internal:8080}"
   _run_surreal() {
     /surreal sql \
       --endpoint "${ENDPOINT}" \

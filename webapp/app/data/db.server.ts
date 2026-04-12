@@ -15,8 +15,8 @@ const DEFAULT_CONFIG: DbConfig = {
   namespace: "nopal",
   database: "opuntia",
   auth: {
-    username: process.env.SURREAL_USER || "",
-    password: process.env.SURREAL_PASS || "",
+    username: process.env.DATABASE_USERNAME || "",
+    password: process.env.DATABASE_PASSWORD || "",
   },
 };
 
