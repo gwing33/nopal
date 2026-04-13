@@ -10,6 +10,7 @@ import {
 } from "../modules/auth/auth.server";
 import { Input } from "../components/Input";
 import { Layout } from "../components/Layout";
+import { Link } from "react-router";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUser(request);
@@ -17,9 +18,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const authEmail = getAuthEmail(request);
   const authError = getAuthError(request);
+
   if (!authEmail) return redirect("/login");
 
-  return data({ authError });
+  return data({ authEmail, authError });
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -28,35 +30,74 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function Verify() {
-  const { authError } = useLoaderData<typeof loader>();
+  const { authEmail, authError } = useLoaderData<typeof loader>();
+
+  const shouldRequestCode =
+    authError?.includes("expired") || authError?.includes("verification");
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12">
-        <h1 className="font-bold mb-4">Verify Login Code</h1>
-        <Form method="POST" className="w-72 flex flex-col gap-4 good-box p-4">
-          <Input
-            label="Code"
-            name="code"
-            required
-            className="border border-gray-300 rounded px-2 py-1"
-          />
-          <div>
-            <button className="btn-secondary" type="submit">
-              Continue
-            </button>
-          </div>
-        </Form>
-        <div className="mt-8">
-          ...or{" "}
-          <Form method="POST" className="inline-flex">
-            <button className="link" type="submit">
-              request new code
-            </button>
+      <div className="w-full max-w-96 mx-auto px-4 py-12">
+        <h1 className="text-3xl purple-light-text font-bold mb-2">
+          Verify Login Code
+        </h1>
+        <p className="italic mb-8">Check your email for "the code"</p>
+        <div className="w-auto flex flex-col gap-4 good-box p-4 text-xl">
+          <Form method="POST" className="flex flex-col gap-4">
+            <input type="hidden" value={authEmail} name="authEmail" />
+            <Input
+              label="Code"
+              name="code"
+              required
+              placeholder="123456"
+              className="border border-gray-300 rounded px-2 py-1"
+            />
+            {authError && !shouldRequestCode && (
+              <div className="red-text">{authError}</div>
+            )}
+            <div className="text-right">
+              <button className="btn-secondary" type="submit">
+                Continue
+              </button>
+            </div>
           </Form>
-          .
+          {authError?.includes("expired") ? (
+            <div className="text-lg red-text mt-2">
+              That code has expired, when you are ready{" "}
+              <Form method="POST" className="inline-flex">
+                <button className="link" type="submit">
+                  click here to request a new code
+                </button>
+              </Form>
+              .
+            </div>
+          ) : authError?.includes("verification") ? (
+            <div className="text-lg red-text mt-2">
+              We lost your session, when you are ready{" "}
+              <Form method="POST" className="inline-flex">
+                <button className="link" type="submit">
+                  click here to request a new code
+                </button>
+              </Form>
+              .
+            </div>
+          ) : (
+            <div className="text-lg text-right">
+              ...or{" "}
+              <Form method="POST" className="inline-flex">
+                <button className="link" type="submit">
+                  request new code
+                </button>
+              </Form>
+              .
+            </div>
+          )}
         </div>
-        <span>{authError}</span>
+        <div className="mt-8">
+          <Link to="/login" className="link">
+            ← Back to login
+          </Link>
+        </div>
       </div>
     </Layout>
   );

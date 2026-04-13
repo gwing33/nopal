@@ -30,11 +30,11 @@ export async function action({ request }: ActionFunctionArgs) {
   if (!user) {
     return data(
       { error: "No account found for that email address." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
-  // Strategy sends TOTP and throws redirect to /mrgnt/verify
+  // Strategy sends TOTP and throws redirect to /verify
   await authenticator.authenticate("TOTP", request);
 }
 
@@ -44,22 +44,24 @@ export default function Login() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12">
-        <h1 className="font-bold mb-4">Login</h1>
-        <Form method="POST" className="w-72 flex flex-col gap-4 good-box p-4">
+      <div className="w-full max-w-96 mx-auto px-4 py-12">
+        <h1 className="text-3xl purple-light-text font-bold mb-4">Login</h1>
+        <Form method="POST" className="flex flex-col gap-4 good-box p-4">
           <Input
             label="Email"
             name="email"
+            defaultValue=""
             required
+            placeholder="you@nature.yeah"
             className={"border border-gray-300 rounded px-2 py-1"}
           />
-          <div>
+          {actionData?.error && <div className="red-text">{authError}</div>}
+          <div className="text-right">
             <button className="btn-secondary" type="submit">
               Send Code
             </button>
           </div>
         </Form>
-        <span>{actionData?.error ?? authError}</span>
       </div>
     </Layout>
   );

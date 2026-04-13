@@ -12,10 +12,10 @@ authenticator.use(
   new TOTPStrategy(
     {
       secret: process.env.ENCRYPTION_SECRET || "NOT_A_STRONG_SECRET",
-      magicLinkPath: "/mrgnt/magic-link",
+      magicLinkPath: "/magic-link",
       emailSentRedirect: "/verify",
       successRedirect: "/fruits",
-      failureRedirect: "/login",
+      failureRedirect: "/verify",
       sendTOTP: async ({ email, code, magicLink }) => {
         await sendEmail({
           to: [email],
@@ -29,21 +29,21 @@ authenticator.use(
       if (!human) throw new Error("No account found for that email address.");
       // Set user in session; strategy will catch this Response, add _totp clearing cookie, and re-throw
       const session = await sessionStorage.getSession(
-        request.headers.get("cookie")
+        request.headers.get("cookie"),
       );
       session.set("user", human);
-      throw redirect("/mrgnt", {
+      throw redirect("/fruits", {
         headers: { "Set-Cookie": await sessionStorage.commitSession(session) },
       });
-    }
+    },
   ),
-  "TOTP"
+  "TOTP",
 );
 
 /** Get authenticated user from session, or null if not logged in */
 export async function getUser(request: Request): Promise<Human | null> {
   const session = await sessionStorage.getSession(
-    request.headers.get("cookie")
+    request.headers.get("cookie"),
   );
   return session.get("user") ?? null;
 }

@@ -101,6 +101,9 @@ type Pages = {
   "/tools/loads": {
     params: {};
   };
+  "/magic-link": {
+    params: {};
+  };
   "/scc-demo": {
     params: {};
   };
@@ -137,9 +140,6 @@ type Pages = {
     params: {};
   };
   "/mrgnt": {
-    params: {};
-  };
-  "/mrgnt/magic-link": {
     params: {};
   };
   "/mrgnt/projects": {
@@ -183,7 +183,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/fruits/good-building-system" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/fruits/styles" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/magic-link" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
+    page: "/" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/fruits/good-building-system" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/fruits/styles" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/magic-link" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
   };
   "routes/fruits_.good-building-system_.$id.tsx": {
     id: "routes/fruits_.good-building-system_.$id";
@@ -285,6 +285,10 @@ type RouteFiles = {
     id: "routes/tools.loads";
     page: "/tools/loads";
   };
+  "routes/magic-link.tsx": {
+    id: "routes/magic-link";
+    page: "/magic-link";
+  };
   "routes/scc-demo.tsx": {
     id: "routes/scc-demo";
     page: "/scc-demo";
@@ -335,11 +339,7 @@ type RouteFiles = {
   };
   "routes/mrgnt.tsx": {
     id: "routes/mrgnt";
-    page: "/mrgnt" | "/mrgnt/magic-link" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs";
-  };
-  "routes/mrgnt.magic-link.tsx": {
-    id: "routes/mrgnt.magic-link";
-    page: "/mrgnt/magic-link";
+    page: "/mrgnt" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs";
   };
   "routes/mrgnt.projects.tsx": {
     id: "routes/mrgnt.projects";
@@ -426,6 +426,7 @@ type RouteModules = {
   "routes/science.$id": typeof import("./app/routes/science.$id.tsx");
   "routes/stories.$id": typeof import("./app/routes/stories.$id.tsx");
   "routes/tools.loads": typeof import("./app/routes/tools.loads.tsx");
+  "routes/magic-link": typeof import("./app/routes/magic-link.tsx");
   "routes/scc-demo": typeof import("./app/routes/scc-demo.tsx");
   "routes/contact": typeof import("./app/routes/contact.tsx");
   "routes/explore": typeof import("./app/routes/explore.tsx");
@@ -439,7 +440,6 @@ type RouteModules = {
   "routes/about": typeof import("./app/routes/about.tsx");
   "routes/login": typeof import("./app/routes/login.tsx");
   "routes/mrgnt": typeof import("./app/routes/mrgnt.tsx");
-  "routes/mrgnt.magic-link": typeof import("./app/routes/mrgnt.magic-link.tsx");
   "routes/mrgnt.projects": typeof import("./app/routes/mrgnt.projects.tsx");
   "routes/mrgnt.discord": typeof import("./app/routes/mrgnt.discord.tsx");
   "routes/mrgnt._index": typeof import("./app/routes/mrgnt._index.tsx");

@@ -67,7 +67,7 @@ body {
 
 /* Buttons */
 .btn {
-  border-radius: 4px;
+  border-radius: 8px;
   display: inline-flex;
 }
 .btn-primary {
@@ -121,7 +121,7 @@ body {
 
 .good-box-boarder {
   border: 1px solid var(--foreground);
-  border-radius: 4px;
+  border-radius: 8px;
   @media (prefers-color-scheme: dark) {
     border-color: var(--dark-foreground);
   }
@@ -131,7 +131,7 @@ body {
 .good-box {
   border: 1px solid var(--foreground);
   background: var(--farground);
-  border-radius: 4px;
+  border-radius: 8px;
   hr {
     border-color: var(--foreground);
     @media (prefers-color-scheme: dark) {
@@ -164,7 +164,7 @@ body {
 .good-white-box {
   border: 1px solid var(--foreground);
   background: var(--white);
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 /* Five Factors */
@@ -228,7 +228,7 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 16px 8px;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     z-index: 1;
 
@@ -252,7 +252,7 @@ body {
     visibility: hidden;
     background: var(--purple-light);
     z-index: 2;
-    border-radius: 4px;
+    border-radius: 8px;
   }
 
   .dropdown-content li {
@@ -629,19 +629,21 @@ body {
 /* Scenes */
 .scene1 {
   min-height: 450px;
-  background: url("/app/images/home/ocotillo.svg") bottom left 30px no-repeat,
+  background:
+    url("/app/images/home/ocotillo.svg") bottom left 30px no-repeat,
     url("/app/images/home/pricklyPear.svg") bottom 10px left no-repeat,
     url("/app/images/home/home.svg") bottom right -20px no-repeat,
     url("/app/images/home/ground.svg") bottom -1px left / 50% no-repeat,
     url("/app/images/home/backRocks.svg") bottom -25px right 180px no-repeat;
 
   @media (prefers-color-scheme: dark) {
-    background: url("/app/images/home/ocotillo-dark.svg") bottom left 30px
-        no-repeat,
+    background:
+      url("/app/images/home/ocotillo-dark.svg") bottom left 30px no-repeat,
       url("/app/images/home/pricklyPear-dark.svg") bottom 10px left no-repeat,
       url("/app/images/home/home-dark.svg") bottom right -20px no-repeat,
       url("/app/images/home/ground-dark.svg") bottom left / 50% no-repeat,
-      url("/app/images/home/backRocks-dark.svg") bottom -25px right 180px no-repeat;
+      url("/app/images/home/backRocks-dark.svg") bottom -25px right 180px
+        no-repeat;
   }
 }
 
@@ -666,16 +668,17 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: url("/app/images/home/frontRocks.svg") bottom left / auto 100%
-      no-repeat,
+  background:
+    url("/app/images/home/frontRocks.svg") bottom left / auto 100% no-repeat,
     url("/app/images/home/pricklyPearFruit.svg") bottom left / auto 85%
       no-repeat,
     url("/app/images/home/homeShadow.svg") top 40px right 146px / auto 100%
       no-repeat;
 
   @media (prefers-color-scheme: dark) {
-    background: url("/app/images/home/frontRocks-dark.svg") bottom left / auto
-        100% no-repeat,
+    background:
+      url("/app/images/home/frontRocks-dark.svg") bottom left / auto 100%
+        no-repeat,
       url("/app/images/home/pricklyPearFruit-dark.svg") bottom left / auto 85%
         no-repeat,
       url("/app/images/home/homeShadow-dark.svg") top 40px right 146px / auto
@@ -1025,5 +1028,29 @@ body {
   border: 2px solid var(--midground);
   @media (prefers-color-scheme: dark) {
     border-color: var(--dark-midground);
+  }
+}
+
+.input-component {
+  input,
+  textarea {
+    color: var(--dark-farground);
+    background: var(--white);
+    border-color: var(--dark-foreground);
+    padding: 16px 8px;
+    border-radius: 8px;
+    outline: none;
+    @media (prefers-color-scheme: dark) {
+      background: var(--farground);
+      border-color: var(--foreground);
+    }
+    &:focus {
+      border-color: var(--pink);
+    }
+  }
+  label {
+    /*font-weight: bold;*/
+    /*font-size: 16px;*/
+    /*margin-bottom: 2px;*/
   }
 }
