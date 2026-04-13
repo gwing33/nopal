@@ -1,5 +1,6 @@
 import { Input } from "../components/Input";
 import { Layout } from "../components/Layout";
+import { Footer } from "../components/Footer";
 import { useLoaderData, useActionData, Form } from "react-router";
 import {
   data,
@@ -44,25 +45,28 @@ export default function Login() {
 
   return (
     <Layout>
-      <div className="w-full max-w-96 mx-auto px-4 py-12">
-        <h1 className="text-3xl purple-light-text font-bold mb-4">Login</h1>
-        <Form method="POST" className="flex flex-col gap-4 good-box p-4">
-          <Input
-            label="Email"
-            name="email"
-            defaultValue=""
-            required
-            placeholder="you@nature.yeah"
-            className={"border border-gray-300 rounded px-2 py-1"}
-          />
-          {actionData?.error && <div className="red-text">{authError}</div>}
-          <div className="text-right">
-            <button className="btn-secondary" type="submit">
-              Send Code
-            </button>
-          </div>
-        </Form>
+      <div className="scene1">
+        <div className="w-full max-w-96 mx-auto px-4 py-12">
+          <h1 className="text-3xl purple-light-text font-bold mb-4">Login</h1>
+          <Form method="POST" className="flex flex-col gap-4 good-box p-4">
+            <Input
+              label="Email"
+              name="email"
+              defaultValue=""
+              required
+              placeholder="you@nature.yeah"
+              className={"border border-gray-300 rounded px-2 py-1"}
+            />
+            {actionData?.error && <div className="red-text">{authError}</div>}
+            <div className="text-right">
+              <button className="btn-secondary" type="submit">
+                Send Code
+              </button>
+            </div>
+          </Form>
+        </div>
       </div>
+      <Footer></Footer>
     </Layout>
   );
 }
