@@ -210,12 +210,12 @@ function CategoryPicker({
   }, []);
 
   const filtered = categories.filter((c) =>
-    c.name.toLowerCase().includes(filter.toLowerCase())
+    c.name.toLowerCase().includes(filter.toLowerCase()),
   );
 
   const trimmedFilter = filter.trim();
   const exactMatch = categories.some(
-    (c) => c.name.toLowerCase() === trimmedFilter.toLowerCase()
+    (c) => c.name.toLowerCase() === trimmedFilter.toLowerCase(),
   );
   const showAddNew = trimmedFilter.length > 0 && !exactMatch;
 
@@ -409,7 +409,7 @@ export default function GoodBuildingSystemDetail() {
     titleSaveTimerRef.current = setTimeout(() => {
       metaFetcher.submit(
         { intent: "update-title", name, currentSlug: slugValue || bs.slug },
-        { method: "POST" }
+        { method: "POST" },
       );
     }, 1500);
   };
@@ -422,7 +422,7 @@ export default function GoodBuildingSystemDetail() {
     const name = titleRef.current?.textContent?.trim() || "Untitled";
     metaFetcher.submit(
       { intent: "update-title", name, currentSlug: slugValue || bs.slug },
-      { method: "POST" }
+      { method: "POST" },
     );
   };
 
@@ -454,7 +454,7 @@ export default function GoodBuildingSystemDetail() {
   const handleCategorySelect = (categoryId: string) => {
     categoryFetcher.submit(
       { intent: "update-category", categoryId },
-      { method: "POST" }
+      { method: "POST" },
     );
     setCategoryOpen(false);
   };
@@ -462,7 +462,7 @@ export default function GoodBuildingSystemDetail() {
   const handleAddNewCategory = (name: string) => {
     categoryFetcher.submit(
       { intent: "create-category", name },
-      { method: "POST" }
+      { method: "POST" },
     );
     setCategoryOpen(false);
   };
@@ -475,7 +475,7 @@ export default function GoodBuildingSystemDetail() {
       const blocks: Block[] = [{ type: "markdown", md }];
       blocksFetcherRef.current.submit(
         { intent: "update-blocks", blocks: JSON.stringify(blocks) },
-        { method: "POST" }
+        { method: "POST" },
       );
     }, 1500);
   }, []);

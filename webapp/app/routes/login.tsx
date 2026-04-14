@@ -55,7 +55,6 @@ export default function Login() {
               defaultValue=""
               required
               placeholder="you@nature.yeah"
-              className={"border border-gray-300 rounded px-2 py-1"}
             />
             {actionData?.error && <div className="red-text">{authError}</div>}
             <div className="text-right">

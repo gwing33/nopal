@@ -5,6 +5,7 @@ import { getUser } from "../modules/auth/auth.server";
 import { AppLayout } from "../components/AppLayout";
 import { Badge } from "../components/Badge";
 import { Chip } from "../components/Chip";
+import { Input } from "../components/Input";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUser(request);
@@ -591,34 +592,24 @@ export default function FruitsStyles() {
               <div>
                 <Label>{"<Input label='...' name='...' />"} — text field</Label>
                 <div className="flex flex-col">
-                  <label className="text-sm" htmlFor="demo-name">
-                    Project Name
-                  </label>
-                  <input
-                    id="demo-name"
+                  <Input
+                    label="Name"
                     type="text"
+                    defaultValue=""
                     placeholder="e.g. Smith Residence"
-                    autoComplete="off"
-                    style={{ maxHeight: "40px" }}
+                    name="demo-name"
                   />
                 </div>
               </div>
 
               <div>
-                <Label>
-                  {"<Input type='textarea' label='...' name='...' />"} —
-                  textarea
-                </Label>
-                <div className="flex flex-col">
-                  <label className="text-sm" htmlFor="demo-notes">
-                    Notes
-                  </label>
-                  <textarea
-                    id="demo-notes"
-                    placeholder="Additional details..."
-                    style={{ minHeight: "90px" }}
-                  />
-                </div>
+                <Input
+                  label="Description"
+                  type="textarea"
+                  defaultValue=""
+                  placeholder="Peaceful walk along a beach"
+                  name="demo-description"
+                />
               </div>
 
               <div>
