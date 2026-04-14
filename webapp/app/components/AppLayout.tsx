@@ -45,7 +45,7 @@ const navLinkStyle = ({ isActive }: { isActive: boolean }) =>
       : {}),
     textDecoration: "none",
     transition: "background 150ms, color 150ms",
-  } as React.CSSProperties);
+  }) as React.CSSProperties;
 
 export function AppLayout({ children }: { children?: ReactNode }) {
   const schemePref = useSchemePref();
@@ -74,6 +74,14 @@ export function AppLayout({ children }: { children?: ReactNode }) {
             style={navLinkStyle}
           >
             Dashboard
+          </NavLink>
+          <NavLink
+            to="/fruits/daily-log"
+            prefetch="intent"
+            className={navLinkClass}
+            style={navLinkStyle}
+          >
+            Daily Log
           </NavLink>
           {isAdmin && (
             <NavLink
@@ -122,7 +130,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
         <div className="app-topnav-bar">
           <Link to="/fruits" prefetch="intent">
             <img
-              src={nopalLogo}
+              src={isDark ? nopalDarkLogo : nopalLogo}
               alt="Nopal"
               style={{ width: "64px", display: "block" }}
             />
@@ -155,6 +163,15 @@ export function AppLayout({ children }: { children?: ReactNode }) {
               onClick={closeMenu}
             >
               Dashboard
+            </NavLink>
+            <NavLink
+              to="/fruits/daily-log"
+              prefetch="intent"
+              className={navLinkClass}
+              style={navLinkStyle}
+              onClick={closeMenu}
+            >
+              Daily Log
             </NavLink>
             {isAdmin && (
               <NavLink

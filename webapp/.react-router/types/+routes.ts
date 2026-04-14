@@ -48,6 +48,9 @@ type Pages = {
   "/tools/erv-calculator": {
     params: {};
   };
+  "/fruits/daily-log": {
+    params: {};
+  };
   "/good/architecture": {
     params: {};
   };
@@ -183,7 +186,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/fruits/good-building-system" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/fruits/styles" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/magic-link" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
+    page: "/" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/fruits/good-building-system" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/fruits/daily-log" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/fruits/styles" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/magic-link" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
   };
   "routes/fruits_.good-building-system_.$id.tsx": {
     id: "routes/fruits_.good-building-system_.$id";
@@ -224,6 +227,10 @@ type RouteFiles = {
   "routes/tools.erv-calculator.tsx": {
     id: "routes/tools.erv-calculator";
     page: "/tools/erv-calculator";
+  };
+  "routes/fruits_.daily-log.tsx": {
+    id: "routes/fruits_.daily-log";
+    page: "/fruits/daily-log";
   };
   "routes/good.architecture.tsx": {
     id: "routes/good.architecture";
@@ -411,6 +418,7 @@ type RouteModules = {
   "routes/fruits_.all-projects": typeof import("./app/routes/fruits_.all-projects.tsx");
   "routes/fruits_.projects.$id": typeof import("./app/routes/fruits_.projects.$id.tsx");
   "routes/tools.erv-calculator": typeof import("./app/routes/tools.erv-calculator.tsx");
+  "routes/fruits_.daily-log": typeof import("./app/routes/fruits_.daily-log.tsx");
   "routes/good.architecture": typeof import("./app/routes/good.architecture.tsx");
   "routes/tools.do-not-use": typeof import("./app/routes/tools.do-not-use.tsx");
   "routes/good.consulting": typeof import("./app/routes/good.consulting.tsx");
