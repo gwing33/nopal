@@ -1,4 +1,5 @@
 import "@mdxeditor/editor/style.css";
+import "../styles/mdxeditor.css";
 import {
   MDXEditor,
   headingsPlugin,
@@ -8,14 +9,6 @@ import {
   markdownShortcutPlugin,
   linkPlugin,
   linkDialogPlugin,
-  toolbarPlugin,
-  UndoRedo,
-  Separator,
-  BoldItalicUnderlineToggles,
-  BlockTypeSelect,
-  CreateLink,
-  ListsToggle,
-  InsertThematicBreak,
 } from "@mdxeditor/editor";
 
 interface MdxEditorClientProps {
@@ -39,23 +32,6 @@ export default function MdxEditorClient({
         markdownShortcutPlugin(),
         linkPlugin(),
         linkDialogPlugin(),
-        toolbarPlugin({
-          toolbarContents: () => (
-            <>
-              <UndoRedo />
-              <Separator />
-              <BoldItalicUnderlineToggles />
-              <Separator />
-              <BlockTypeSelect />
-              <Separator />
-              <ListsToggle />
-              <Separator />
-              <CreateLink />
-              <Separator />
-              <InsertThematicBreak />
-            </>
-          ),
-        }),
       ]}
     />
   );

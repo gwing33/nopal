@@ -594,13 +594,7 @@ export default function GoodBuildingSystemDetail() {
                 <div className="text-sm subtle-text">Loading editor…</div>
               }
             >
-              <div
-                className="rounded-lg overflow-hidden"
-                style={{
-                  border: "1px solid var(--midground)",
-                  background: "var(--farground)",
-                }}
-              >
+              <div className="mdx-editor-wrapper">
                 <MdxEditorClient
                   markdown={markdown}
                   onChange={handleMarkdownChange}

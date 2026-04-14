@@ -1,0 +1,462 @@
+/* ── MDX Editor – Fruits Design System Theme ─────────────────────────────── *
+ *                                                                             *
+ * The doubled `.mdxeditor.mdxeditor` selector produces specificity (0,2,0),  *
+ * which beats the editor's own `._editorRoot_*` single-class declaration     *
+ * (0,1,0), so our values win regardless of source-order.                     *
+ * ────────────────────────────────────────────────────────────────────────── */
+
+.mdxeditor.mdxeditor {
+  /* ── Base surfaces ──────────────────────────────────────────────────────── *
+   * Mapped to the farground → midground → foreground surface scale.           */
+  --basePageBg: var(--farground); /* #fff9f1  editor content bg    */
+  --baseBase: var(--farground); /* lightest surface              */
+  --baseBgSubtle: #f5ede0; /* between farground & midground  */
+  --baseBg: var(--midground); /* #ede4da  toolbar bg           */
+  --baseBgHover: var(--foreground); /* #e5d6c5  hover tint           */
+  --baseBgActive: #d5c4af; /* active / pressed              */
+  --baseLine: var(--foreground); /* hairline rules                */
+  --baseBorder: var(--midground); /* control borders               */
+  --baseBorderHover: var(--foreground); /* border on hover               */
+  --baseSolid: var(--text-subtle); /* #817186  secondary solid bg   */
+  --baseSolidHover: var(--purple-light); /* #7f5b8b                       */
+  --baseText: var(--text-subtle); /* #817186  secondary / icon text */
+  --baseTextContrast: var(--purple); /* #3f2b46  primary body text    */
+
+  /* ── Accent – purple / moon palette ────────────────────────────────────── *
+   * Used for selections, active toolbar buttons, links, focus rings.         */
+  --accentBase: #f3f0fb;
+  --accentBgSubtle: #e8e4f8;
+  --accentBg: var(--moon); /* #c4c6fc  lavender             */
+  --accentBgHover: #b2b4f7;
+  --accentBgActive: #9c9ff0;
+  --accentLine: var(--purple-light); /* #7f5b8b                       */
+  --accentBorder: var(--purple-light);
+  --accentBorderHover: var(--purple);
+  --accentSolid: var(--purple); /* #3f2b46  active-state pill    */
+  --accentSolidHover: #2d1e35;
+  --accentText: var(--purple-light);
+  --accentTextContrast: var(--farground); /* light text on purple bg       */
+
+  /* ── Typography ─────────────────────────────────────────────────────────── */
+  --font-body: inherit; /* pick up the app's typeface    */
+  --font-mono: ui-monospace, "SF Mono", "Fira Code", "Fira Mono", monospace;
+
+  /* ── Radii ───────────────────────────────────────────────────────────────── */
+  --radius-none: 0px;
+  --radius-base: 4px;
+  --radius-small: 4px;
+  --radius-medium: 6px;
+  --radius-large: 8px;
+  --radius-extra-large: 12px;
+  --radius-full: 9999px;
+}
+
+/* ── Editor outer wrapper ─────────────────────────────────────────────────── *
+ * Use this class on the div that wraps <MdxEditorClient> instead of inline   *
+ * styles so the dark-mode media query can swap out the background.           */
+.mdx-editor-wrapper {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--midground);
+  background: var(--farground);
+}
+
+/* ── Content / editable area ─────────────────────────────────────────────── */
+.mdxeditor [class*="_contentEditable_"],
+.mdxeditor [class*="_rootContentEditableWrapper_"] {
+  padding: 16px;
+  min-height: 260px;
+  font-size: 0.9375rem; /* 15 px – comfortable reading size  */
+  line-height: 1.2;
+  color: var(--purple);
+}
+
+/* ── Gutter indicators ───────────────────────────────────────────────────── *
+ * Each block element with a special type gets a subtle monospace label in    *
+ * the 52 px left-padding gutter: # / ## / ### for headings, > for quotes.   *
+ * Uses ::before on a position:relative ancestor so it never interferes with  *
+ * cursor placement or text selection inside the editable area.               */
+
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  :is(h1, h2, h3, blockquote) {
+  position: relative;
+}
+
+/* shared ::before layout */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  :is(h1, h2, h3, blockquote)::before {
+  position: absolute;
+  top: 4px;
+  left: -38px;
+  width: 32px;
+  text-align: right;
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-weight: 400;
+  color: var(--purple-light);
+  opacity: 0.4;
+  pointer-events: none;
+  user-select: none;
+  line-height: inherit;
+}
+
+/* specific labels */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  h1::before {
+  content: "#";
+  font-size: 1em;
+}
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  h2::before {
+  content: "##";
+  font-size: 0.8rem;
+}
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  h3::before {
+  content: "###";
+  font-size: 0.7rem;
+}
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  blockquote::before {
+  content: ">";
+  font-size: 0.9rem;
+}
+
+/* ── Headings inside the editor ──────────────────────────────────────────── */
+.mdxeditor [class*="_contentEditable_"] h1,
+.mdxeditor [class*="_rootContentEditableWrapper_"] h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--purple);
+  margin-top: 1.25em;
+  margin-bottom: 0.4em;
+}
+
+.mdxeditor [class*="_contentEditable_"] h2,
+.mdxeditor [class*="_rootContentEditableWrapper_"] h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--purple-light);
+  margin-top: 1.1em;
+  margin-bottom: 0.35em;
+}
+
+.mdxeditor [class*="_contentEditable_"] h3,
+.mdxeditor [class*="_rootContentEditableWrapper_"] h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--purple-light);
+  margin-top: 1em;
+  margin-bottom: 0.3em;
+}
+
+/* ── Blockquote ──────────────────────────────────────────────────────────── */
+.mdxeditor [class*="_contentEditable_"] blockquote,
+.mdxeditor [class*="_rootContentEditableWrapper_"] blockquote {
+  border-left: 3px solid var(--purple-light);
+  padding-left: 16px;
+  color: var(--text-subtle);
+  font-style: italic;
+}
+
+/* ── List items ──────────────────────────────────────────────────────────── *
+ * Remove native list markers and replace with styled ::before indicators.   *
+ * Nested items (_nestedListItem_*) already have display:none on ::before    *
+ * from Lexical's own CSS; our higher-specificity rule replaces that with a  *
+ * consistent bullet, keeping the visual language uniform at every depth.    */
+
+/* unordered — bullet */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ul {
+  list-style: none;
+  padding-left: 1em;
+}
+
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ul
+  > li {
+  position: relative;
+}
+
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ul
+  > li::before {
+  content: "•";
+  position: absolute;
+  left: -1.2em;
+  font-size: 0.85em;
+  color: var(--purple-light);
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+  line-height: inherit;
+}
+
+/* second-level unordered — dash */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ul
+  ul
+  > li::before {
+  content: "–";
+}
+
+/* ordered — number */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ol {
+  list-style: none;
+  padding-left: 1em;
+  counter-reset: mdx-ol;
+}
+
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ol
+  > li {
+  position: relative;
+  counter-increment: mdx-ol;
+}
+
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ol
+  > li::before {
+  content: counter(mdx-ol) ".";
+  position: absolute;
+  top: 2px;
+  left: -1.8em;
+  width: 1.5em;
+  text-align: right;
+  font-size: 0.78rem;
+  font-family: ui-monospace, "SF Mono", monospace;
+  color: var(--purple-light);
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+  line-height: inherit;
+}
+
+/* second-level ordered — alphabetical (a. b. c.) */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ol
+  ol {
+  counter-reset: mdx-ol-alpha;
+}
+
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ol
+  ol
+  > li {
+  counter-increment: mdx-ol-alpha;
+}
+
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ol
+  ol
+  > li::before {
+  content: counter(mdx-ol-alpha, lower-alpha) ".";
+}
+
+/* ── Inline code ─────────────────────────────────────────────────────────── */
+.mdxeditor [class*="_contentEditable_"] code,
+.mdxeditor [class*="_rootContentEditableWrapper_"] code {
+  background: var(--midground);
+  color: var(--purple);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 0.875em;
+  font-family: var(--font-mono);
+}
+
+/* ── Horizontal rule ─────────────────────────────────────────────────────── */
+.mdxeditor [class*="_contentEditable_"] hr,
+.mdxeditor [class*="_rootContentEditableWrapper_"] hr {
+  border: none;
+  border-top: 1px solid var(--midground);
+  margin: 1.5em 0;
+}
+
+/* ── Links ───────────────────────────────────────────────────────────────── */
+.mdxeditor [class*="_contentEditable_"] a,
+.mdxeditor [class*="_rootContentEditableWrapper_"] a {
+  color: var(--purple-light);
+  text-decoration: underline;
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--purple-light) 40%,
+    transparent
+  );
+  text-underline-offset: 2px;
+}
+
+.mdxeditor [class*="_contentEditable_"] a:hover,
+.mdxeditor [class*="_rootContentEditableWrapper_"] a:hover {
+  color: var(--purple);
+  text-decoration-color: var(--purple);
+}
+
+/* ── Select / dropdown popover ───────────────────────────────────────────── */
+.mdxeditor [class*="_selectContainer_"],
+.mdxeditor [class*="_toolbarNodeKindSelectContainer_"],
+.mdxeditor [class*="_toolbarButtonDropdownContainer_"] {
+  background-color: var(--farground);
+  border: 1px solid var(--midground);
+  box-shadow: 0 4px 16px rgba(63, 43, 70, 0.12);
+}
+
+.mdxeditor [class*="_selectItem_"]:hover {
+  background-color: var(--midground);
+  color: var(--purple);
+}
+
+/* ── Link dialog ─────────────────────────────────────────────────────────── */
+.mdxeditor [class*="_linkDialogPopoverContent_"],
+.mdxeditor [class*="_tableEditor_"] {
+  background: var(--farground);
+  border: 1px solid var(--midground);
+  box-shadow: 0 4px 16px rgba(63, 43, 70, 0.12);
+}
+
+/* ── Dark mode overrides ─────────────────────────────────────────────────── *
+ * Mirrors the app's @media (prefers-color-scheme: dark) pattern.             */
+@media (prefers-color-scheme: dark) {
+  .mdxeditor.mdxeditor {
+    background-color: var(--dark-farground);
+    --basePageBg: var(--dark-farground);
+    --baseBase: var(--dark-farground);
+    --baseBgSubtle: #555679;
+    --baseBg: var(--dark-midground);
+    --baseBgHover: var(--dark-foreground);
+    --baseBgActive: #9fa0c4;
+    --baseLine: var(--dark-foreground);
+    --baseBorder: var(--dark-midground);
+    --baseBorderHover: var(--dark-foreground);
+    --baseSolid: var(--dark-foreground);
+    --baseSolidHover: #a0a1c8;
+    --baseText: var(--text-subtle-dark);
+    --baseTextContrast: #ffffff;
+
+    --accentBase: #3d3e5e;
+    --accentBgSubtle: #4a4b72;
+    --accentBg: #6667a0;
+    --accentBgHover: #7778b4;
+    --accentBgActive: #8889c6;
+    --accentLine: var(--text-subtle-dark);
+    --accentBorder: var(--text-subtle-dark);
+    --accentBorderHover: #e0d0e6;
+    --accentSolid: var(--pink);
+    --accentSolidHover: #e0b0f0;
+    --accentText: var(--pink);
+    --accentTextContrast: var(--purple);
+  }
+
+  .mdxeditor [class*="_contentEditable_"],
+  .mdxeditor [class*="_rootContentEditableWrapper_"] {
+    background-color: var(--dark-farground);
+    color: #ffffff;
+  }
+
+  .mdxeditor [class*="_contentEditable_"] h1,
+  .mdxeditor [class*="_rootContentEditableWrapper_"] h1 {
+    color: #ffffff;
+  }
+
+  .mdxeditor [class*="_contentEditable_"] h2,
+  .mdxeditor [class*="_rootContentEditableWrapper_"] h2,
+  .mdxeditor [class*="_contentEditable_"] h3,
+  .mdxeditor [class*="_rootContentEditableWrapper_"] h3 {
+    color: var(--white);
+  }
+
+  .mdxeditor [class*="_contentEditable_"] blockquote,
+  .mdxeditor [class*="_rootContentEditableWrapper_"] blockquote {
+    border-left-color: var(--pink);
+    color: var(--text-subtle-dark);
+  }
+
+  .mdxeditor [class*="_contentEditable_"] code,
+  .mdxeditor [class*="_rootContentEditableWrapper_"] code {
+    background: var(--dark-midground);
+    color: var(--pink);
+  }
+
+  .mdxeditor [class*="_contentEditable_"] hr,
+  .mdxeditor [class*="_rootContentEditableWrapper_"] hr {
+    border-top-color: var(--dark-midground);
+  }
+
+  .mdxeditor [class*="_contentEditable_"] a,
+  .mdxeditor [class*="_rootContentEditableWrapper_"] a {
+    color: var(--pink);
+    text-decoration-color: color-mix(in srgb, var(--pink) 50%, transparent);
+  }
+
+  .mdxeditor [class*="_contentEditable_"] a:hover,
+  .mdxeditor [class*="_rootContentEditableWrapper_"] a:hover {
+    color: #f0c0ff;
+    text-decoration-color: #f0c0ff;
+  }
+
+  .mdxeditor [class*="_selectContainer_"],
+  .mdxeditor [class*="_toolbarNodeKindSelectContainer_"],
+  .mdxeditor [class*="_toolbarButtonDropdownContainer_"] {
+    background-color: var(--dark-farground);
+    border-color: var(--dark-midground);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  }
+
+  .mdxeditor [class*="_selectItem_"]:hover {
+    background-color: var(--dark-midground);
+    color: #ffffff;
+  }
+
+  .mdxeditor [class*="_linkDialogPopoverContent_"],
+  .mdxeditor [class*="_tableEditor_"] {
+    background: var(--dark-farground);
+    border-color: var(--dark-midground);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  }
+
+  .mdx-editor-wrapper {
+    border-color: var(--dark-midground);
+    background: var(--dark-farground);
+  }
+
+  /* gutter + list indicators — softer in dark mode */
+  .mdxeditor
+    :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+    :is(h1, h2, h3, blockquote)::before,
+  .mdxeditor
+    :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+    ul
+    > li::before,
+  .mdxeditor
+    :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+    ul
+    ul
+    > li::before,
+  .mdxeditor
+    :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+    ol
+    > li::before,
+  .mdxeditor
+    :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+    ol
+    ol
+    > li::before {
+    color: var(--white);
+    opacity: 0.35;
+  }
+}
