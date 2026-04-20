@@ -132,15 +132,37 @@ export default function MTFCalc() {
 
   const geo = useMemo(() => buildMTFPostGeometry(params), [params]);
 
-  // ── Cuts per post (2 boards per component — front + back lamination) ──────
+  // ── Cuts per post ─────────────────────────────────────────────────────────
+  //
+  // isPaired = false → cut from individual boards (studs)
+  // isPaired = true  → boards are glued face-to-face BEFORE cutting, so each
+  //                    physical saw-pass through the 2-ply blank yields both
+  //                    pieces simultaneously.  The optimizer therefore works
+  //                    on 1 cut per piece per post (count 2 comes for free),
+  //                    and each "board" in the result represents 2 physicals.
   const cutPieces = useMemo(
     () => [
-      { label: "Stud", length: studLength, count: 2 },
-      { label: "Sill Tenon", length: sillTenonLength, count: 2 },
-      { label: "Mid Tenon", length: midTenonLength, count: 2 },
-      { label: "Top Tenon", length: topTenonLength, count: 2 },
-      { label: "Lower Bridging", length: lowerBridgingLength, count: 2 },
-      { label: "Upper Bridging", length: upperBridgingLength, count: 2 },
+      { label: "Stud", length: studLength, count: 2, isPaired: false },
+      {
+        label: "Sill Tenon",
+        length: sillTenonLength,
+        count: 2,
+        isPaired: true,
+      },
+      { label: "Mid Tenon", length: midTenonLength, count: 2, isPaired: true },
+      { label: "Top Tenon", length: topTenonLength, count: 2, isPaired: true },
+      {
+        label: "Lower Bridging",
+        length: lowerBridgingLength,
+        count: 2,
+        isPaired: true,
+      },
+      {
+        label: "Upper Bridging",
+        length: upperBridgingLength,
+        count: 2,
+        isPaired: true,
+      },
     ],
     [
       studLength,
@@ -152,15 +174,17 @@ export default function MTFCalc() {
     ],
   );
 
-  // ── Optimizer results ─────────────────────────────────────────────────────
-  const optimizer = useMemo(() => {
-    const cuts = cutPieces.flatMap(({ label, length, count }) =>
-      Array.from({ length: count * postCount }, () => ({
-        size: length,
-        unit: "in" as const,
-        label,
-      })),
-    );
+  // ── Stud optimizer — individual boards ───────────────────────────────────
+  const studOptimizer = useMemo(() => {
+    const cuts = cutPieces
+      .filter((p) => !p.isPaired)
+      .flatMap(({ label, length, count }) =>
+        Array.from({ length: count * postCount }, () => ({
+          size: length,
+          unit: "in" as const,
+          label,
+        })),
+      );
 
     const result = CutStockOptimizer({
       cuts,
@@ -179,16 +203,68 @@ export default function MTFCalc() {
     return { ...result, stockCounts, nonZeroOffCuts, totalOffCutIn };
   }, [cutPieces, postCount, availableStock]);
 
+  // ── Paired optimizer — tenons + bridging from glued board pairs ───────────
+  //
+  // We feed 1 cut per piece per post (not 2) because both boards in the glued
+  // pair are sawn at the same time, so one optimizer "slot" already accounts
+  // for both physical boards.  Each board that comes out of this optimizer
+  // represents TWO physical 2×6s that will be glued and cut together.
+  const pairedOptimizer = useMemo(() => {
+    const cuts = cutPieces
+      .filter((p) => p.isPaired)
+      .flatMap(({ label, length }) =>
+        Array.from({ length: postCount }, () => ({
+          size: length,
+          unit: "in" as const,
+          label,
+        })),
+      );
+
+    const result = CutStockOptimizer({
+      cuts,
+      kerf: KERF,
+      newStock: availableStock,
+      onHandStock: [],
+    });
+
+    const stockCounts = countByKey(result.usedStock);
+    const nonZeroOffCuts = result.offCuts.filter((o) => toInches(o) > 0);
+    const totalOffCutIn = nonZeroOffCuts.reduce(
+      (sum, m) => sum + toInches(m),
+      0,
+    );
+
+    return { ...result, stockCounts, nonZeroOffCuts, totalOffCutIn };
+  }, [cutPieces, postCount, availableStock]);
+
+  // ── Combined stock counts ─────────────────────────────────────────────────
+  // Paired boards × 2 because each optimizer "board" = 2 physical boards.
+  const combinedStockCounts = useMemo(() => {
+    const counts: Record<string, number> = { ...studOptimizer.stockCounts };
+    for (const [key, cnt] of Object.entries(pairedOptimizer.stockCounts)) {
+      counts[key] = (counts[key] ?? 0) + cnt * 2;
+    }
+    return counts;
+  }, [studOptimizer.stockCounts, pairedOptimizer.stockCounts]);
+
+  const totalPhysicalBoards =
+    studOptimizer.boards.length + pairedOptimizer.boards.length * 2;
+
+  const totalOffCutIn =
+    studOptimizer.totalOffCutIn + pairedOptimizer.totalOffCutIn * 2;
+
   const midCenter = studLength / 2;
 
   // ── Board-layout visualization ────────────────────────────────────────────
   /**
-   * Renders one physical board as a proportional horizontal bar.
-   * Each cut gets a colour-coded segment; the off-cut tail is shown in grey.
+   * Renders one physical board (or one board of a pair) as a proportional
+   * horizontal bar.  Each cut gets a colour-coded segment; the off-cut tail
+   * is shown in grey.  Pass isPair=true to show the "×2 boards" badge.
    */
   function BoardBar({
     board,
     index,
+    isPair = false,
   }: {
     board: {
       stock: { size: number; unit: string };
@@ -196,6 +272,7 @@ export default function MTFCalc() {
       offCutMM: number;
     };
     index: number;
+    isPair?: boolean;
   }) {
     const stockIn = toInches(board.stock as { size: number; unit: string });
     const offCutIn = board.offCutMM / 25.4;
@@ -255,8 +332,16 @@ export default function MTFCalc() {
           )}
         </div>
 
-        {/* Waste % */}
-        <div className="shrink-0 text-right" style={{ width: "3rem" }}>
+        {/* Pair badge or waste % */}
+        <div
+          className="shrink-0 flex items-center justify-end gap-2"
+          style={{ width: "5rem" }}
+        >
+          {isPair && (
+            <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium leading-none">
+              ×2
+            </span>
+          )}
           <span
             className={`text-xs tabular-nums ${
               parseFloat(wastePercent) > 20
@@ -281,7 +366,6 @@ export default function MTFCalc() {
           </Breadcrumb>
 
           <h1 className="text-4xl font-bold mt-8">MTF</h1>
-          <p className="mt-4 mb-8 text-lg">Calculate the MTF</p>
 
           {/* ── Dimension Controls ──────────────────────────────────────────── */}
           <section className="mb-8">
@@ -447,6 +531,20 @@ export default function MTFCalc() {
             <h3 className="text-xs font-semibold uppercase tracking-widest opacity-50 mb-3">
               Cuts per Post
             </h3>
+
+            {/* Pairing callout */}
+            <div className="mb-4 flex items-start gap-2 text-xs rounded-lg px-3 py-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300">
+              <span className="mt-0.5 shrink-0">💡</span>
+              <span>
+                <strong>Board pairing:</strong> Tenons and bridging are cut from
+                boards that have been glued face-to-face first. One saw-pass
+                through the 2-ply blank yields both pieces at once, so the cut
+                layout below optimises <em>pairs</em> of boards — each row
+                marked <span className="font-semibold">×2</span> represents two
+                physical boards glued together.
+              </span>
+            </div>
+
             <div className="overflow-x-auto mb-8">
               <table className="text-sm w-full">
                 <thead>
@@ -460,13 +558,16 @@ export default function MTFCalc() {
                     <th className="text-right pb-2 font-medium opacity-60 pr-6">
                       Qty / post
                     </th>
-                    <th className="text-right pb-2 font-medium opacity-60">
+                    <th className="text-right pb-2 font-medium opacity-60 pr-6">
                       Total ({postCount} {postCount === 1 ? "post" : "posts"})
+                    </th>
+                    <th className="text-right pb-2 font-medium opacity-60">
+                      Method
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {cutPieces.map(({ label, length, count }) => (
+                  {cutPieces.map(({ label, length, count, isPaired }) => (
                     <tr
                       key={label}
                       className="border-b border-gray-100 dark:border-gray-800/60"
@@ -478,8 +579,17 @@ export default function MTFCalc() {
                       <td className="py-2 pr-6 text-right tabular-nums">
                         {count}
                       </td>
-                      <td className="py-2 text-right tabular-nums font-medium">
+                      <td className="py-2 pr-6 text-right tabular-nums font-medium">
                         {count * postCount}
+                      </td>
+                      <td className="py-2 text-right">
+                        {isPaired ? (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                            glued pair
+                          </span>
+                        ) : (
+                          <span className="text-xs opacity-35">individual</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -489,9 +599,10 @@ export default function MTFCalc() {
                     <td className="pt-3 pr-6 text-right tabular-nums">
                       {cutPieces.reduce((s, p) => s + p.count, 0)}
                     </td>
-                    <td className="pt-3 text-right tabular-nums">
+                    <td className="pt-3 pr-6 text-right tabular-nums">
                       {cutPieces.reduce((s, p) => s + p.count, 0) * postCount}
                     </td>
+                    <td />
                   </tr>
                 </tbody>
               </table>
@@ -534,12 +645,13 @@ export default function MTFCalc() {
                   onChange={setAddSize}
                   min={1}
                   step={1}
-                  className="w-24"
+                  className="w-40"
                 />
                 <select
                   value={addUnit}
                   onChange={(e) => setAddUnit(e.target.value as StockUnit)}
                   className="text-sm rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5"
+                  style={{ color: "var(--purple)" }}
                 >
                   <option value="ft">ft</option>
                   <option value="in">in</option>
@@ -586,15 +698,36 @@ export default function MTFCalc() {
               </div>
             </div>
 
-            {/* Board bars */}
-            {optimizer.boards.length > 0 ? (
-              <div className="space-y-1.5 mb-8">
-                {optimizer.boards.map((board, i) => (
-                  <BoardBar key={i} board={board} index={i} />
+            {/* ── Stud boards (individual) */}
+            <p className="text-xs font-semibold opacity-40 mb-2 mt-1 uppercase tracking-widest">
+              Stud boards — individual
+            </p>
+            {studOptimizer.boards.length > 0 ? (
+              <div className="space-y-1.5 mb-6">
+                {studOptimizer.boards.map((board, i) => (
+                  <BoardBar key={i} board={board} index={i} isPair={false} />
                 ))}
               </div>
             ) : (
-              <p className="text-sm opacity-40 mb-8">No boards yet.</p>
+              <p className="text-sm opacity-40 mb-6">No stud boards.</p>
+            )}
+
+            {/* ── Tenon + bridging board pairs */}
+            <p className="text-xs font-semibold opacity-40 mb-1 mt-4 uppercase tracking-widest">
+              Tenon &amp; bridging — glued board pairs
+            </p>
+            <p className="text-xs opacity-40 mb-3">
+              Each row represents two boards glued face-to-face. One layout
+              serves both boards in the pair.
+            </p>
+            {pairedOptimizer.boards.length > 0 ? (
+              <div className="space-y-1.5 mb-8">
+                {pairedOptimizer.boards.map((board, i) => (
+                  <BoardBar key={i} board={board} index={i} isPair={true} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm opacity-40 mb-8">No paired boards.</p>
             )}
 
             {/* Material list */}
@@ -604,7 +737,7 @@ export default function MTFCalc() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
               {availableStock.map((s) => {
                 const key = `${s.size}${s.unit}`;
-                const count = optimizer.stockCounts[key] ?? 0;
+                const count = combinedStockCounts[key] ?? 0;
                 return (
                   <div
                     key={key}
@@ -625,27 +758,47 @@ export default function MTFCalc() {
 
             <div className="text-sm opacity-60 space-y-1">
               <p>
-                {optimizer.usedStock.length} board
-                {optimizer.usedStock.length !== 1 ? "s" : ""} total · ~
-                {optimizer.totalOffCutIn.toFixed(1)}″ combined off-cuts
+                {totalPhysicalBoards} board
+                {totalPhysicalBoards !== 1 ? "s" : ""} total (
+                {studOptimizer.boards.length} stud
+                {studOptimizer.boards.length !== 1 ? "s" : ""} +{" "}
+                {pairedOptimizer.boards.length * 2} paired) · ~
+                {totalOffCutIn.toFixed(1)}″ combined off-cuts
               </p>
 
-              {optimizer.nonZeroOffCuts.length > 0 && (
+              {/* Off-cut details */}
+              {(studOptimizer.nonZeroOffCuts.length > 0 ||
+                pairedOptimizer.nonZeroOffCuts.length > 0) && (
                 <details className="mt-1 group">
                   <summary className="cursor-pointer select-none w-fit hover:opacity-80 transition-opacity list-none flex items-center gap-1.5">
                     <span className="text-xs transition-transform group-open:rotate-90 inline-block">
                       ▶
                     </span>
                     <span>
-                      {optimizer.nonZeroOffCuts.length} off-cut
-                      {optimizer.nonZeroOffCuts.length !== 1 ? "s" : ""}
+                      {studOptimizer.nonZeroOffCuts.length +
+                        pairedOptimizer.nonZeroOffCuts.length}{" "}
+                      off-cut
+                      {studOptimizer.nonZeroOffCuts.length +
+                        pairedOptimizer.nonZeroOffCuts.length !==
+                      1
+                        ? "s"
+                        : ""}
                     </span>
                   </summary>
                   <ul className="mt-2 ml-4 space-y-0.5 tabular-nums font-mono text-xs">
-                    {[...optimizer.nonZeroOffCuts]
-                      .sort((a, b) => toInches(b) - toInches(a))
-                      .map((offcut, i) => {
-                        const inches = toInches(offcut);
+                    {[
+                      ...studOptimizer.nonZeroOffCuts.map((o) => ({
+                        m: o,
+                        tag: "",
+                      })),
+                      ...pairedOptimizer.nonZeroOffCuts.map((o) => ({
+                        m: o,
+                        tag: "×2",
+                      })),
+                    ]
+                      .sort((a, b) => toInches(b.m) - toInches(a.m))
+                      .map(({ m, tag }, i) => {
+                        const inches = toInches(m);
                         const feet = Math.floor(inches / 12);
                         const remainIn = inches - feet * 12;
                         const label =
@@ -658,6 +811,11 @@ export default function MTFCalc() {
                               {i + 1}.
                             </span>
                             <span>{label}</span>
+                            {tag && (
+                              <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                                {tag}
+                              </span>
+                            )}
                           </li>
                         );
                       })}
@@ -665,11 +823,20 @@ export default function MTFCalc() {
                 </details>
               )}
 
-              {optimizer.missingStock.length > 0 && (
+              {(studOptimizer.missingStock.length > 0 ||
+                pairedOptimizer.missingStock.length > 0) && (
                 <p className="text-red-500 dark:text-red-400 font-medium">
-                  ⚠ {optimizer.missingStock.length} cut
-                  {optimizer.missingStock.length !== 1 ? "s" : ""} could not be
-                  fulfilled — check that no single piece exceeds 16′ (192″).
+                  ⚠{" "}
+                  {studOptimizer.missingStock.length +
+                    pairedOptimizer.missingStock.length}{" "}
+                  cut
+                  {studOptimizer.missingStock.length +
+                    pairedOptimizer.missingStock.length !==
+                  1
+                    ? "s"
+                    : ""}{" "}
+                  could not be fulfilled — check that no single piece exceeds
+                  16′ (192″).
                 </p>
               )}
             </div>
