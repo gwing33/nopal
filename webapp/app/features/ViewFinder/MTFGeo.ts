@@ -1,11 +1,35 @@
 import type { PearGeo } from "./PearGeo";
 
+export type MTFParams = {
+  /** Full stud height in inches (default 96 = 8 ft) */
+  studLength: number;
+  /** Top tenon vertical length in inches (default 26.5) */
+  topTenonLength: number;
+  /** Mid tenon horizontal length in inches (default 14.5) */
+  midTenonLength: number;
+  /** Sill tenon horizontal length in inches (default 14.5) */
+  sillTenonLength: number;
+  /** Lower bridging vertical length in inches (default 12) */
+  lowerBridgingLength: number;
+  /** Upper bridging vertical length in inches (default 12) */
+  upperBridgingLength: number;
+};
+
+export const DEFAULT_MTF_PARAMS: MTFParams = {
+  studLength: 96,
+  topTenonLength: 26.5,
+  midTenonLength: 14.5,
+  sillTenonLength: 14.5,
+  lowerBridgingLength: 12,
+  upperBridgingLength: 12,
+};
+
 /**
  * Builds WebGPU-ready geometry for one MTF (Modified Timber Frame) post.
  *
  * Coordinate system (all values in feet, right-handed, Y-up):
  *   X → horizontal face width (studs + tenon overhangs centred at 0)
- *   Y → up (0 = floor, 8 = top of stud at 96")
+ *   Y → up (0 = floor, studLength/12 = top of stud)
  *   Z → post depth  (0 = front stud face, 6/12 = back stud face)
  *
  * Assembly layers in Z:
@@ -17,7 +41,9 @@ import type { PearGeo } from "./PearGeo";
  * dimension is their height (Y). Vertical pieces (bridging, top tenon) run
  * in Y and are 5.5" wide in X.
  */
-export function buildMTFPostGeometry(): PearGeo {
+export function buildMTFPostGeometry(
+  params: MTFParams = DEFAULT_MTF_PARAMS,
+): PearGeo {
   const IN = 1 / 12; // 1 inch → feet
 
   // ── Lumber dimensions ───────────────────────────────────────────────────
@@ -30,35 +56,35 @@ export function buildMTFPostGeometry(): PearGeo {
   const Z0 = 0;
   const Z1 = STUD_THICK; // 1.5/12 – gap start
   const Z2 = STUD_THICK + BLOCK_THICK; // 4.5/12 – gap end
-  const Z3 = Z2 + STUD_THICK; // 6/12   – post back face
+  // Z3 unused but kept for reference: Z2 + STUD_THICK = 6/12 – post back face
   // Mid-gap: each laminated piece is actually TWO 2×6 boards face-to-face
   const Z_MID = Z1 + STUD_THICK; // 3/12   – seam between the two boards
 
   // ── X layout (centred at 0) ───────────────────────────────────────────────
   const HALF_STUD = STUD_FACE / 2; // ±2.75/12 ft
 
-  // ── Component lengths ─────────────────────────────────────────────────────
-  const SILL_LEN = 14.5 * IN; // sill tenon horizontal length
-  const MID_LEN = 14.5 * IN; // mid tenon horizontal length
-  const TOP_LEN = 26.5 * IN; // top tenon vertical length
-  const LB_LEN = 12.0 * IN; // lower bridging vertical length
-  const UB_LEN = 12.0 * IN; // upper bridging vertical length
+  // ── Component lengths (params are in inches, convert to feet) ────────────
+  const SILL_LEN = params.sillTenonLength * IN;
+  const MID_LEN = params.midTenonLength * IN;
+  const TOP_LEN = params.topTenonLength * IN;
+  const LB_LEN = params.lowerBridgingLength * IN;
+  const UB_LEN = params.upperBridgingLength * IN;
 
   // ── Y positions ───────────────────────────────────────────────────────────
-  const STUD_H = 8.0; // 96" = 8 ft
+  const STUD_H = params.studLength * IN; // full stud height in feet
 
   // Sill tenon: at the very bottom, BLOCK_FACE tall
   const SILL_Y0 = 0;
   const SILL_Y1 = BLOCK_FACE; // 5.5/12 ft
 
-  // Mid tenon: centred at 4 ft, BLOCK_FACE tall
-  const MID_CY = 4.0;
+  // Mid tenon: centred at stud mid-point, BLOCK_FACE tall
+  const MID_CY = STUD_H / 2;
   const MID_Y0 = MID_CY - BLOCK_FACE / 2;
   const MID_Y1 = MID_CY + BLOCK_FACE / 2;
 
-  // Top tenon: bottom inserts 8" below stud top, rises 26.5" total
-  const TOP_Y0 = STUD_H - 8 * IN; // 88/12 ft
-  const TOP_Y1 = TOP_Y0 + TOP_LEN; // 114.5/12 ft (18.5" above stud)
+  // Top tenon: bottom inserts 8" below stud top, rises TOP_LEN total
+  const TOP_Y0 = STUD_H - 8 * IN; // 8" below stud top
+  const TOP_Y1 = TOP_Y0 + TOP_LEN;
 
   // Lower bridging: centred between sill centre and mid centre
   const SILL_CY = (SILL_Y0 + SILL_Y1) / 2; // 2.75/12 ft
@@ -78,14 +104,14 @@ export function buildMTFPostGeometry(): PearGeo {
     // Stud A (front face of post) — single 2×6
     [-HALF_STUD, HALF_STUD, 0, STUD_H, Z0, Z1],
     // Stud B (back face of post) — single 2×6
-    [-HALF_STUD, HALF_STUD, 0, STUD_H, Z2, Z3],
+    [-HALF_STUD, HALF_STUD, 0, STUD_H, Z2, Z2 + STUD_THICK],
 
     // Sill tenon — horizontal, runs ±X, 5.5" tall at base
     // Two individual 2×6 boards laminated face-to-face in Z
     [-SILL_LEN / 2, SILL_LEN / 2, SILL_Y0, SILL_Y1, Z1, Z_MID], // front board
     [-SILL_LEN / 2, SILL_LEN / 2, SILL_Y0, SILL_Y1, Z_MID, Z2], // back board
 
-    // Mid tenon — horizontal, runs ±X, centred at 4 ft
+    // Mid tenon — horizontal, runs ±X, centred at stud mid-point
     [-MID_LEN / 2, MID_LEN / 2, MID_Y0, MID_Y1, Z1, Z_MID], // front board
     [-MID_LEN / 2, MID_LEN / 2, MID_Y0, MID_Y1, Z_MID, Z2], // back board
 
