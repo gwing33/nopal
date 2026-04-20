@@ -111,8 +111,8 @@ struct WireVSOut {
   out.clipPos = clipP;
   out.clipPos.x = out.clipPos.x + ndcOffset.x * clipP.w;
   out.clipPos.y = out.clipPos.y + ndcOffset.y * clipP.w;
-  // Slight depth bias so edges draw on top of faces
-  out.clipPos.z = out.clipPos.z - 0.0005;
+  // No manual depth bias — solid pipeline uses depthBias so faces sit just
+  // behind the actual surface depth, letting wire edges pass "less-equal".
   out.facing = facing;
   return out;
 }
@@ -183,7 +183,7 @@ interface GpuState {
 
 function buildWireframeBuffer(
   positions: Float32Array,
-  indices: Uint32Array
+  indices: Uint32Array,
 ): Float32Array {
   // Build a map from each edge to the triangle indices that share it
   const edgeTriMap = new Map<string, number[]>();
@@ -287,7 +287,7 @@ function buildGridBuffer(
   centerX: number,
   centerZ: number,
   extent: number,
-  step: number
+  step: number,
 ): Float32Array {
   const lines: number[] = [];
   const halfExt = Math.ceil(extent / step) * step;
@@ -440,6 +440,13 @@ export function VisualPreviewer({ geometry }: VisualPreviewerProps) {
           format: "depth24plus",
           depthWriteEnabled: true,
           depthCompare: "less",
+          // Push solid faces slightly back in the depth buffer so wire edges
+          // drawn at the actual surface depth pass the "less-equal" test.
+          // depthBias units = multiples of the minimum resolvable depth value
+          // (1 / 2^24 ≈ 6e-8 for depth24plus), so this is imperceptibly small.
+          depthBias: 2,
+          depthBiasSlopeScale: 1.0,
+          depthBiasClamp: 0.0,
         },
         multisample: { count: 4 },
       });
@@ -471,7 +478,9 @@ export function VisualPreviewer({ geometry }: VisualPreviewerProps) {
         depthStencil: {
           format: "depth24plus",
           depthWriteEnabled: true,
-          depthCompare: "less",
+          // "less-equal" lets edges at the actual surface depth pass now that
+          // solid faces are pushed back by depthBias above.
+          depthCompare: "less-equal",
         },
         multisample: { count: 4 },
       });
@@ -667,7 +676,7 @@ export function VisualPreviewer({ geometry }: VisualPreviewerProps) {
       "wireVerts:",
       gpu.wireVertCount,
       "gridVerts:",
-      gpu.gridVertCount
+      gpu.gridVertCount,
     );
     cameraRef.current.needsRender = true;
   }, [geometry, initSeq]);
@@ -723,7 +732,7 @@ export function VisualPreviewer({ geometry }: VisualPreviewerProps) {
         "[WebGPU render] Skipped — gpu:",
         !!gpu,
         "canvas:",
-        !!canvas
+        !!canvas,
       );
       return;
     }
@@ -788,7 +797,7 @@ export function VisualPreviewer({ geometry }: VisualPreviewerProps) {
         `color: ${tw}x${th}`,
         `indexCount: ${gpu.indexCount}`,
         `wireVerts: ${gpu.wireVertCount}`,
-        `gridVerts: ${gpu.gridVertCount}`
+        `gridVerts: ${gpu.gridVertCount}`,
       );
     }
 
@@ -810,12 +819,12 @@ export function VisualPreviewer({ geometry }: VisualPreviewerProps) {
     gpu.device.queue.writeBuffer(
       gpu.uniformBuffer,
       64,
-      gpuBuf(new Float32Array([eyeX, eyeY, eyeZ, 0]))
+      gpuBuf(new Float32Array([eyeX, eyeY, eyeZ, 0])),
     );
     gpu.device.queue.writeBuffer(
       gpu.uniformBuffer,
       80,
-      gpuBuf(new Float32Array([tw, th, 0, 0]))
+      gpuBuf(new Float32Array([tw, th, 0, 0])),
     );
 
     const encoder = gpu.device.createCommandEncoder();
