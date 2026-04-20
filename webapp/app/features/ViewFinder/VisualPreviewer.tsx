@@ -440,7 +440,7 @@ export function VisualPreviewer({ geometry }: VisualPreviewerProps) {
         },
         primitive: {
           topology: "triangle-list",
-          cullMode: "back",
+          cullMode: "front",
           frontFace: "ccw",
         },
         depthStencil: {

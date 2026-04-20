@@ -101,6 +101,13 @@ export default function MTFCalc() {
   // ── Takeoff state ─────────────────────────────────────────────────────────
   const [postCount, setPostCount] = useState(1);
 
+  // ── Available stock state ─────────────────────────────────────────────────
+  type StockUnit = "in" | "ft" | "mm" | "cm" | "m";
+  const [availableStock, setAvailableStock] =
+    useState<{ size: number; unit: StockUnit }[]>(NEW_STOCK);
+  const [addSize, setAddSize] = useState(14);
+  const [addUnit, setAddUnit] = useState<StockUnit>("ft");
+
   // ── Geometry (rebuilds only when dimensions change) ───────────────────────
   const params: MTFParams = useMemo(
     () => ({
@@ -158,7 +165,7 @@ export default function MTFCalc() {
     const result = CutStockOptimizer({
       cuts,
       kerf: KERF,
-      newStock: NEW_STOCK,
+      newStock: availableStock,
       onHandStock: [],
     });
 
@@ -170,7 +177,7 @@ export default function MTFCalc() {
     );
 
     return { ...result, stockCounts, nonZeroOffCuts, totalOffCutIn };
-  }, [cutPieces, postCount]);
+  }, [cutPieces, postCount, availableStock]);
 
   const midCenter = studLength / 2;
 
@@ -490,6 +497,73 @@ export default function MTFCalc() {
               </table>
             </div>
 
+            {/* ── Available Stock ──────────────────────────────────────────── */}
+            <h3 className="text-xs font-semibold uppercase tracking-widest opacity-50 mb-3">
+              Available Stock
+            </h3>
+            <div className="mb-8">
+              <div className="flex flex-wrap gap-2 mb-3">
+                {availableStock.map((s, i) => (
+                  <div
+                    key={`${s.size}${s.unit}-${i}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-gray-100 dark:bg-gray-800"
+                  >
+                    <span className="font-medium tabular-nums">
+                      {s.size}
+                      {s.unit}
+                    </span>
+                    <span className="opacity-40 text-xs">2×6</span>
+                    <button
+                      onClick={() =>
+                        setAvailableStock((prev) =>
+                          prev.filter((_, j) => j !== i),
+                        )
+                      }
+                      disabled={availableStock.length === 1}
+                      className="ml-0.5 w-4 h-4 flex items-center justify-center rounded-full opacity-40 hover:opacity-90 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:cursor-not-allowed transition-opacity leading-none"
+                      aria-label={`Remove ${s.size}${s.unit}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <NumberInput
+                  value={addSize}
+                  onChange={setAddSize}
+                  min={1}
+                  step={1}
+                  className="w-24"
+                />
+                <select
+                  value={addUnit}
+                  onChange={(e) => setAddUnit(e.target.value as StockUnit)}
+                  className="text-sm rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5"
+                >
+                  <option value="ft">ft</option>
+                  <option value="in">in</option>
+                </select>
+                <button
+                  onClick={() => {
+                    const key = `${addSize}${addUnit}`;
+                    if (
+                      !availableStock.some((s) => `${s.size}${s.unit}` === key)
+                    ) {
+                      setAvailableStock((prev) =>
+                        [...prev, { size: addSize, unit: addUnit }].sort(
+                          (a, b) => toInches(a) - toInches(b),
+                        ),
+                      );
+                    }
+                  }}
+                  className="text-sm px-3 py-1.5 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-medium"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+
             {/* ── Board Layout ────────────────────────────────────────────── */}
             <h3 className="text-xs font-semibold uppercase tracking-widest opacity-50 mb-4">
               Board Layout
@@ -528,7 +602,7 @@ export default function MTFCalc() {
               Stock Required — 2×6 (⅛″ kerf)
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-              {NEW_STOCK.map((s) => {
+              {availableStock.map((s) => {
                 const key = `${s.size}${s.unit}`;
                 const count = optimizer.stockCounts[key] ?? 0;
                 return (
