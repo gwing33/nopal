@@ -52,6 +52,12 @@ const TOOLS: Tool[] = [
     href: "/tools/grade-differential",
     inDevelopment: true,
   },
+  {
+    name: "Medium Timber Framing",
+    description: "Size and generate takeoffs for MTF",
+    href: "/tools/mtf",
+    inDevelopment: true,
+  },
 ];
 
 export default function ToolsIndex() {
