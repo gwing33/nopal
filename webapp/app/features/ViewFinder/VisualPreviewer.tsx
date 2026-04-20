@@ -96,9 +96,11 @@ struct WireVSOut {
   let n = normalize(edgeNormal);
   let facing = dot(n, viewDir);
 
-  // Width in pixels: thicker for front-facing, thinner for back-facing
-  let t = smoothstep(0.15, 0.55, facing);
-  let widthPx = mix(2, 1, t);
+  // Width in pixels: thicker for front-facing (facing > 0), thinner for back-facing.
+  // Edge normals are outward, so facing > 0 means the surface faces the camera.
+  // smoothstep is centred around 0 so silhouette edges get intermediate width.
+  let t = smoothstep(-0.2, 0.4, facing);
+  let widthPx = mix(1.0, 2.0, t);
 
   // Pick the interpolated clip position for this vertex
   let clipP = mix(clipA, clipB, endT);
@@ -118,8 +120,12 @@ struct WireVSOut {
 }
 
 @fragment fn fs_wire(input : WireVSOut) -> @location(0) vec4<f32> {
-  let t = smoothstep(0.15, 0.55, input.facing);
-  let color = vec3<f32>(0.63, 0.89, 0.68); // extra light Green
+  // facing < 0 means the outward edge normal points away from the camera →
+  // this edge is on the far side of the object.  Discard it so far-side wire
+  // edges don't bleed through the transparent background around the object,
+  // which is what made the rendering feel depth-reversed.
+  if (input.facing < -0.5) { discard; }
+  let color = vec3<f32>(0.63, 0.89, 0.68); // light green
   return vec4<f32>(color, 1.0);
 }
 `;
@@ -273,10 +279,11 @@ function buildWireframeBuffer(
     verts[off + 3] = positions[b * 3];
     verts[off + 4] = positions[b * 3 + 1];
     verts[off + 5] = positions[b * 3 + 2];
-    // Edge normal
-    verts[off + 6] = nx;
-    verts[off + 7] = ny;
-    verts[off + 8] = nz;
+    // Edge normal — negate so the normal points outward (the cross product of
+    // the geometry winding is inward due to WebGPU's Y-down front-face convention).
+    verts[off + 6] = -nx;
+    verts[off + 7] = -ny;
+    verts[off + 8] = -nz;
   }
   return verts;
 }

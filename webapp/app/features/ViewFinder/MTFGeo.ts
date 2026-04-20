@@ -5,6 +5,8 @@ export type MTFParams = {
   studLength: number;
   /** Top tenon vertical length in inches (default 26.5) */
   topTenonLength: number;
+  /** How far the top tenon overlaps down into the stud from the top, in inches (default 8) */
+  topTenonOverlap: number;
   /** Mid tenon horizontal length in inches (default 14.5) */
   midTenonLength: number;
   /** Sill tenon horizontal length in inches (default 14.5) */
@@ -18,6 +20,7 @@ export type MTFParams = {
 export const DEFAULT_MTF_PARAMS: MTFParams = {
   studLength: 96,
   topTenonLength: 26.5,
+  topTenonOverlap: 8,
   midTenonLength: 14.5,
   sillTenonLength: 14.5,
   lowerBridgingLength: 12,
@@ -82,8 +85,8 @@ export function buildMTFPostGeometry(
   const MID_Y0 = MID_CY - BLOCK_FACE / 2;
   const MID_Y1 = MID_CY + BLOCK_FACE / 2;
 
-  // Top tenon: bottom inserts 8" below stud top, rises TOP_LEN total
-  const TOP_Y0 = STUD_H - 8 * IN; // 8" below stud top
+  // Top tenon: bottom inserts topTenonOverlap" below stud top, rises TOP_LEN total
+  const TOP_Y0 = STUD_H - params.topTenonOverlap * IN;
   const TOP_Y1 = TOP_Y0 + TOP_LEN;
 
   // Lower bridging: centred between sill centre and mid centre

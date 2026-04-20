@@ -23,6 +23,7 @@ describe("CutStockOptimizer", () => {
         remainingStock: [],
         usedStock: [],
         offCuts: [],
+        boards: [],
       });
     });
   });
@@ -31,7 +32,7 @@ describe("CutStockOptimizer", () => {
 
   describe("single cut", () => {
     it("uses an on-hand piece and produces the correct off-cut", () => {
-      // 1000 - 400 - 5 (kerf) = 595mm off-cut
+      // 1000 - 400 = 600mm off-cut (first cut uses board's natural face, no kerf)
       const result = CutStockOptimizer({
         cuts: [mm(400)],
         kerf: mm(5),
@@ -40,19 +41,20 @@ describe("CutStockOptimizer", () => {
       });
       expect(result.usedStock).toEqual([mm(1000)]);
       expect(result.remainingStock).toEqual([]);
-      expect(result.offCuts).toEqual([mm(595)]);
+      expect(result.offCuts).toEqual([mm(600)]);
       expect(result.missingStock).toEqual([]);
     });
 
-    it("produces no off-cut entry when cut + kerf exactly fills the stock", () => {
-      // 495 + 5 = 500 — zero remainder, should not appear in offCuts
+    it("produces no off-cut when a single cut exactly equals the stock length", () => {
+      // 8ft cut from 8ft stock — no saw cut made, no kerf, no waste
       const result = CutStockOptimizer({
-        cuts: [mm(495)],
-        kerf: mm(5),
+        cuts: [{ size: 8, unit: "ft" }],
+        kerf: { size: 0.125, unit: "in" },
         newStock: [],
-        onHandStock: [mm(500)],
+        onHandStock: [{ size: 8, unit: "ft" }],
       });
       expect(result.offCuts).toEqual([]);
+      expect(result.missingStock).toEqual([]);
     });
   });
 
@@ -60,7 +62,7 @@ describe("CutStockOptimizer", () => {
 
   describe("kerf accounting", () => {
     it("deducts one kerf per cut from the available space", () => {
-      // 3 × (300 + 10kerf) = 930mm consumed from 1000mm → 70mm off-cut
+      // N−1 kerfs for N cuts: 300 + 2×(300+10) = 920mm consumed from 1000mm → 80mm off-cut
       const result = CutStockOptimizer({
         cuts: [mm(300), mm(300), mm(300)],
         kerf: mm(10),
@@ -68,7 +70,7 @@ describe("CutStockOptimizer", () => {
         onHandStock: [mm(1000)],
       });
       expect(result.usedStock).toHaveLength(1);
-      expect(result.offCuts).toEqual([mm(70)]);
+      expect(result.offCuts).toEqual([mm(80)]);
     });
 
     it("works correctly with zero kerf", () => {
@@ -86,7 +88,7 @@ describe("CutStockOptimizer", () => {
 
   describe("bin packing — Best Fit Decreasing", () => {
     it("packs multiple cuts into one stock piece when they all fit", () => {
-      // Sorted: [400, 300, 200]. (400+5) + (300+5) + (200+5) = 915 ≤ 1000
+      // Sorted: [400, 300, 200]. 400 + (300+5) + (200+5) = 910 ≤ 1000
       const result = CutStockOptimizer({
         cuts: [mm(300), mm(200), mm(400)],
         kerf: mm(5),
@@ -94,7 +96,7 @@ describe("CutStockOptimizer", () => {
         onHandStock: [],
       });
       expect(result.usedStock).toHaveLength(1);
-      expect(result.offCuts).toEqual([mm(85)]); // 1000 - 915
+      expect(result.offCuts).toEqual([mm(90)]); // 1000 - 910
     });
 
     it("opens a second stock piece when cuts cannot all fit in one", () => {
@@ -109,7 +111,7 @@ describe("CutStockOptimizer", () => {
     });
 
     it("fills an existing open bin before opening a new one", () => {
-      // (500+5) + (300+5) = 810 ≤ 1000 → both cuts fit in the same piece
+      // 500 + (300+5) = 805 ≤ 1000 → both cuts fit in the same piece
       const result = CutStockOptimizer({
         cuts: [mm(500), mm(300)],
         kerf: mm(5),
@@ -117,14 +119,15 @@ describe("CutStockOptimizer", () => {
         onHandStock: [],
       });
       expect(result.usedStock).toHaveLength(1);
-      expect(result.offCuts).toEqual([mm(190)]); // 1000 - 810
+      expect(result.offCuts).toEqual([mm(195)]); // 1000 - 805
     });
 
     it("efficiently distributes cuts across two on-hand pieces", () => {
       // Sorted cuts: [600, 400, 300].
-      // 600+5=605 → smallest fitting on-hand is 700 (not 1000). remaining=95.
-      // 400+5=405 → bin(700) has 95 < 405, open 1000mm. remaining=595.
-      // 300+5=305 → bin(700)=95 skip; bin(1000)=595 fits. remaining=290.
+      // 600 → score 1000mm (off-cut 400, fits 300mm → 95mm waste) vs 700mm (off-cut 100, fits nothing → 100mm waste).
+      //        Opens 1000mm. remaining=400.
+      // 400+5=405 → bin(1000mm) remaining=400 < 405. Open 700mm. remaining=300.
+      // 300+5=305 → bin(1000mm) remaining=400 ≥ 305. Fits. remaining=95.
       const result = CutStockOptimizer({
         cuts: [mm(600), mm(400), mm(300)],
         kerf: mm(5),
@@ -133,8 +136,8 @@ describe("CutStockOptimizer", () => {
       });
       expect(result.usedStock).toHaveLength(2);
       expect(result.remainingStock).toEqual([]);
-      expect(result.offCuts).toContainEqual(mm(95));  // 700 - 605
-      expect(result.offCuts).toContainEqual(mm(290)); // 1000 - 405 - 305
+      expect(result.offCuts).toContainEqual(mm(95)); // 1000 - 600 - 305
+      expect(result.offCuts).toContainEqual(mm(300)); // 700 - 400
     });
   });
 
@@ -177,7 +180,7 @@ describe("CutStockOptimizer", () => {
     });
 
     it("picks the smallest new-stock length that fits", () => {
-      // Input order: [1000, 600]. After sort: [600, 1000]. Need 405mm → 600 wins.
+      // Input order: [1000, 600]. After sort: [600, 1000]. Need 400mm (first cut, no kerf) → 600 wins.
       const result = CutStockOptimizer({
         cuts: [mm(400)],
         kerf: mm(5),
@@ -185,7 +188,7 @@ describe("CutStockOptimizer", () => {
         onHandStock: [],
       });
       expect(result.usedStock).toEqual([mm(600)]);
-      expect(result.offCuts).toEqual([mm(195)]); // 600 - 405
+      expect(result.offCuts).toEqual([mm(200)]); // 600 - 400
     });
 
     it("can open multiple new-stock pieces of the same length", () => {
@@ -268,8 +271,8 @@ describe("CutStockOptimizer", () => {
 
     it("returns an empty remainingStock when all on-hand pieces are consumed", () => {
       // Sorted: [300, 200].
-      // 300+5=305 → smallest fitting on-hand: 400mm. Opens it. availableOnHand=[300mm].
-      // 200+5=205 → bin(400) has 95 < 205. Smallest fitting on-hand: 300mm. Opens it.
+      // 300 → exact fit on-hand: 300mm. Opens it. availableOnHand=[400mm].
+      // 200+5=205 → bin(300) has 0 < 205. Smallest fitting on-hand: 400mm. Opens it.
       const result = CutStockOptimizer({
         cuts: [mm(200), mm(300)],
         kerf: mm(5),
@@ -302,8 +305,7 @@ describe("CutStockOptimizer", () => {
 
   describe("mixed units", () => {
     it("handles cuts in inches, kerf in inches, and stock in millimeters", () => {
-      // 6in = 152.4mm, kerf 0.125in = 3.175mm → space needed = 155.575mm
-      // stock 200mm → off-cut = 44.425mm
+      // 6in = 152.4mm; first cut uses natural face → remaining = 200 − 152.4 = 47.6mm
       const result = CutStockOptimizer({
         cuts: [{ size: 6, unit: "in" }],
         kerf: { size: 0.125, unit: "in" },
@@ -313,13 +315,16 @@ describe("CutStockOptimizer", () => {
       expect(result.usedStock).toHaveLength(1);
       expect(result.missingStock).toHaveLength(0);
       expect(result.offCuts[0].unit).toBe("mm");
-      expect(result.offCuts[0].size).toBeCloseTo(44.425);
+      expect(result.offCuts[0].size).toBeCloseTo(47.6);
     });
 
     it("handles stock in feet and cuts in feet with a fractional kerf", () => {
-      // 2 × (3ft + 0.0625ft kerf) = 6.125ft consumed from 10ft → 3.875ft off-cut
+      // 3ft (first) + (3ft + 0.0625ft kerf) = 6.0625ft consumed from 10ft → 3.9375ft off-cut
       const result = CutStockOptimizer({
-        cuts: [{ size: 3, unit: "ft" }, { size: 3, unit: "ft" }],
+        cuts: [
+          { size: 3, unit: "ft" },
+          { size: 3, unit: "ft" },
+        ],
         kerf: { size: 0.0625, unit: "ft" }, // 0.75in
         newStock: [],
         onHandStock: [{ size: 10, unit: "ft" }],
@@ -327,7 +332,7 @@ describe("CutStockOptimizer", () => {
       expect(result.usedStock).toHaveLength(1);
       expect(result.offCuts).toHaveLength(1);
       expect(result.offCuts[0].unit).toBe("ft");
-      expect(result.offCuts[0].size).toBeCloseTo(3.875);
+      expect(result.offCuts[0].size).toBeCloseTo(3.9375);
     });
   });
 });

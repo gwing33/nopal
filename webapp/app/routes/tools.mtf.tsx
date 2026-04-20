@@ -32,6 +32,17 @@ const NEW_STOCK = [
 
 const KERF = { size: 0.125, unit: "in" as const }; // 1/8" blade kerf
 
+// ── Piece colour palette ──────────────────────────────────────────────────────
+
+const PIECE_COLORS: Record<string, string> = {
+  Stud: "#6366f1", // indigo
+  "Sill Tenon": "#10b981", // emerald
+  "Mid Tenon": "#0891b2", // cyan-600
+  "Top Tenon": "#7c3aed", // violet-600
+  "Lower Bridging": "#ea580c", // orange-600
+  "Upper Bridging": "#d97706", // amber-600
+};
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Format an inch value as "X″" or "X′ (Y″)" when evenly divisible by 12. */
@@ -77,6 +88,9 @@ export default function MTFCalc() {
   const [topTenonLength, setTopTenonLength] = useState(
     DEFAULT_MTF_PARAMS.topTenonLength,
   );
+  const [topTenonOverlap, setTopTenonOverlap] = useState(
+    DEFAULT_MTF_PARAMS.topTenonOverlap,
+  );
   const [lowerBridgingLength, setLowerBridgingLength] = useState(
     DEFAULT_MTF_PARAMS.lowerBridgingLength,
   );
@@ -94,6 +108,7 @@ export default function MTFCalc() {
       sillTenonLength,
       midTenonLength,
       topTenonLength,
+      topTenonOverlap,
       lowerBridgingLength,
       upperBridgingLength,
     }),
@@ -102,6 +117,7 @@ export default function MTFCalc() {
       sillTenonLength,
       midTenonLength,
       topTenonLength,
+      topTenonOverlap,
       lowerBridgingLength,
       upperBridgingLength,
     ],
@@ -131,10 +147,11 @@ export default function MTFCalc() {
 
   // ── Optimizer results ─────────────────────────────────────────────────────
   const optimizer = useMemo(() => {
-    const cuts = cutPieces.flatMap(({ length, count }) =>
+    const cuts = cutPieces.flatMap(({ label, length, count }) =>
       Array.from({ length: count * postCount }, () => ({
         size: length,
         unit: "in" as const,
+        label,
       })),
     );
 
@@ -156,6 +173,96 @@ export default function MTFCalc() {
   }, [cutPieces, postCount]);
 
   const midCenter = studLength / 2;
+
+  // ── Board-layout visualization ────────────────────────────────────────────
+  /**
+   * Renders one physical board as a proportional horizontal bar.
+   * Each cut gets a colour-coded segment; the off-cut tail is shown in grey.
+   */
+  function BoardBar({
+    board,
+    index,
+  }: {
+    board: {
+      stock: { size: number; unit: string };
+      cuts: { size: number; unit: string; label?: string }[];
+      offCutMM: number;
+    };
+    index: number;
+  }) {
+    const stockIn = toInches(board.stock as { size: number; unit: string });
+    const offCutIn = board.offCutMM / 25.4;
+    const usedIn = stockIn - offCutIn;
+    const wastePercent = ((offCutIn / stockIn) * 100).toFixed(1);
+
+    return (
+      <div className="flex items-center gap-3">
+        {/* Board label */}
+        <div className="shrink-0 text-right" style={{ width: "2.5rem" }}>
+          <span className="text-xs font-mono opacity-40">#{index + 1}</span>
+        </div>
+        <div className="shrink-0" style={{ width: "2.5rem" }}>
+          <span className="text-xs opacity-50">
+            {board.stock.size}
+            {board.stock.unit}
+          </span>
+        </div>
+
+        {/* Bar */}
+        <div className="flex-1 flex rounded overflow-hidden h-7 text-xs font-medium">
+          {board.cuts.map((cut, ci) => {
+            const cutIn = toInches(cut as { size: number; unit: string });
+            const pct = (cutIn / stockIn) * 100;
+            const color = PIECE_COLORS[cut.label ?? ""] ?? "#94a3b8";
+            const showLabel = pct > 8;
+            return (
+              <div
+                key={ci}
+                style={{ width: `${pct}%`, backgroundColor: color }}
+                className="flex items-center justify-center text-white overflow-hidden whitespace-nowrap border-r border-black/20 last:border-r-0"
+                title={`${cut.label ?? "Cut"}: ${cutIn}″`}
+              >
+                {showLabel && (
+                  <span
+                    className="px-1 truncate leading-none"
+                    style={{ fontSize: "0.65rem" }}
+                  >
+                    {cut.label}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+          {offCutIn > 0 && (
+            <div
+              style={{ width: `${(offCutIn / stockIn) * 100}%` }}
+              className="flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 overflow-hidden whitespace-nowrap"
+              title={`Off-cut: ${offCutIn.toFixed(2)}″`}
+            >
+              {(offCutIn / stockIn) * 100 > 5 && (
+                <span className="px-1 truncate" style={{ fontSize: "0.65rem" }}>
+                  {offCutIn.toFixed(1)}″
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Waste % */}
+        <div className="shrink-0 text-right" style={{ width: "3rem" }}>
+          <span
+            className={`text-xs tabular-nums ${
+              parseFloat(wastePercent) > 20
+                ? "text-orange-500 dark:text-orange-400"
+                : "opacity-40"
+            }`}
+          >
+            {wastePercent}%
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -223,6 +330,18 @@ export default function MTFCalc() {
 
               <div>
                 <label className="block text-sm font-medium mb-1.5 opacity-70">
+                  Top Tenon Overlap (in)
+                </label>
+                <NumberInput
+                  value={topTenonOverlap}
+                  onChange={setTopTenonOverlap}
+                  min={0}
+                  step={0.5}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5 opacity-70">
                   Lower Bridging (in)
                 </label>
                 <NumberInput
@@ -267,7 +386,8 @@ export default function MTFCalc() {
             <div className="p-3 rounded-lg bg-gray-100 dark:bg-gray-800">
               <p className="font-semibold mb-1">Top Tenon</p>
               <p className="opacity-70">
-                {topTenonLength}″ vertical · inserts 8″ below stud top
+                {topTenonLength}″ vertical · inserts {topTenonOverlap}″ below
+                stud top
               </p>
             </div>
             <div className="p-3 rounded-lg bg-gray-100 dark:bg-gray-800">
@@ -369,6 +489,39 @@ export default function MTFCalc() {
                 </tbody>
               </table>
             </div>
+
+            {/* ── Board Layout ────────────────────────────────────────────── */}
+            <h3 className="text-xs font-semibold uppercase tracking-widest opacity-50 mb-4">
+              Board Layout
+            </h3>
+
+            {/* Legend */}
+            <div className="flex flex-wrap gap-x-4 gap-y-2 mb-5">
+              {Object.entries(PIECE_COLORS).map(([label, color]) => (
+                <div key={label} className="flex items-center gap-1.5">
+                  <div
+                    className="w-3 h-3 rounded-sm shrink-0"
+                    style={{ backgroundColor: color }}
+                  />
+                  <span className="text-xs opacity-60">{label}</span>
+                </div>
+              ))}
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm shrink-0 bg-gray-300 dark:bg-gray-600" />
+                <span className="text-xs opacity-60">Off-cut</span>
+              </div>
+            </div>
+
+            {/* Board bars */}
+            {optimizer.boards.length > 0 ? (
+              <div className="space-y-1.5 mb-8">
+                {optimizer.boards.map((board, i) => (
+                  <BoardBar key={i} board={board} index={i} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm opacity-40 mb-8">No boards yet.</p>
+            )}
 
             {/* Material list */}
             <h3 className="text-xs font-semibold uppercase tracking-widest opacity-50 mb-3">
