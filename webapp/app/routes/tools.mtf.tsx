@@ -8,6 +8,9 @@ import {
   DEFAULT_MTF_PARAMS,
 } from "../features/ViewFinder/MTFGeo";
 import type { MTFParams } from "../features/ViewFinder/MTFGeo";
+import { MTFElevationDiagram } from "../features/ViewFinder/MTFElevationDiagram";
+import { PIECE_COLORS } from "../features/ViewFinder/MTFColors";
+import { MTFPrintLayout } from "../features/ViewFinder/MTFPrintLayout";
 import CutStockOptimizer from "../calculators/CutStockOptimizer";
 import { NumberInput } from "../components/NumberInput";
 import type { MetaFunction } from "react-router";
@@ -31,17 +34,6 @@ const NEW_STOCK = [
 ];
 
 const KERF = { size: 0.125, unit: "in" as const }; // 1/8" blade kerf
-
-// ── Piece colour palette ──────────────────────────────────────────────────────
-
-const PIECE_COLORS: Record<string, string> = {
-  Stud: "#6366f1", // indigo
-  "Sill Tenon": "#10b981", // emerald
-  "Mid Tenon": "#0891b2", // cyan-600
-  "Top Tenon": "#7c3aed", // violet-600
-  "Lower Bridging": "#ea580c", // orange-600
-  "Upper Bridging": "#d97706", // amber-600
-};
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -359,13 +351,35 @@ export default function MTFCalc() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <Layout>
-      <div className="scene1">
+      {/* ── Print page CSS ──────────────────────────────────────────────── */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @media print {
+          @page { size: 11in 17in; margin: 0; }
+          .page-wrapper > .header { display: none !important; }
+          footer { display: none !important; }
+        }
+      `,
+        }}
+      />
+
+      {/* ── Screen content (hidden when printing) ────────────────────── */}
+      <div className="scene1 print:hidden">
         <div className="simple-container p-4">
           <Breadcrumb>
             <Link to="/tools">All Tools</Link>
           </Breadcrumb>
 
-          <h1 className="text-4xl font-bold mt-8">MTF</h1>
+          <div className="flex items-center justify-between mt-8 mb-2">
+            <h1 className="text-4xl font-bold">MTF</h1>
+            <button
+              onClick={() => window.print()}
+              className="text-sm px-3 py-1.5 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-medium flex items-center gap-1.5"
+            >
+              <span>🖨</span> Print
+            </button>
+          </div>
 
           {/* ── Dimension Controls ──────────────────────────────────────────── */}
           <section className="mb-8">
@@ -509,6 +523,8 @@ export default function MTFCalc() {
             </div>
           </div>
 
+          <MTFElevationDiagram params={params} />
+
           {/* ── Takeoffs ────────────────────────────────────────────────────── */}
           <section className="mt-10 mb-12">
             <h2 className="text-lg font-semibold mb-4">Takeoffs</h2>
@@ -608,74 +624,6 @@ export default function MTFCalc() {
               </table>
             </div>
 
-            {/* ── Available Stock ──────────────────────────────────────────── */}
-            <h3 className="text-xs font-semibold uppercase tracking-widest opacity-50 mb-3">
-              Available Stock
-            </h3>
-            <div className="mb-8">
-              <div className="flex flex-wrap gap-2 mb-3">
-                {availableStock.map((s, i) => (
-                  <div
-                    key={`${s.size}${s.unit}-${i}`}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-gray-100 dark:bg-gray-800"
-                  >
-                    <span className="font-medium tabular-nums">
-                      {s.size}
-                      {s.unit}
-                    </span>
-                    <span className="opacity-40 text-xs">2×6</span>
-                    <button
-                      onClick={() =>
-                        setAvailableStock((prev) =>
-                          prev.filter((_, j) => j !== i),
-                        )
-                      }
-                      disabled={availableStock.length === 1}
-                      className="ml-0.5 w-4 h-4 flex items-center justify-center rounded-full opacity-40 hover:opacity-90 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:cursor-not-allowed transition-opacity leading-none"
-                      aria-label={`Remove ${s.size}${s.unit}`}
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center gap-2">
-                <NumberInput
-                  value={addSize}
-                  onChange={setAddSize}
-                  min={1}
-                  step={1}
-                  className="w-40"
-                />
-                <select
-                  value={addUnit}
-                  onChange={(e) => setAddUnit(e.target.value as StockUnit)}
-                  className="text-sm rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5"
-                  style={{ color: "var(--purple)" }}
-                >
-                  <option value="ft">ft</option>
-                  <option value="in">in</option>
-                </select>
-                <button
-                  onClick={() => {
-                    const key = `${addSize}${addUnit}`;
-                    if (
-                      !availableStock.some((s) => `${s.size}${s.unit}` === key)
-                    ) {
-                      setAvailableStock((prev) =>
-                        [...prev, { size: addSize, unit: addUnit }].sort(
-                          (a, b) => toInches(a) - toInches(b),
-                        ),
-                      );
-                    }
-                  }}
-                  className="text-sm px-3 py-1.5 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-medium"
-                >
-                  Add
-                </button>
-              </div>
-            </div>
-
             {/* ── Board Layout ────────────────────────────────────────────── */}
             <h3 className="text-xs font-semibold uppercase tracking-widest opacity-50 mb-4">
               Board Layout
@@ -730,30 +678,78 @@ export default function MTFCalc() {
               <p className="text-sm opacity-40 mb-8">No paired boards.</p>
             )}
 
-            {/* Material list */}
+            {/* ── Stock Required (editable) ────────────────────────────────── */}
             <h3 className="text-xs font-semibold uppercase tracking-widest opacity-50 mb-3">
               Stock Required — 2×6 (⅛″ kerf)
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-              {availableStock.map((s) => {
+            <div className="flex flex-wrap gap-3 mb-3">
+              {availableStock.map((s, i) => {
                 const key = `${s.size}${s.unit}`;
                 const count = combinedStockCounts[key] ?? 0;
                 return (
                   <div
-                    key={key}
-                    className={`p-4 rounded-lg text-center transition-opacity ${
+                    key={`${key}-${i}`}
+                    className={`relative p-4 rounded-lg text-center min-w-[5.5rem] transition-opacity ${
                       count > 0
                         ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
-                        : "bg-gray-50 dark:bg-gray-800 opacity-30"
+                        : "bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 opacity-40"
                     }`}
                   >
+                    <button
+                      onClick={() =>
+                        setAvailableStock((prev) =>
+                          prev.filter((_, j) => j !== i),
+                        )
+                      }
+                      disabled={availableStock.length === 1}
+                      className="absolute top-1 right-1 w-4 h-4 flex items-center justify-center rounded-full text-xs opacity-30 hover:opacity-80 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:cursor-not-allowed transition-opacity leading-none"
+                      aria-label={`Remove ${s.size}${s.unit}`}
+                    >
+                      ×
+                    </button>
                     <p className="text-3xl font-bold tabular-nums">{count}</p>
                     <p className="text-sm mt-0.5 opacity-70">
-                      × {s.size}′&nbsp;2×6
+                      {s.size}
+                      {s.unit}&nbsp;2×6
                     </p>
                   </div>
                 );
               })}
+            </div>
+            <div className="flex items-center gap-2 mb-4">
+              <NumberInput
+                value={addSize}
+                onChange={setAddSize}
+                min={1}
+                step={1}
+                className="w-40"
+              />
+              <select
+                value={addUnit}
+                onChange={(e) => setAddUnit(e.target.value as StockUnit)}
+                className="text-sm rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1.5"
+                style={{ color: "var(--purple)" }}
+              >
+                <option value="ft">ft</option>
+                <option value="in">in</option>
+              </select>
+              <button
+                onClick={() => {
+                  const key = `${addSize}${addUnit}`;
+                  if (
+                    !availableStock.some((s) => `${s.size}${s.unit}` === key)
+                  ) {
+                    setAvailableStock((prev) =>
+                      [...prev, { size: addSize, unit: addUnit }].sort(
+                        (a, b) => toInches(a) - toInches(b),
+                      ),
+                    );
+                  }
+                }}
+                className="text-sm px-3 py-1.5 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-medium"
+              >
+                + Add
+              </button>
             </div>
 
             <div className="text-sm opacity-60 space-y-1">
@@ -844,7 +840,22 @@ export default function MTFCalc() {
         </div>
       </div>
 
-      <Footer />
+      <div className="print:hidden">
+        <Footer />
+      </div>
+
+      {/* ── Print layout (11×17 blueprint, shown only when printing) ──── */}
+      <MTFPrintLayout
+        params={params}
+        postCount={postCount}
+        cutPieces={cutPieces}
+        studBoards={studOptimizer.boards}
+        pairedBoards={pairedOptimizer.boards}
+        combinedStockCounts={combinedStockCounts}
+        availableStock={availableStock}
+        totalPhysicalBoards={totalPhysicalBoards}
+        totalOffCutIn={totalOffCutIn}
+      />
     </Layout>
   );
 }
