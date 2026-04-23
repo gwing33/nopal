@@ -152,10 +152,10 @@ export function MTFElevationDiagram({
     {
       name: "Stud ×2",
       dotX: cx(2.75),
-      dotY: cy(studLength * 0.65),
+      dotY: cy((ubY0 + ubY1) / 2 + 10),
       color: C.stud,
       hidden: false,
-      svgY: cy(studLength * 0.65),
+      svgY: cy((ubY0 + ubY1) / 2 + 10),
     },
     {
       name: "Mid Tenon",
@@ -208,10 +208,10 @@ export function MTFElevationDiagram({
     {
       name: "Stud",
       dotX: sz(POST_DEPTH),
-      dotY: sy(studLength * 0.65),
+      dotY: sy((ubY0 + ubY1) / 2 + 10),
       color: C.stud,
       hidden: false,
-      svgY: sy(studLength * 0.65),
+      svgY: sy((ubY0 + ubY1) / 2 + 10),
     },
     {
       name: "Mid Tenon",
