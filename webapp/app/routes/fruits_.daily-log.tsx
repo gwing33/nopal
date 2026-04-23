@@ -1,4 +1,8 @@
-import type { LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
+import type {
+  LoaderFunctionArgs,
+  ActionFunctionArgs,
+  LinksFunction,
+} from "react-router";
 import { redirect, useLoaderData, useFetcher } from "react-router";
 import {
   useState,
@@ -15,9 +19,15 @@ import {
   saveDailyLog,
   type DailyLog,
 } from "../data/dailyLog.server";
+import { useMarkdown } from "../hooks/useMarkdown";
+import projectStyles from "../styles/project.css?url";
 
 // Lazy-load the MDX editor — client only, never runs on the server.
 const MdxEditorClient = lazy(() => import("../components/MdxEditorClient"));
+
+export const links: LinksFunction = () => [
+  { rel: "stylesheet", href: projectStyles },
+];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -110,98 +120,6 @@ Your log stays open all day based on your device's clock and saves automatically
 
 — Gerald`;
 
-// ─── LogContent ───────────────────────────────────────────────────────────────
-// Renders log text with full-line images displayed as <img> and standalone
-// file links displayed as clickable anchors. Everything else stays in <pre>.
-
-const IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|bmp|tiff|ico)(\?.*)?$/i;
-
-function LogContent({
-  content,
-  textStyle,
-}: {
-  content: string;
-  textStyle?: React.CSSProperties;
-}) {
-  const lines = content.split("\n");
-  const nodes: React.ReactNode[] = [];
-  let textBufferStart = -1;
-
-  const flushText = (end: number) => {
-    if (textBufferStart < 0) return;
-    const text = lines.slice(textBufferStart, end).join("\n");
-    if (text.trim()) {
-      nodes.push(
-        <pre
-          key={`text-${textBufferStart}`}
-          style={{
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-word",
-            fontFamily: "inherit",
-            fontSize: "0.93rem",
-            lineHeight: "1.65",
-            margin: "0",
-            ...textStyle,
-          }}
-        >
-          {text}
-        </pre>,
-      );
-    }
-    textBufferStart = -1;
-  };
-
-  lines.forEach((line, i) => {
-    const trimmed = line.trim();
-
-    // Full-line image: ![alt](url)
-    const imgMatch = trimmed.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
-    if (imgMatch) {
-      flushText(i);
-      nodes.push(
-        <div key={`img-${i}`} style={{ margin: "8px 0" }}>
-          <img
-            src={imgMatch[2]}
-            alt={imgMatch[1]}
-            style={{ maxWidth: "100%", display: "block", borderRadius: "6px" }}
-          />
-        </div>,
-      );
-      return;
-    }
-
-    // Full-line file link: [label](url)  (not preceded by !)
-    const linkMatch = trimmed.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
-    if (linkMatch && !IMAGE_EXTENSIONS.test(linkMatch[2])) {
-      flushText(i);
-      nodes.push(
-        <div key={`link-${i}`} style={{ margin: "4px 0" }}>
-          <a
-            href={linkMatch[2]}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              fontFamily: "monospace",
-              fontSize: "0.85rem",
-              color: "var(--purple-light)",
-            }}
-          >
-            📎 {linkMatch[1]}
-          </a>
-        </div>,
-      );
-      return;
-    }
-
-    // Regular text line — accumulate into buffer
-    if (textBufferStart < 0) textBufferStart = i;
-  });
-
-  flushText(lines.length);
-
-  return <>{nodes}</>;
-}
-
 // ─── Shared expand button ─────────────────────────────────────────────────────
 
 function ExpandButton({
@@ -240,7 +158,7 @@ function AuthorIntroEntry() {
     <div
       style={{
         padding: "20px 24px",
-        marginBottom: "12px",
+        marginBottom: "80px",
         background: "var(--farground)",
         border: "1px dashed var(--midground)",
         borderRadius: "8px",
@@ -304,23 +222,21 @@ function AuthorIntroEntry() {
 function PastLogEntry({ entry, today }: { entry: DailyLog; today: string }) {
   const [expanded, setExpanded] = useState(false);
   const { preview, hasMore } = getPreview(entry.content, 10);
+  const previewMd = useMarkdown(preview);
+  const fullMd = useMarkdown(entry.content);
 
   return (
-    <div
-      className="good-box"
-      style={{ padding: "20px 24px", marginBottom: "12px" }}
-    >
+    <div style={{ marginBottom: "80px" }}>
       <div
         style={{
           fontFamily: "monospace",
-          fontSize: "0.82rem",
+          fontSize: "1rem",
           color: "var(--text-subtle)",
-          marginBottom: "8px",
         }}
       >
         {formatEntryDate(entry.date, today)}
       </div>
-      <LogContent content={expanded ? entry.content : preview} />
+      {expanded ? fullMd : previewMd}
       {hasMore && (
         <ExpandButton
           expanded={expanded}

@@ -329,6 +329,98 @@
   box-shadow: 0 4px 16px rgba(63, 43, 70, 0.12);
 }
 
+/* ── Image grid layout ───────────────────────────────────────────────────── *
+ * When a Lexical paragraph contains image nodes, each image is rendered as   *
+ * a <span> (decorator container) holding a div[class*="_imageWrapper_"].     *
+ * We turn the paragraph into a flex row so images tile naturally:            *
+ *   • 1 image  → grows to fill the full width, natural aspect ratio          *
+ *   • 2+ images → equal-width columns, square-cropped for a clean grid       */
+
+/* Paragraph containing at least one image wrapper → flex row */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  p:has([class*="_imageWrapper_"]) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+/* Each image-containing span is a flex item with a min width */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  p:has([class*="_imageWrapper_"])
+  > span {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+/* Image wrapper fills its span */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  p:has([class*="_imageWrapper_"])
+  [class*="_imageWrapper_"] {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* img fills the wrapper */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  p:has([class*="_imageWrapper_"])
+  [class*="_imageWrapper_"]
+  img {
+  display: block;
+  width: 100%;
+}
+
+/* Multiple images in the same paragraph → grid, no crop */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  p:has([class*="_imageWrapper_"])
+  > span:not(:only-child)
+  [class*="_imageWrapper_"]
+  img {
+  border-radius: 6px;
+}
+
+/* ── Broken-image placeholder: natural size, no crop ───────────────────── */
+/* img[src*="nopal-broken"] works because encodeURIComponent leaves hyphens  *
+ * and ASCII letters untouched, so the id="nopal-broken" attribute value     *
+ * remains a literal substring of the data URI.                              */
+
+/* The flex span shouldn't stretch to fill available space */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  p:has([class*="_imageWrapper_"])
+  > span:has(img[src*="nopal-broken"]) {
+  flex: 0 0 auto;
+}
+
+/* The imageWrapper itself shouldn't force full width */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  p:has([class*="_imageWrapper_"])
+  > span:has(img[src*="nopal-broken"])
+  [class*="_imageWrapper_"] {
+  width: auto !important;
+  max-width: 160px !important;
+}
+
+/* The img: natural dimensions, no square-crop overrides */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  img[src*="nopal-broken"] {
+  width: auto !important;
+  max-width: 160px !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  border-radius: 0 !important;
+}
+
+/* Dark-mode image grid – no extra overrides needed (inherits above) */
+
 /* ── Dark mode overrides ─────────────────────────────────────────────────── *
  * Mirrors the app's @media (prefers-color-scheme: dark) pattern.             */
 @media (prefers-color-scheme: dark) {
