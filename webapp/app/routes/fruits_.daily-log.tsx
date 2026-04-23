@@ -72,18 +72,23 @@ export async function action({ request }: ActionFunctionArgs) {
   if (!user) return { error: "Not authenticated" };
 
   const ct = request.headers.get("content-type") ?? "";
-  let date: string, content: string;
 
+  // ── JSON save ─────────────────────────────────────────────────────────────
   if (ct.includes("application/json")) {
     const body = await request.json();
-    date = body.date;
-    content = body.content;
-  } else {
-    const form = await request.formData();
-    date = String(form.get("date") ?? "");
-    content = String(form.get("content") ?? "");
+    const { date, content } = body;
+    if (!date || typeof content !== "string")
+      return { error: "Invalid request" };
+    const entry = await saveDailyLog(user._id, date, content);
+    return { success: true, entry };
   }
 
+  // ── Multipart: file upload OR form save ───────────────────────────────────
+  const form = await request.formData();
+
+  // ── Regular form save ─────────────────────────────────────────────────────
+  const date = String(form.get("date") ?? "");
+  const content = String(form.get("content") ?? "");
   if (!date || typeof content !== "string") return { error: "Invalid request" };
   const entry = await saveDailyLog(user._id, date, content);
   return { success: true, entry };
@@ -104,6 +109,98 @@ The format is loose. Some days a few sentences, other days a few paragraphs. The
 Your log stays open all day based on your device's clock and saves automatically as you type. Scroll up to see past entries.
 
 — Gerald`;
+
+// ─── LogContent ───────────────────────────────────────────────────────────────
+// Renders log text with full-line images displayed as <img> and standalone
+// file links displayed as clickable anchors. Everything else stays in <pre>.
+
+const IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|bmp|tiff|ico)(\?.*)?$/i;
+
+function LogContent({
+  content,
+  textStyle,
+}: {
+  content: string;
+  textStyle?: React.CSSProperties;
+}) {
+  const lines = content.split("\n");
+  const nodes: React.ReactNode[] = [];
+  let textBufferStart = -1;
+
+  const flushText = (end: number) => {
+    if (textBufferStart < 0) return;
+    const text = lines.slice(textBufferStart, end).join("\n");
+    if (text.trim()) {
+      nodes.push(
+        <pre
+          key={`text-${textBufferStart}`}
+          style={{
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            fontFamily: "inherit",
+            fontSize: "0.93rem",
+            lineHeight: "1.65",
+            margin: "0",
+            ...textStyle,
+          }}
+        >
+          {text}
+        </pre>,
+      );
+    }
+    textBufferStart = -1;
+  };
+
+  lines.forEach((line, i) => {
+    const trimmed = line.trim();
+
+    // Full-line image: ![alt](url)
+    const imgMatch = trimmed.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (imgMatch) {
+      flushText(i);
+      nodes.push(
+        <div key={`img-${i}`} style={{ margin: "8px 0" }}>
+          <img
+            src={imgMatch[2]}
+            alt={imgMatch[1]}
+            style={{ maxWidth: "100%", display: "block", borderRadius: "6px" }}
+          />
+        </div>,
+      );
+      return;
+    }
+
+    // Full-line file link: [label](url)  (not preceded by !)
+    const linkMatch = trimmed.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if (linkMatch && !IMAGE_EXTENSIONS.test(linkMatch[2])) {
+      flushText(i);
+      nodes.push(
+        <div key={`link-${i}`} style={{ margin: "4px 0" }}>
+          <a
+            href={linkMatch[2]}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontFamily: "monospace",
+              fontSize: "0.85rem",
+              color: "var(--purple-light)",
+            }}
+          >
+            📎 {linkMatch[1]}
+          </a>
+        </div>,
+      );
+      return;
+    }
+
+    // Regular text line — accumulate into buffer
+    if (textBufferStart < 0) textBufferStart = i;
+  });
+
+  flushText(lines.length);
+
+  return <>{nodes}</>;
+}
 
 // ─── Shared expand button ─────────────────────────────────────────────────────
 
@@ -223,18 +320,7 @@ function PastLogEntry({ entry, today }: { entry: DailyLog; today: string }) {
       >
         {formatEntryDate(entry.date, today)}
       </div>
-      <pre
-        style={{
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-          fontFamily: "inherit",
-          fontSize: "0.93rem",
-          lineHeight: "1.65",
-          margin: "0",
-        }}
-      >
-        {expanded ? entry.content : preview}
-      </pre>
+      <LogContent content={expanded ? entry.content : preview} />
       {hasMore && (
         <ExpandButton
           expanded={expanded}
@@ -310,6 +396,23 @@ function TodayLogEntry({
     contentRef.current = content;
   }, [content]);
 
+  // ── Upload helpers ────────────────────────────────────────────────────────
+
+  const uploadFile = useCallback(async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) {
+      throw new Error(`Upload failed: ${res.status} ${res.statusText}`);
+    }
+    const data = (await res.json()) as { url?: string; error?: string };
+    if (!data.url) throw new Error(data.error ?? "Upload failed");
+    return data.url;
+  }, []);
+
   // Build "Today — Monday, November 15, 2024"
   const [y, m, d] = date.split("-").map(Number);
   const fullDate = new Date(y, m - 1, d).toLocaleDateString("en-US", {
@@ -346,8 +449,10 @@ function TodayLogEntry({
         >
           {heading}
         </span>
+
         <SaveIndicator status={saveStatus} />
       </div>
+
       <div
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget as Node)) {
@@ -375,6 +480,7 @@ function TodayLogEntry({
               key={date}
               markdown={content}
               onChange={onChange}
+              uploadFile={uploadFile}
             />
           </Suspense>
         ) : (
@@ -465,7 +571,7 @@ export default function DailyLogPage() {
   const scheduleSave = useCallback(
     (content: string) => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = setTimeout(() => saveNow(content), 30_000);
+      saveTimerRef.current = setTimeout(() => saveNow(content), 2000);
     },
     [saveNow],
   );
