@@ -66,6 +66,7 @@ export function MTFElevationDiagram({
     topTenonLength,
     topTenonOverlap,
     midTenonLength,
+    midTenonBottomFromGround,
     sillTenonLength,
     lowerBridgingLength,
     upperBridgingLength,
@@ -77,9 +78,9 @@ export function MTFElevationDiagram({
   const sillY1 = BLOCK_FACE; // 5.5
   const sillCY = 2.75;
 
-  const midCY = studLength / 2;
-  const midY0 = midCY - 2.75;
-  const midY1 = midCY + 2.75;
+  const midY0 = midTenonBottomFromGround;
+  const midY1 = midY0 + 5.5; // BLOCK_FACE = 5.5"
+  const midCY = (midY0 + midY1) / 2;
 
   const topY0 = studLength - topTenonOverlap;
   const topY1 = topY0 + topTenonLength;

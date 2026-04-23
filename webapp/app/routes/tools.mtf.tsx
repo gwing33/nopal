@@ -77,6 +77,9 @@ export default function MTFCalc() {
   const [midTenonLength, setMidTenonLength] = useState(
     DEFAULT_MTF_PARAMS.midTenonLength,
   );
+  const [midTenonBottomFromGround, setMidTenonBottomFromGround] = useState(
+    DEFAULT_MTF_PARAMS.midTenonBottomFromGround,
+  );
   const [topTenonLength, setTopTenonLength] = useState(
     DEFAULT_MTF_PARAMS.topTenonLength,
   );
@@ -106,6 +109,7 @@ export default function MTFCalc() {
       studLength,
       sillTenonLength,
       midTenonLength,
+      midTenonBottomFromGround,
       topTenonLength,
       topTenonOverlap,
       lowerBridgingLength,
@@ -115,6 +119,7 @@ export default function MTFCalc() {
       studLength,
       sillTenonLength,
       midTenonLength,
+      midTenonBottomFromGround,
       topTenonLength,
       topTenonOverlap,
       lowerBridgingLength,
@@ -245,17 +250,49 @@ export default function MTFCalc() {
   const totalOffCutIn =
     studOptimizer.totalOffCutIn + pairedOptimizer.totalOffCutIn * 2;
 
-  const midCenter = studLength / 2;
-
   // ── Board-layout visualization ────────────────────────────────────────────
   /**
    * Renders one physical board (or one board of a pair) as a proportional
    * horizontal bar.  Each cut gets a colour-coded segment; the off-cut tail
    * is shown in grey.  Pass isPair=true to show the "×2 boards" badge.
    */
+  /** Groups consecutive boards with identical layout into {board, start, count} tuples. */
+  function groupBoards<
+    T extends {
+      stock: { size: number; unit: string };
+      cuts: { size: number; unit: string; label?: string }[];
+      offCutMM: number;
+    },
+  >(boards: T[]): { board: T; start: number; count: number }[] {
+    const groups: { board: T; start: number; count: number }[] = [];
+    for (let i = 0; i < boards.length; i++) {
+      const board = boards[i];
+      const key = JSON.stringify({
+        stock: board.stock,
+        cuts: board.cuts,
+        offCutMM: board.offCutMM,
+      });
+      if (groups.length > 0) {
+        const last = groups[groups.length - 1];
+        const lastKey = JSON.stringify({
+          stock: last.board.stock,
+          cuts: last.board.cuts,
+          offCutMM: last.board.offCutMM,
+        });
+        if (key === lastKey) {
+          last.count++;
+          continue;
+        }
+      }
+      groups.push({ board, start: i, count: 1 });
+    }
+    return groups;
+  }
+
   function BoardBar({
     board,
-    index,
+    startIndex,
+    count,
     isPair = false,
   }: {
     board: {
@@ -263,19 +300,21 @@ export default function MTFCalc() {
       cuts: { size: number; unit: string; label?: string }[];
       offCutMM: number;
     };
-    index: number;
+    startIndex: number;
+    count: number;
     isPair?: boolean;
   }) {
     const stockIn = toInches(board.stock as { size: number; unit: string });
     const offCutIn = board.offCutMM / 25.4;
     const usedIn = stockIn - offCutIn;
     const wastePercent = ((offCutIn / stockIn) * 100).toFixed(1);
+    const rangeLabel = `${count}x`;
 
     return (
       <div className="flex items-center gap-3">
         {/* Board label */}
         <div className="shrink-0 text-right" style={{ width: "2.5rem" }}>
-          <span className="text-xs font-mono opacity-40">#{index + 1}</span>
+          <span className="text-xs font-mono opacity-40">{rangeLabel}</span>
         </div>
         <div className="shrink-0" style={{ width: "2.5rem" }}>
           <span className="text-xs opacity-50">
@@ -301,7 +340,7 @@ export default function MTFCalc() {
                 {showLabel && (
                   <span
                     className="px-1 truncate leading-none"
-                    style={{ fontSize: "0.65rem" }}
+                    style={{ fontSize: "0.65rem", color: "white" }}
                   >
                     {cut.label}
                   </span>
@@ -423,6 +462,18 @@ export default function MTFCalc() {
 
               <div>
                 <label className="block text-sm font-medium mb-1.5 opacity-70">
+                  Mid Tenon from Ground (in)
+                </label>
+                <NumberInput
+                  value={midTenonBottomFromGround}
+                  onChange={setMidTenonBottomFromGround}
+                  min={0}
+                  step={0.5}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5 opacity-70">
                   Top Tenon (in)
                 </label>
                 <NumberInput
@@ -477,46 +528,198 @@ export default function MTFCalc() {
           {/* ── Post Spec Summary ───────────────────────────────────────────── */}
           <div className="mt-10 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
             <div className="p-3 rounded-lg bg-gray-100 dark:bg-gray-800">
-              <p className="font-semibold mb-1">Studs</p>
+              <p className="font-semibold mb-1 flex items-center gap-1.5">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  aria-hidden="true"
+                  className="shrink-0"
+                >
+                  <path
+                    d="M 2 11 C 4 8 10 6 12 3"
+                    stroke={PIECE_COLORS["Stud"]}
+                    strokeWidth="1.25"
+                    strokeLinecap="round"
+                  />
+                  <circle cx="7" cy="7" r="2.5" fill={PIECE_COLORS["Stud"]} />
+                </svg>
+                Studs
+              </p>
               <p className="opacity-70">
                 2× 2×6 @ {fmtIn(studLength)} — 1.5″ × 5.5″ actual
               </p>
             </div>
             <div className="p-3 rounded-lg bg-gray-100 dark:bg-gray-800">
-              <p className="font-semibold mb-1">Tenon / Bridging block</p>
+              <p className="font-semibold mb-1 flex items-center gap-1.5">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  aria-hidden="true"
+                  className="shrink-0"
+                >
+                  <path
+                    d="M 2 11 C 4 8 10 6 12 3"
+                    stroke="#9ca3af"
+                    strokeWidth="1.25"
+                    strokeLinecap="round"
+                  />
+                  <circle cx="7" cy="7" r="2.5" fill="#9ca3af" />
+                </svg>
+                Tenon / Bridging block
+              </p>
               <p className="opacity-70">
                 2× 2×6 laminated — 3″ × 5.5″ cross-section
               </p>
             </div>
             <div className="p-3 rounded-lg bg-gray-100 dark:bg-gray-800">
-              <p className="font-semibold mb-1">Top Tenon</p>
+              <p className="font-semibold mb-1 flex items-center gap-1.5">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  aria-hidden="true"
+                  className="shrink-0"
+                >
+                  <path
+                    d="M 2 11 C 4 8 10 6 12 3"
+                    stroke={PIECE_COLORS["Top Tenon"]}
+                    strokeWidth="1.25"
+                    strokeLinecap="round"
+                  />
+                  <circle
+                    cx="7"
+                    cy="7"
+                    r="2.5"
+                    fill={PIECE_COLORS["Top Tenon"]}
+                  />
+                </svg>
+                Top Tenon
+              </p>
               <p className="opacity-70">
                 {topTenonLength}″ vertical · inserts {topTenonOverlap}″ below
                 stud top
               </p>
             </div>
             <div className="p-3 rounded-lg bg-gray-100 dark:bg-gray-800">
-              <p className="font-semibold mb-1">Upper Bridging</p>
+              <p className="font-semibold mb-1 flex items-center gap-1.5">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  aria-hidden="true"
+                  className="shrink-0"
+                >
+                  <path
+                    d="M 2 11 C 4 8 10 6 12 3"
+                    stroke={PIECE_COLORS["Upper Bridging"]}
+                    strokeWidth="1.25"
+                    strokeLinecap="round"
+                  />
+                  <circle
+                    cx="7"
+                    cy="7"
+                    r="2.5"
+                    fill={PIECE_COLORS["Upper Bridging"]}
+                  />
+                </svg>
+                Upper Bridging
+              </p>
               <p className="opacity-70">
                 {upperBridgingLength}″ vertical · centred between mid &amp; top
                 tenons
               </p>
             </div>
             <div className="p-3 rounded-lg bg-gray-100 dark:bg-gray-800">
-              <p className="font-semibold mb-1">Mid Tenon</p>
+              <p className="font-semibold mb-1 flex items-center gap-1.5">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  aria-hidden="true"
+                  className="shrink-0"
+                >
+                  <path
+                    d="M 2 11 C 4 8 10 6 12 3"
+                    stroke={PIECE_COLORS["Mid Tenon"]}
+                    strokeWidth="1.25"
+                    strokeLinecap="round"
+                  />
+                  <circle
+                    cx="7"
+                    cy="7"
+                    r="2.5"
+                    fill={PIECE_COLORS["Mid Tenon"]}
+                  />
+                </svg>
+                Mid Tenon
+              </p>
               <p className="opacity-70">
-                {midTenonLength}″ horizontal · centred at {fmtIn(midCenter)}
+                {midTenonLength}″ horizontal · bottom at{" "}
+                {fmtIn(midTenonBottomFromGround)}
               </p>
             </div>
             <div className="p-3 rounded-lg bg-gray-100 dark:bg-gray-800">
-              <p className="font-semibold mb-1">Lower Bridging</p>
+              <p className="font-semibold mb-1 flex items-center gap-1.5">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  aria-hidden="true"
+                  className="shrink-0"
+                >
+                  <path
+                    d="M 2 11 C 4 8 10 6 12 3"
+                    stroke={PIECE_COLORS["Lower Bridging"]}
+                    strokeWidth="1.25"
+                    strokeLinecap="round"
+                  />
+                  <circle
+                    cx="7"
+                    cy="7"
+                    r="2.5"
+                    fill={PIECE_COLORS["Lower Bridging"]}
+                  />
+                </svg>
+                Lower Bridging
+              </p>
               <p className="opacity-70">
                 {lowerBridgingLength}″ vertical · centred between sill &amp; mid
                 tenons
               </p>
             </div>
             <div className="p-3 rounded-lg bg-gray-100 dark:bg-gray-800 sm:col-span-2">
-              <p className="font-semibold mb-1">Sill Tenon</p>
+              <p className="font-semibold mb-1 flex items-center gap-1.5">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                  aria-hidden="true"
+                  className="shrink-0"
+                >
+                  <path
+                    d="M 2 11 C 4 8 10 6 12 3"
+                    stroke={PIECE_COLORS["Sill Tenon"]}
+                    strokeWidth="1.25"
+                    strokeLinecap="round"
+                  />
+                  <circle
+                    cx="7"
+                    cy="7"
+                    r="2.5"
+                    fill={PIECE_COLORS["Sill Tenon"]}
+                  />
+                </svg>
+                Sill Tenon
+              </p>
               <p className="opacity-70">
                 {sillTenonLength}″ horizontal · at base (0″)
               </p>
@@ -652,8 +855,14 @@ export default function MTFCalc() {
             </p>
             {studOptimizer.boards.length > 0 ? (
               <div className="space-y-1.5 mb-6">
-                {studOptimizer.boards.map((board, i) => (
-                  <BoardBar key={i} board={board} index={i} isPair={false} />
+                {groupBoards(studOptimizer.boards).map((g) => (
+                  <BoardBar
+                    key={g.start}
+                    board={g.board}
+                    startIndex={g.start}
+                    count={g.count}
+                    isPair={false}
+                  />
                 ))}
               </div>
             ) : (
@@ -670,8 +879,14 @@ export default function MTFCalc() {
             </p>
             {pairedOptimizer.boards.length > 0 ? (
               <div className="space-y-1.5 mb-8">
-                {pairedOptimizer.boards.map((board, i) => (
-                  <BoardBar key={i} board={board} index={i} isPair={true} />
+                {groupBoards(pairedOptimizer.boards).map((g) => (
+                  <BoardBar
+                    key={g.start}
+                    board={g.board}
+                    startIndex={g.start}
+                    count={g.count}
+                    isPair={true}
+                  />
                 ))}
               </div>
             ) : (
