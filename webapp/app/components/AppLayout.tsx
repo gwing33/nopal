@@ -34,7 +34,7 @@ function HamburgerIcon({ open }: { open: boolean }) {
 }
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `text-sm font-mono px-3 py-2 rounded block ${
+  `text-sm font-mono py-2 rounded block ${
     isActive ? "font-bold" : "purple-light-text"
   }`;
 

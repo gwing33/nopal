@@ -951,7 +951,7 @@ body {
 }
 
 .app-sidebar {
-  width: 200px;
+  width: 160px;
   flex-shrink: 0;
   border-right: 1px solid var(--foreground);
   background: var(--farground);
