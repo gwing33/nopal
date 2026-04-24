@@ -24,6 +24,7 @@ import projectStyles from "../styles/project.css?url";
 
 // Lazy-load the MDX editor — client only, never runs on the server.
 const MdxEditorClient = lazy(() => import("../components/MdxEditorClient"));
+import type { EditorHandle } from "../components/MdxEditorClient";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: projectStyles },
@@ -247,42 +248,6 @@ function PastLogEntry({ entry, today }: { entry: DailyLog; today: string }) {
   );
 }
 
-// ─── SaveIndicator ────────────────────────────────────────────────────────────
-
-type SaveStatus = "idle" | "saving" | "saved" | "error";
-
-function SaveIndicator({ status }: { status: SaveStatus }) {
-  if (status === "idle") return null;
-
-  const label =
-    status === "saving"
-      ? "Saving…"
-      : status === "saved"
-        ? "Saved"
-        : "Save failed";
-
-  const color =
-    status === "saving"
-      ? "var(--text-subtle)"
-      : status === "saved"
-        ? "var(--green)"
-        : "var(--red)";
-
-  return (
-    <span
-      style={{
-        fontFamily: "monospace",
-        fontSize: "0.75rem",
-        color,
-        transition: "color 200ms",
-        flexShrink: 0,
-      }}
-    >
-      {label}
-    </span>
-  );
-}
-
 // ─── TodayLogEntry ────────────────────────────────────────────────────────────
 
 function TodayLogEntry({
@@ -291,17 +256,20 @@ function TodayLogEntry({
   content,
   onChange,
   onBlur,
-  saveStatus,
 }: {
   date: string;
   today: string;
   content: string;
   onChange: (v: string) => void;
   onBlur: (v: string) => void;
-  saveStatus: SaveStatus;
 }) {
   const [isClient, setIsClient] = useState(false);
   const contentRef = useRef(content);
+  const editorHandleRef = useRef<EditorHandle | null>(null);
+
+  const handleEditorReady = useCallback((handle: EditorHandle) => {
+    editorHandleRef.current = handle;
+  }, []);
 
   useEffect(() => {
     setIsClient(true);
@@ -311,6 +279,30 @@ function TodayLogEntry({
   useEffect(() => {
     contentRef.current = content;
   }, [content]);
+
+  // Page-level file drop → add to editor tray
+  useEffect(() => {
+    const onDragOver = (e: DragEvent) => {
+      if (
+        Array.from(e.dataTransfer?.items ?? []).some((i) => i.kind === "file")
+      ) {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+      }
+    };
+    const onDrop = (e: DragEvent) => {
+      const files = Array.from(e.dataTransfer?.files ?? []);
+      if (!files.length) return;
+      e.preventDefault();
+      editorHandleRef.current?.addFiles(files);
+    };
+    document.addEventListener("dragover", onDragOver);
+    document.addEventListener("drop", onDrop);
+    return () => {
+      document.removeEventListener("dragover", onDragOver);
+      document.removeEventListener("drop", onDrop);
+    };
+  }, []);
 
   // ── Upload helpers ────────────────────────────────────────────────────────
 
@@ -365,8 +357,6 @@ function TodayLogEntry({
         >
           {heading}
         </span>
-
-        <SaveIndicator status={saveStatus} />
       </div>
 
       <div
@@ -397,6 +387,7 @@ function TodayLogEntry({
               markdown={content}
               onChange={onChange}
               uploadFile={uploadFile}
+              onEditorReady={handleEditorReady}
             />
           </Suspense>
         ) : (
@@ -503,26 +494,6 @@ export default function DailyLogPage() {
     [saveNow],
   );
 
-  // ── Save status ───────────────────────────────────────────────────────────
-
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
-
-  useEffect(() => {
-    if (saveFetcher.state === "submitting") {
-      setSaveStatus("saving");
-      return;
-    }
-    if (saveFetcher.state === "idle" && saveFetcher.data) {
-      if ((saveFetcher.data as { error?: string }).error) {
-        setSaveStatus("error");
-        return;
-      }
-      setSaveStatus("saved");
-      const t = setTimeout(() => setSaveStatus("idle"), 2500);
-      return () => clearTimeout(t);
-    }
-  }, [saveFetcher.state, saveFetcher.data]);
-
   // ── Scroll to bottom once today resolves (past entries are now rendered) ──
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -561,7 +532,6 @@ export default function DailyLogPage() {
           content={todayContent}
           onChange={handleChange}
           onBlur={handleBlur}
-          saveStatus={saveStatus}
         />
 
         {/* Invisible anchor scrolled into view once today resolves */}
