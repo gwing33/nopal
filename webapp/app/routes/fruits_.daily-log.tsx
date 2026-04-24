@@ -20,6 +20,7 @@ import {
   type DailyLog,
 } from "../data/dailyLog.server";
 import { useMarkdown } from "../hooks/useMarkdown";
+import { resolveNopalMarkdown } from "../utils/nopalMarkdown";
 import projectStyles from "../styles/project.css?url";
 
 // Lazy-load the MDX editor — client only, never runs on the server.
@@ -222,9 +223,10 @@ function AuthorIntroEntry() {
 
 function PastLogEntry({ entry, today }: { entry: DailyLog; today: string }) {
   const [expanded, setExpanded] = useState(false);
-  const { preview, hasMore } = getPreview(entry.content, 10);
+  const resolved = resolveNopalMarkdown(entry.content);
+  const { preview, hasMore } = getPreview(resolved, 10);
   const previewMd = useMarkdown(preview);
-  const fullMd = useMarkdown(entry.content);
+  const fullMd = useMarkdown(resolved);
 
   return (
     <div style={{ marginBottom: "80px" }}>

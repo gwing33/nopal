@@ -1,5 +1,6 @@
 import "@mdxeditor/editor/style.css";
 import "../styles/mdxeditor.css";
+import { buildDisplayMarkdown } from "../utils/nopalMarkdown";
 import {
   MDXEditor,
   type MDXEditorMethods,
@@ -444,32 +445,16 @@ export default function MdxEditorClient({
 
   // ── Preview content ─────────────────────────────────────────────────────
   /**
-   * Builds the full merged markdown string for the preview:
-   * placement tokens are resolved to real image/file markdown so that
-   * useMarkdown can render the document exactly as it will appear.
+   * Builds the full merged markdown string for the preview using the shared
+   * buildDisplayMarkdown utility — same logic used by PastLogEntry so both
+   * views are always consistent.
    * When not in preview mode we return "" to avoid unnecessary work.
    */
-  const previewMarkdown = useMemo(() => {
-    if (!isPreview) return "";
-
-    const paras = editorText.split("\n\n").filter((p) => p.trim());
-    const result = [...paras];
-
-    // Insert from the end so earlier indices don't shift
-    const sorted = [...placements].sort(
-      (a, b) => b.afterParagraphIndex - a.afterParagraphIndex,
-    );
-    for (const { fileIndex, afterParagraphIndex } of sorted) {
-      const file = files.find((f) => f.index === fileIndex);
-      if (!file?.url) continue;
-      const mdRef = file.isImage
-        ? `![${file.name}](${file.url})`
-        : `[${file.name}](${file.url})`;
-      result.splice(Math.min(afterParagraphIndex, result.length), 0, mdRef);
-    }
-
-    return result.join("\n\n");
-  }, [isPreview, editorText, placements, files]);
+  const previewMarkdown = useMemo(
+    () =>
+      isPreview ? buildDisplayMarkdown(editorText, placements, files) : "",
+    [isPreview, editorText, placements, files],
+  );
 
   // useMarkdown must be called unconditionally (Rules of Hooks).
   // When isPreview is false, previewMarkdown is "" so the hook is a no-op.
@@ -499,21 +484,31 @@ export default function MdxEditorClient({
 
   const handleDropLineDragOver = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
-      if (!e.dataTransfer.types.includes("application/x-nopal-file-index"))
-        return;
+      const { types } = e.dataTransfer;
+      const isChip = types.includes("application/x-nopal-chip-index");
+      const isFile = types.includes("application/x-nopal-file-index");
+      if (!isChip && !isFile) return;
       e.preventDefault();
-      e.dataTransfer.dropEffect = "copy";
+      // dropEffect must match the drag source's effectAllowed:
+      // tray items use "copy", chip repositions use "move"
+      e.dataTransfer.dropEffect = isChip ? "move" : "copy";
     },
     [],
   );
 
   const handleDropLineDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
-      const indexStr = e.dataTransfer.getData("application/x-nopal-file-index");
-      if (!indexStr) return;
+      const chipIndexStr = e.dataTransfer.getData(
+        "application/x-nopal-chip-index",
+      );
+      const fileIndexStr = e.dataTransfer.getData(
+        "application/x-nopal-file-index",
+      );
+      if (!chipIndexStr && !fileIndexStr) return;
       e.preventDefault();
 
-      const fileIndex = parseInt(indexStr);
+      const fileIndex = parseInt(chipIndexStr || fileIndexStr);
+      const isReposition = !!chipIndexStr;
       setIsDragging(false);
 
       // Use the snap-point index accumulated during dragover — it already
@@ -534,7 +529,15 @@ export default function MdxEditorClient({
             )
           : paragraphs.length;
 
-      setPlacements((prev) => [...prev, { fileIndex, afterParagraphIndex }]);
+      if (isReposition) {
+        // Remove the old placement and insert at the new position
+        setPlacements((prev) => [
+          ...prev.filter((p) => p.fileIndex !== fileIndex),
+          { fileIndex, afterParagraphIndex },
+        ]);
+      } else {
+        setPlacements((prev) => [...prev, { fileIndex, afterParagraphIndex }]);
+      }
     },
     [],
   );
@@ -551,9 +554,12 @@ export default function MdxEditorClient({
       );
       e.dataTransfer.effectAllowed = "move";
       setExpandedGroupKey(null);
+      setIsDragging(true);
     },
     [],
   );
+
+  const handleChipDragEnd = useCallback(() => setIsDragging(false), []);
 
   const handleTrayChipDragOver = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
@@ -671,6 +677,7 @@ export default function MdxEditorClient({
                 style={{ top: chipY, zIndex: chipZIndex }}
                 draggable
                 onDragStart={(e) => handleChipDragStart(e, chip.fileIndex)}
+                onDragEnd={handleChipDragEnd}
                 onClick={() => {
                   if (isStack && !isExpanded) {
                     setExpandedGroupKey(group.key);
