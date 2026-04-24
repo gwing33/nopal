@@ -424,7 +424,7 @@ export default function DailyLogPage() {
   // ── today + todayContent ──────────────────────────────────────────────────
   // Both start as "" so the server render and the initial client render
   // produce identical output (no hydration mismatch). The real device date
-  // and localStorage content are read in a single useEffect after hydration.
+  // and server content are read in a single useEffect after hydration.
 
   const [today, setToday] = useState("");
   const [todayContent, setTodayContent] = useState("");
@@ -433,19 +433,8 @@ export default function DailyLogPage() {
     const d = localDateString();
     setToday(d);
 
-    const lsKey = `nopal:daily-log:${user._id}:${d}`;
-    try {
-      const raw = localStorage.getItem(lsKey);
-      if (raw !== null) {
-        setTodayContent(JSON.parse(raw) as string);
-      } else {
-        // No localStorage copy — fall back to whatever the server has saved
-        const serverEntry = serverEntries.find((e) => e.date === d);
-        if (serverEntry?.content) setTodayContent(serverEntry.content);
-      }
-    } catch {
-      // Ignore storage / parse errors
-    }
+    const serverEntry = serverEntries.find((e) => e.date === d);
+    if (serverEntry?.content) setTodayContent(serverEntry.content);
   }, []); // intentionally empty — run exactly once after hydration
 
   // ── Derived values (gated on today being resolved) ───────────────────────
@@ -503,20 +492,9 @@ export default function DailyLogPage() {
   const handleChange = useCallback(
     (content: string) => {
       setTodayContent(content);
-      // Persist to localStorage immediately
-      if (today) {
-        try {
-          localStorage.setItem(
-            `nopal:daily-log:${user._id}:${today}`,
-            JSON.stringify(content),
-          );
-        } catch {
-          // Ignore quota / access errors
-        }
-      }
       scheduleSave(content);
     },
-    [today, user._id, scheduleSave],
+    [today, scheduleSave],
   );
 
   // Blur triggers an immediate save so switching tabs never loses work
