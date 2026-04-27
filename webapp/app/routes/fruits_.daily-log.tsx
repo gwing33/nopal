@@ -20,7 +20,7 @@ import {
   type DailyLog,
 } from "../data/dailyLog.server";
 import { useMarkdown } from "../hooks/useMarkdown";
-import { resolveNopalMarkdown } from "../utils/nopalMarkdown";
+import { resolveNopalMarkdown } from "../util/nopalMarkdown";
 import projectStyles from "../styles/project.css?url";
 
 // Lazy-load the MDX editor — client only, never runs on the server.

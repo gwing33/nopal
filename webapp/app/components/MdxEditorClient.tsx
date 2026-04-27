@@ -1,6 +1,6 @@
 import "@mdxeditor/editor/style.css";
 import "../styles/mdxeditor.css";
-import { buildDisplayMarkdown } from "../utils/nopalMarkdown";
+import { buildDisplayMarkdown } from "../util/nopalMarkdown";
 import {
   MDXEditor,
   type MDXEditorMethods,
