@@ -1,18 +1,19 @@
-import {
-  json,
-  redirect,
-  ActionFunctionArgs,
-  LoaderFunctionArgs,
-} from "@remix-run/node";
-import { authenticator } from "../modules/auth/auth.server";
+import { redirect, ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import { getUser } from "../modules/auth/auth.server";
 import {
   Form,
   useActionData,
   useLoaderData,
   useNavigation,
   useRevalidator,
-} from "@remix-run/react";
+} from "react-router";
 import { useEffect, useRef, useState } from "react";
+
+// React Router v7 removed the json() helper — this shim preserves the existing
+// call-sites without requiring a rewrite of every return statement.
+function json<T>(data: T): T {
+  return data;
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -125,9 +126,8 @@ async function checkChannelAccess(
 // ── Loader ────────────────────────────────────────────────────────────────────
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  await authenticator.isAuthenticated(request, {
-    failureRedirect: "/mrgnt/login",
-  });
+  const user = await getUser(request);
+  if (!user) return redirect("/login");
 
   const url = new URL(request.url);
   const threadId =
@@ -236,9 +236,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 // ── Action ────────────────────────────────────────────────────────────────────
 
 export async function action({ request }: ActionFunctionArgs) {
-  await authenticator.isAuthenticated(request, {
-    failureRedirect: "/mrgnt/login",
-  });
+  const user = await getUser(request);
+  if (!user) return redirect("/login");
 
   const botToken = process.env.DISCORD_BOT_TOKEN;
   const channelId = process.env.DISCORD_CHANNEL_ID;
@@ -544,7 +543,7 @@ export default function MrgntDiscord() {
 
             {/* Reply form */}
             <Form
-              onSubmit={handleSubmit}
+              onSubmit={(e) => handleSubmit(e.currentTarget)}
               ref={replyFormRef}
               method="post"
               className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col gap-3"

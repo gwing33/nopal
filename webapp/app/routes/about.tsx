@@ -1,7 +1,7 @@
-import { Link } from "@remix-run/react";
+import { Link } from "react-router";
 import { Layout } from "../components/Layout";
 import { FooterDiscovery } from "../components/Footer";
-import { LinksFunction } from "@remix-run/node";
+import { LinksFunction } from "react-router";
 import projectStyles from "../styles/project.css?url";
 
 export const links: LinksFunction = () => [

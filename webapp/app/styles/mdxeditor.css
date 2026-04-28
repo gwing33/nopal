@@ -1,0 +1,821 @@
+/* ── MDX Editor – Fruits Design System Theme ─────────────────────────────── *
+ *                                                                             *
+ * The doubled `.mdxeditor.mdxeditor` selector produces specificity (0,2,0),  *
+ * which beats the editor's own `._editorRoot_*` single-class declaration     *
+ * (0,1,0), so our values win regardless of source-order.                     *
+ * ────────────────────────────────────────────────────────────────────────── */
+
+.mdxeditor.mdxeditor {
+  /* ── Base surfaces ──────────────────────────────────────────────────────── *
+   * Mapped to the farground → midground → foreground surface scale.           */
+  --basePageBg: var(--farground); /* #fff9f1  editor content bg    */
+  --baseBase: var(--farground); /* lightest surface              */
+  --baseBgSubtle: #f5ede0; /* between farground & midground  */
+  --baseBg: var(--midground); /* #ede4da  toolbar bg           */
+  --baseBgHover: var(--foreground); /* #e5d6c5  hover tint           */
+  --baseBgActive: #d5c4af; /* active / pressed              */
+  --baseLine: var(--foreground); /* hairline rules                */
+  --baseBorder: var(--midground); /* control borders               */
+  --baseBorderHover: var(--foreground); /* border on hover               */
+  --baseSolid: var(--text-subtle); /* #817186  secondary solid bg   */
+  --baseSolidHover: var(--purple-light); /* #7f5b8b                       */
+  --baseText: var(--text-subtle); /* #817186  secondary / icon text */
+  --baseTextContrast: var(--purple); /* #3f2b46  primary body text    */
+
+  /* ── Accent – purple / moon palette ────────────────────────────────────── *
+   * Used for selections, active toolbar buttons, links, focus rings.         */
+  --accentBase: #f3f0fb;
+  --accentBgSubtle: #e8e4f8;
+  --accentBg: var(--moon); /* #c4c6fc  lavender             */
+  --accentBgHover: #b2b4f7;
+  --accentBgActive: #9c9ff0;
+  --accentLine: var(--purple-light); /* #7f5b8b                       */
+  --accentBorder: var(--purple-light);
+  --accentBorderHover: var(--purple);
+  --accentSolid: var(--purple); /* #3f2b46  active-state pill    */
+  --accentSolidHover: #2d1e35;
+  --accentText: var(--purple-light);
+  --accentTextContrast: var(--farground); /* light text on purple bg       */
+
+  /* ── Typography ─────────────────────────────────────────────────────────── */
+  --font-body: inherit; /* pick up the app's typeface    */
+  --font-mono: ui-monospace, "SF Mono", "Fira Code", "Fira Mono", monospace;
+
+  /* ── Radii ───────────────────────────────────────────────────────────────── */
+  --radius-none: 0px;
+  --radius-base: 4px;
+  --radius-small: 4px;
+  --radius-medium: 6px;
+  --radius-large: 8px;
+  --radius-extra-large: 12px;
+  --radius-full: 9999px;
+}
+
+/* ── Editor outer wrapper ─────────────────────────────────────────────────── *
+ * Use this class on the div that wraps <MdxEditorClient> instead of inline   *
+ * styles so the dark-mode media query can swap out the background.           */
+.mdx-editor-wrapper {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--midground);
+  background: var(--farground);
+}
+
+/* ── Content / editable area ─────────────────────────────────────────────── */
+.mdxeditor [class*="_contentEditable_"],
+.mdxeditor [class*="_rootContentEditableWrapper_"] {
+  padding: 16px;
+  min-height: 260px;
+  font-size: 0.9375rem; /* 15 px – comfortable reading size  */
+  line-height: 1.2;
+  color: var(--purple);
+}
+
+/* ── Gutter indicators ───────────────────────────────────────────────────── *
+ * Each block element with a special type gets a subtle monospace label in    *
+ * the 52 px left-padding gutter: # / ## / ### for headings, > for quotes.   *
+ * Uses ::before on a position:relative ancestor so it never interferes with  *
+ * cursor placement or text selection inside the editable area.               */
+
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  :is(h1, h2, h3, blockquote) {
+  position: relative;
+}
+
+/* shared ::before layout */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  :is(h1, h2, h3, blockquote)::before {
+  position: absolute;
+  top: 4px;
+  left: -38px;
+  width: 32px;
+  text-align: right;
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-weight: 400;
+  color: var(--purple-light);
+  opacity: 0.4;
+  pointer-events: none;
+  user-select: none;
+  line-height: inherit;
+}
+
+/* specific labels */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  h1::before {
+  content: "#";
+  font-size: 1em;
+}
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  h2::before {
+  content: "##";
+  font-size: 0.8rem;
+}
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  h3::before {
+  content: "###";
+  font-size: 0.7rem;
+}
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  blockquote::before {
+  content: ">";
+  font-size: 0.9rem;
+}
+
+/* ── Headings inside the editor ──────────────────────────────────────────── */
+.mdxeditor [class*="_contentEditable_"] h1,
+.mdxeditor [class*="_rootContentEditableWrapper_"] h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--purple);
+  margin-top: 1.25em;
+  margin-bottom: 0.4em;
+}
+
+.mdxeditor [class*="_contentEditable_"] h2,
+.mdxeditor [class*="_rootContentEditableWrapper_"] h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--purple-light);
+  margin-top: 1.1em;
+  margin-bottom: 0.35em;
+}
+
+.mdxeditor [class*="_contentEditable_"] h3,
+.mdxeditor [class*="_rootContentEditableWrapper_"] h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--purple-light);
+  margin-top: 1em;
+  margin-bottom: 0.3em;
+}
+
+/* ── Blockquote ──────────────────────────────────────────────────────────── */
+.mdxeditor [class*="_contentEditable_"] blockquote,
+.mdxeditor [class*="_rootContentEditableWrapper_"] blockquote {
+  border-left: 3px solid var(--purple-light);
+  padding-left: 16px;
+  color: var(--text-subtle);
+  font-style: italic;
+}
+
+/* ── List items ──────────────────────────────────────────────────────────── *
+ * Remove native list markers and replace with styled ::before indicators.   *
+ * Nested items (_nestedListItem_*) already have display:none on ::before    *
+ * from Lexical's own CSS; our higher-specificity rule replaces that with a  *
+ * consistent bullet, keeping the visual language uniform at every depth.    */
+
+/* unordered — bullet */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ul {
+  list-style: none;
+  padding-left: 1em;
+}
+
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ul
+  > li {
+  position: relative;
+}
+
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ul
+  > li::before {
+  content: "•";
+  position: absolute;
+  left: -1.2em;
+  font-size: 0.85em;
+  color: var(--purple-light);
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+  line-height: inherit;
+}
+
+/* second-level unordered — dash */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ul
+  ul
+  > li::before {
+  content: "–";
+}
+
+/* ordered — number */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ol {
+  list-style: none;
+  padding-left: 1em;
+  counter-reset: mdx-ol;
+}
+
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ol
+  > li {
+  position: relative;
+  counter-increment: mdx-ol;
+}
+
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ol
+  > li::before {
+  content: counter(mdx-ol) ".";
+  position: absolute;
+  top: 2px;
+  left: -1.8em;
+  width: 1.5em;
+  text-align: right;
+  font-size: 0.78rem;
+  font-family: ui-monospace, "SF Mono", monospace;
+  color: var(--purple-light);
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+  line-height: inherit;
+}
+
+/* second-level ordered — alphabetical (a. b. c.) */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ol
+  ol {
+  counter-reset: mdx-ol-alpha;
+}
+
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ol
+  ol
+  > li {
+  counter-increment: mdx-ol-alpha;
+}
+
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  ol
+  ol
+  > li::before {
+  content: counter(mdx-ol-alpha, lower-alpha) ".";
+}
+
+/* ── Inline code ─────────────────────────────────────────────────────────── */
+.mdxeditor [class*="_contentEditable_"] code,
+.mdxeditor [class*="_rootContentEditableWrapper_"] code {
+  background: var(--midground);
+  color: var(--purple);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 0.875em;
+  font-family: var(--font-mono);
+}
+
+/* ── Horizontal rule ─────────────────────────────────────────────────────── */
+.mdxeditor [class*="_contentEditable_"] hr,
+.mdxeditor [class*="_rootContentEditableWrapper_"] hr {
+  border: none;
+  border-top: 1px solid var(--midground);
+  margin: 1.5em 0;
+}
+
+/* ── Links ───────────────────────────────────────────────────────────────── */
+.mdxeditor [class*="_contentEditable_"] a,
+.mdxeditor [class*="_rootContentEditableWrapper_"] a {
+  color: var(--purple-light);
+  text-decoration: underline;
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--purple-light) 40%,
+    transparent
+  );
+  text-underline-offset: 2px;
+}
+
+.mdxeditor [class*="_contentEditable_"] a:hover,
+.mdxeditor [class*="_rootContentEditableWrapper_"] a:hover {
+  color: var(--purple);
+  text-decoration-color: var(--purple);
+}
+
+/* ── Select / dropdown popover ───────────────────────────────────────────── */
+.mdxeditor [class*="_selectContainer_"],
+.mdxeditor [class*="_toolbarNodeKindSelectContainer_"],
+.mdxeditor [class*="_toolbarButtonDropdownContainer_"] {
+  background-color: var(--farground);
+  border: 1px solid var(--midground);
+  box-shadow: 0 4px 16px rgba(63, 43, 70, 0.12);
+}
+
+.mdxeditor [class*="_selectItem_"]:hover {
+  background-color: var(--midground);
+  color: var(--purple);
+}
+
+/* ── Link dialog ─────────────────────────────────────────────────────────── */
+.mdxeditor [class*="_linkDialogPopoverContent_"],
+.mdxeditor [class*="_tableEditor_"] {
+  background: var(--farground);
+  border: 1px solid var(--midground);
+  box-shadow: 0 4px 16px rgba(63, 43, 70, 0.12);
+}
+
+/* ── Image grid layout ───────────────────────────────────────────────────── *
+ * When a Lexical paragraph contains image nodes, each image is rendered as   *
+ * a <span> (decorator container) holding a div[class*="_imageWrapper_"].     *
+ * We turn the paragraph into a flex row so images tile naturally:            *
+ *   • 1 image  → grows to fill the full width, natural aspect ratio          *
+ *   • 2+ images → equal-width columns, square-cropped for a clean grid       */
+
+/* Paragraph containing at least one image wrapper → flex row */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  p:has([class*="_imageWrapper_"]) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+/* Each image-containing span is a flex item with a min width */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  p:has([class*="_imageWrapper_"])
+  > span {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+/* Image wrapper fills its span */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  p:has([class*="_imageWrapper_"])
+  [class*="_imageWrapper_"] {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* img fills the wrapper */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  p:has([class*="_imageWrapper_"])
+  [class*="_imageWrapper_"]
+  img {
+  display: block;
+  width: 100%;
+}
+
+/* Multiple images in the same paragraph → grid, no crop */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  p:has([class*="_imageWrapper_"])
+  > span:not(:only-child)
+  [class*="_imageWrapper_"]
+  img {
+  border-radius: 6px;
+}
+
+/* ── Broken-image placeholder: natural size, no crop ───────────────────── */
+/* img[src*="nopal-broken"] works because encodeURIComponent leaves hyphens  *
+ * and ASCII letters untouched, so the id="nopal-broken" attribute value     *
+ * remains a literal substring of the data URI.                              */
+
+/* The flex span shouldn't stretch to fill available space */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  p:has([class*="_imageWrapper_"])
+  > span:has(img[src*="nopal-broken"]) {
+  flex: 0 0 auto;
+}
+
+/* The imageWrapper itself shouldn't force full width */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  p:has([class*="_imageWrapper_"])
+  > span:has(img[src*="nopal-broken"])
+  [class*="_imageWrapper_"] {
+  width: auto !important;
+  max-width: 160px !important;
+}
+
+/* The img: natural dimensions, no square-crop overrides */
+.mdxeditor
+  :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+  img[src*="nopal-broken"] {
+  width: auto !important;
+  max-width: 160px !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  border-radius: 0 !important;
+}
+
+/* ── Nopal placed-file chips (outside the editor) ────────────────────────── *
+ * Absolutely-positioned circular buttons that sit on the right side of the   *
+ * editor container, one per placed file.  They float above the content with  *
+ * a shadow and a white ring so they read clearly on any background.          */
+
+.nopal-image-chip {
+  position: absolute;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: grab;
+  /* overflow visible so the stack-count badge can bleed outside */
+  overflow: visible;
+  z-index: 10;
+  transform: translateY(-50%);
+  box-shadow:
+    0 4px 14px rgba(63, 43, 70, 0.35),
+    0 0 0 2.5px rgba(255, 255, 255, 0.92);
+  transition:
+    top 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+
+.nopal-image-chip:active {
+  cursor: grabbing;
+}
+
+.nopal-image-chip:hover {
+  box-shadow:
+    0 6px 20px rgba(63, 43, 70, 0.45),
+    0 0 0 2.5px rgba(255, 255, 255, 0.92);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.nopal-image-chip img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 50%;
+  overflow: hidden; /* clip image to circle (button itself is overflow:visible) */
+}
+
+/* Index badge that appears on hover */
+.nopal-image-chip-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(63, 43, 70, 0.55);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+
+.nopal-image-chip:hover .nopal-image-chip-label {
+  opacity: 1;
+}
+
+/* Stacked state — cursor indicates clickability (tap to fan out) */
+.nopal-image-chip--stacked {
+  cursor: pointer;
+}
+
+/* Count badge: sits in the top-right corner of the top chip in a stack */
+.nopal-image-chip-stack-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 8px;
+  background: var(--purple-light, #a78bfa);
+  color: #fff;
+  font-size: 9px;
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 1px 4px rgba(63, 43, 70, 0.3);
+}
+
+/* ── Nopal file tray ──────────────────────────────────────────────────────── *
+ * Rendered below the editor; shows unplaced files as draggable chips.        */
+
+.nopal-tray {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--foreground, #e5d6c5);
+  background: var(--midground, #ede4da);
+  min-height: 48px;
+}
+
+.nopal-tray > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.nopal-tray-item {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 5px;
+  overflow: hidden;
+  cursor: grab;
+  border: 1px solid var(--foreground, #e5d6c5);
+  flex-shrink: 0;
+  background: var(--farground, #fff9f1);
+  transition:
+    box-shadow 0.15s,
+    opacity 0.15s;
+}
+
+.nopal-tray-item:hover:not(.nopal-tray-item--uploading) {
+  box-shadow: 0 2px 8px rgba(63, 43, 70, 0.18);
+}
+
+.nopal-tray-item:active:not(.nopal-tray-item--uploading) {
+  cursor: grabbing;
+}
+
+.nopal-tray-item--uploading {
+  cursor: default;
+  border-style: dashed;
+  opacity: 0.65;
+}
+
+.nopal-tray-item-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.nopal-tray-item-badge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  font-size: 7px;
+  font-family: ui-monospace, "SF Mono", monospace;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.38);
+  padding: 1px 2px;
+  text-align: center;
+  line-height: 1.5;
+  pointer-events: none;
+  user-select: none;
+}
+
+.nopal-tray-add {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--purple-light, #a78bfa);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  box-shadow: 0 1px 4px rgba(63, 43, 70, 0.22);
+  transition:
+    opacity 0.15s,
+    background 0.15s;
+}
+
+.nopal-tray-add:hover {
+  opacity: 0.82;
+}
+
+/* Dark-mode image grid – no extra overrides needed (inherits above) */
+
+/* ── Preview mode ─────────────────────────────────────────────────────────── *
+ * Wrapper for the useMarkdown output.  Content styling comes from the        *
+ * app-wide .uncooked-markdown rules in project.css.                          */
+
+.nopal-preview {
+  padding: 12px 16px 20px;
+  min-height: 80px;
+}
+
+/* ── Preview toggle bar ───────────────────────────────────────────────────── */
+
+.nopal-preview-toggle-bar {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+.nopal-preview-toggle {
+  display: inline-block;
+  padding: 3px 12px;
+  font-size: 0.72rem;
+  font-family: ui-monospace, "SF Mono", monospace;
+  letter-spacing: 0.03em;
+  color: var(--text-subtle, #817186);
+  background: none;
+  border: 1px solid var(--midground, #ede4da);
+  border-radius: 12px;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.nopal-preview-toggle:hover {
+  color: var(--purple-light, #a78bfa);
+  border-color: var(--purple-light, #a78bfa);
+}
+
+/* ── Dark mode overrides ─────────────────────────────────────────────────── *
+ * Mirrors the app's @media (prefers-color-scheme: dark) pattern.             */
+@media (prefers-color-scheme: dark) {
+  .mdxeditor.mdxeditor {
+    background-color: var(--dark-farground);
+    --basePageBg: var(--dark-farground);
+    --baseBase: var(--dark-farground);
+    --baseBgSubtle: #555679;
+    --baseBg: var(--dark-midground);
+    --baseBgHover: var(--dark-foreground);
+    --baseBgActive: #9fa0c4;
+    --baseLine: var(--dark-foreground);
+    --baseBorder: var(--dark-midground);
+    --baseBorderHover: var(--dark-foreground);
+    --baseSolid: var(--dark-foreground);
+    --baseSolidHover: #a0a1c8;
+    --baseText: var(--text-subtle-dark);
+    --baseTextContrast: #ffffff;
+
+    --accentBase: #3d3e5e;
+    --accentBgSubtle: #4a4b72;
+    --accentBg: #6667a0;
+    --accentBgHover: #7778b4;
+    --accentBgActive: #8889c6;
+    --accentLine: var(--text-subtle-dark);
+    --accentBorder: var(--text-subtle-dark);
+    --accentBorderHover: #e0d0e6;
+    --accentSolid: var(--pink);
+    --accentSolidHover: #e0b0f0;
+    --accentText: var(--pink);
+    --accentTextContrast: var(--purple);
+  }
+
+  .mdxeditor [class*="_contentEditable_"],
+  .mdxeditor [class*="_rootContentEditableWrapper_"] {
+    background-color: var(--dark-farground);
+    color: #ffffff;
+  }
+
+  .mdxeditor [class*="_contentEditable_"] h1,
+  .mdxeditor [class*="_rootContentEditableWrapper_"] h1 {
+    color: #ffffff;
+  }
+
+  .mdxeditor [class*="_contentEditable_"] h2,
+  .mdxeditor [class*="_rootContentEditableWrapper_"] h2,
+  .mdxeditor [class*="_contentEditable_"] h3,
+  .mdxeditor [class*="_rootContentEditableWrapper_"] h3 {
+    color: var(--white);
+  }
+
+  .mdxeditor [class*="_contentEditable_"] blockquote,
+  .mdxeditor [class*="_rootContentEditableWrapper_"] blockquote {
+    border-left-color: var(--pink);
+    color: var(--text-subtle-dark);
+  }
+
+  .mdxeditor [class*="_contentEditable_"] code,
+  .mdxeditor [class*="_rootContentEditableWrapper_"] code {
+    background: var(--dark-midground);
+    color: var(--pink);
+  }
+
+  .mdxeditor [class*="_contentEditable_"] hr,
+  .mdxeditor [class*="_rootContentEditableWrapper_"] hr {
+    border-top-color: var(--dark-midground);
+  }
+
+  .mdxeditor [class*="_contentEditable_"] a,
+  .mdxeditor [class*="_rootContentEditableWrapper_"] a {
+    color: var(--pink);
+    text-decoration-color: color-mix(in srgb, var(--pink) 50%, transparent);
+  }
+
+  .mdxeditor [class*="_contentEditable_"] a:hover,
+  .mdxeditor [class*="_rootContentEditableWrapper_"] a:hover {
+    color: #f0c0ff;
+    text-decoration-color: #f0c0ff;
+  }
+
+  .mdxeditor [class*="_selectContainer_"],
+  .mdxeditor [class*="_toolbarNodeKindSelectContainer_"],
+  .mdxeditor [class*="_toolbarButtonDropdownContainer_"] {
+    background-color: var(--dark-farground);
+    border-color: var(--dark-midground);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  }
+
+  .mdxeditor [class*="_selectItem_"]:hover {
+    background-color: var(--dark-midground);
+    color: #ffffff;
+  }
+
+  .mdxeditor [class*="_linkDialogPopoverContent_"],
+  .mdxeditor [class*="_tableEditor_"] {
+    background: var(--dark-farground);
+    border-color: var(--dark-midground);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  }
+
+  .mdx-editor-wrapper {
+    border-color: var(--dark-midground);
+    background: var(--dark-farground);
+  }
+
+  /* gutter + list indicators — softer in dark mode */
+  .mdxeditor
+    :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+    :is(h1, h2, h3, blockquote)::before,
+  .mdxeditor
+    :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+    ul
+    > li::before,
+  .mdxeditor
+    :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+    ul
+    ul
+    > li::before,
+  .mdxeditor
+    :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+    ol
+    > li::before,
+  .mdxeditor
+    :is([class*="_contentEditable_"], [class*="_rootContentEditableWrapper_"])
+    ol
+    ol
+    > li::before {
+    color: var(--white);
+    opacity: 0.35;
+  }
+
+  /* Placed-file chips – dark mode */
+  .nopal-image-chip {
+    box-shadow:
+      0 4px 14px rgba(0, 0, 0, 0.55),
+      0 0 0 2.5px rgba(40, 32, 52, 0.92);
+  }
+
+  .nopal-image-chip:hover {
+    box-shadow:
+      0 6px 20px rgba(0, 0, 0, 0.65),
+      0 0 0 2.5px rgba(40, 32, 52, 0.92);
+  }
+
+  /* Tray – dark mode */
+  .nopal-tray {
+    background: color-mix(in srgb, var(--midground, #2a2035) 80%, #000);
+    border-top-color: var(--foreground, #3a2f45);
+  }
+
+  .nopal-tray-item {
+    border-color: var(--foreground, #3a2f45);
+    background: var(--farground, #1e1826);
+  }
+
+  .nopal-tray-item:hover:not(.nopal-tray-item--uploading) {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Preview toggle – dark mode */
+  .nopal-preview-toggle {
+    border-color: var(--dark-midground, #2a2035);
+    color: var(--text-subtle-dark, #9a8ea8);
+  }
+
+  .nopal-preview-toggle:hover {
+    color: var(--moon, #c4c6fc);
+    border-color: var(--moon, #c4c6fc);
+  }
+}

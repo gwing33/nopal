@@ -3,38 +3,47 @@
   "version": "1.0.0",
   "description": "",
   "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "main": "index.js",
   "scripts": {
     "test": "vitest",
-    "build": "npx remix vite:build",
+    "build": "react-router build",
     "dev": "node ./server.js",
     "start": "cross-env NODE_ENV=production node ./server.js",
     "clean": "rm -rf ./build",
-    "startDb": "surreal start -u opuntia -p pads rocksdb:build/database.db"
+    "seed:data": "vite-node scripts/seed/index.ts",
+    "typecheck": "react-router typegen && tsc"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.797.0",
+    "@mdxeditor/editor": "^3.54.0",
     "@notionhq/client": "^2.3.0",
-    "@remix-run/express": "^2.17.4",
-    "@remix-run/node": "^2.17.4",
-    "@remix-run/react": "^2.17.4",
+    "@react-email/render": "^2.0.5",
+    "@react-router/express": "^7.14.0",
+    "@react-router/node": "^7.14.0",
     "cross-env": "^7.0.3",
     "express": "^4.19.2",
     "isbot": "^4.4.0",
+    "nodemailer": "^8.0.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "remix-auth": "^3.7.0",
-    "remix-auth-totp": "^3.4.2",
+    "react-router": "^7.14.0",
+    "remix-auth": "^4.2.0",
+    "remix-auth-totp": "^4.0.0",
     "resend": "^6.6.0",
     "showdown": "^2.1.0",
     "surrealdb": "^1.3.2"
   },
   "devDependencies": {
     "@flydotio/dockerfile": "^0.5.8",
-    "@remix-run/dev": "^2.17.4",
+    "@react-router/dev": "^7.14.0",
+    "@react-router/fs-routes": "^7.14.0",
+    "@types/nodemailer": "^8.0.0",
     "@types/react": "^18.3.3",
     "@types/showdown": "^2.0.6",
     "@webgpu/types": "^0.1.69",
@@ -43,6 +52,7 @@
     "postcss-nesting": "^13.0.0",
     "tailwindcss": "^3.4.3",
     "vite": "^5.2.12",
+    "vite-node": "^6.0.0",
     "vitest": "^2.1.8"
   }
 }

@@ -6,7 +6,7 @@ import {
   GoodButtonGuiding,
 } from "../components/GoodAssets";
 import { RandomFiveFactors } from "../components/FiveFactors";
-import { Link } from "@remix-run/react";
+import { Link } from "react-router";
 
 export default function Index() {
   return (
