@@ -22,8 +22,24 @@ type Pages = {
   "/fruits/good-building-system/new": {
     params: {};
   };
+  "/api/building-system/categories": {
+    params: {};
+  };
+  "/api/building-system/categories/:id": {
+    params: {
+      "id": string;
+    };
+  };
   "/fruits/good-building-system": {
     params: {};
+  };
+  "/api/building-system/systems": {
+    params: {};
+  };
+  "/api/building-system/systems/:id": {
+    params: {
+      "id": string;
+    };
   };
   "/api/calendar/calendars/:id": {
     params: {
@@ -54,6 +70,14 @@ type Pages = {
   };
   "/grandpas-cabin-recipe": {
     params: {};
+  };
+  "/api/project-messages": {
+    params: {};
+  };
+  "/api/project-messages/:id": {
+    params: {
+      "id": string;
+    };
   };
   "/fruits/all-projects": {
     params: {};
@@ -92,10 +116,21 @@ type Pages = {
   "/sunny-home-no1": {
     params: {};
   };
+  "/api/daily-log": {
+    params: {};
+  };
   "/good/building": {
     params: {};
   };
   "/materials/:id": {
+    params: {
+      "id": string;
+    };
+  };
+  "/api/projects": {
+    params: {};
+  };
+  "/api/projects/:id": {
     params: {
       "id": string;
     };
@@ -121,6 +156,14 @@ type Pages = {
   };
   "/tools/loads": {
     params: {};
+  };
+  "/api/humans": {
+    params: {};
+  };
+  "/api/humans/:id": {
+    params: {
+      "id": string;
+    };
   };
   "/api/upload": {
     params: {};
@@ -216,7 +259,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/fruits/good-building-system" | "/api/calendar/calendars/:id" | "/api/calendar/collections" | "/api/calendar/collections/:collectionId/calendars" | "/api/calendar/collections/:id" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/fruits/daily-log" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/fruits/styles" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/api/upload" | "/magic-link" | "/plant-seed" | "/tools/mtf" | "/docs/api" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
+    page: "/" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/api/building-system/categories" | "/api/building-system/categories/:id" | "/fruits/good-building-system" | "/api/building-system/systems" | "/api/building-system/systems/:id" | "/api/calendar/calendars/:id" | "/api/calendar/collections" | "/api/calendar/collections/:collectionId/calendars" | "/api/calendar/collections/:id" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/api/project-messages" | "/api/project-messages/:id" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/fruits/daily-log" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/fruits/styles" | "/good/sunny-no1" | "/sunny-home-no1" | "/api/daily-log" | "/good/building" | "/materials/:id" | "/api/projects" | "/api/projects/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/api/humans" | "/api/humans/:id" | "/api/upload" | "/magic-link" | "/plant-seed" | "/tools/mtf" | "/docs/api" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
   };
   "routes/fruits_.good-building-system_.$id.tsx": {
     id: "routes/fruits_.good-building-system_.$id";
@@ -226,9 +269,25 @@ type RouteFiles = {
     id: "routes/fruits_.good-building-system_.new";
     page: "/fruits/good-building-system/new";
   };
+  "routes/api.building-system.categories.tsx": {
+    id: "routes/api.building-system.categories";
+    page: "/api/building-system/categories" | "/api/building-system/categories/:id";
+  };
+  "routes/api.building-system.categories.$id.tsx": {
+    id: "routes/api.building-system.categories.$id";
+    page: "/api/building-system/categories/:id";
+  };
   "routes/fruits_.good-building-system.tsx": {
     id: "routes/fruits_.good-building-system";
     page: "/fruits/good-building-system";
+  };
+  "routes/api.building-system.systems.tsx": {
+    id: "routes/api.building-system.systems";
+    page: "/api/building-system/systems" | "/api/building-system/systems/:id";
+  };
+  "routes/api.building-system.systems.$id.tsx": {
+    id: "routes/api.building-system.systems.$id";
+    page: "/api/building-system/systems/:id";
   };
   "routes/api.calendar.calendars.$id.tsx": {
     id: "routes/api.calendar.calendars.$id";
@@ -261,6 +320,14 @@ type RouteFiles = {
   "routes/grandpas-cabin-recipe.tsx": {
     id: "routes/grandpas-cabin-recipe";
     page: "/grandpas-cabin-recipe";
+  };
+  "routes/api.project-messages.tsx": {
+    id: "routes/api.project-messages";
+    page: "/api/project-messages" | "/api/project-messages/:id";
+  };
+  "routes/api.project-messages.$id.tsx": {
+    id: "routes/api.project-messages.$id";
+    page: "/api/project-messages/:id";
   };
   "routes/fruits_.all-projects.tsx": {
     id: "routes/fruits_.all-projects";
@@ -306,6 +373,10 @@ type RouteFiles = {
     id: "routes/sunny-home-no1";
     page: "/sunny-home-no1";
   };
+  "routes/api.daily-log.tsx": {
+    id: "routes/api.daily-log";
+    page: "/api/daily-log";
+  };
   "routes/good.building.tsx": {
     id: "routes/good.building";
     page: "/good/building";
@@ -313,6 +384,14 @@ type RouteFiles = {
   "routes/materials.$id.tsx": {
     id: "routes/materials.$id";
     page: "/materials/:id";
+  };
+  "routes/api.projects.tsx": {
+    id: "routes/api.projects";
+    page: "/api/projects" | "/api/projects/:id";
+  };
+  "routes/api.projects.$id.tsx": {
+    id: "routes/api.projects.$id";
+    page: "/api/projects/:id";
   };
   "routes/roots._index.tsx": {
     id: "routes/roots._index";
@@ -337,6 +416,14 @@ type RouteFiles = {
   "routes/tools.loads.tsx": {
     id: "routes/tools.loads";
     page: "/tools/loads";
+  };
+  "routes/api.humans.tsx": {
+    id: "routes/api.humans";
+    page: "/api/humans" | "/api/humans/:id";
+  };
+  "routes/api.humans.$id.tsx": {
+    id: "routes/api.humans.$id";
+    page: "/api/humans/:id";
   };
   "routes/api.upload.tsx": {
     id: "routes/api.upload";
@@ -472,7 +559,11 @@ type RouteModules = {
   "root": typeof import("./app/root.tsx");
   "routes/fruits_.good-building-system_.$id": typeof import("./app/routes/fruits_.good-building-system_.$id.tsx");
   "routes/fruits_.good-building-system_.new": typeof import("./app/routes/fruits_.good-building-system_.new.tsx");
+  "routes/api.building-system.categories": typeof import("./app/routes/api.building-system.categories.tsx");
+  "routes/api.building-system.categories.$id": typeof import("./app/routes/api.building-system.categories.$id.tsx");
   "routes/fruits_.good-building-system": typeof import("./app/routes/fruits_.good-building-system.tsx");
+  "routes/api.building-system.systems": typeof import("./app/routes/api.building-system.systems.tsx");
+  "routes/api.building-system.systems.$id": typeof import("./app/routes/api.building-system.systems.$id.tsx");
   "routes/api.calendar.calendars.$id": typeof import("./app/routes/api.calendar.calendars.$id.tsx");
   "routes/api.calendar.collections": typeof import("./app/routes/api.calendar.collections.tsx");
   "routes/api.calendar.collections.$collectionId.calendars": typeof import("./app/routes/api.calendar.collections.$collectionId.calendars.tsx");
@@ -481,6 +572,8 @@ type RouteModules = {
   "routes/tools.grade-differential": typeof import("./app/routes/tools.grade-differential.tsx");
   "routes/tools.building-envelope": typeof import("./app/routes/tools.building-envelope.tsx");
   "routes/grandpas-cabin-recipe": typeof import("./app/routes/grandpas-cabin-recipe.tsx");
+  "routes/api.project-messages": typeof import("./app/routes/api.project-messages.tsx");
+  "routes/api.project-messages.$id": typeof import("./app/routes/api.project-messages.$id.tsx");
   "routes/fruits_.all-projects": typeof import("./app/routes/fruits_.all-projects.tsx");
   "routes/fruits_.projects.$id": typeof import("./app/routes/fruits_.projects.$id.tsx");
   "routes/tools.erv-calculator": typeof import("./app/routes/tools.erv-calculator.tsx");
@@ -492,14 +585,19 @@ type RouteModules = {
   "routes/fruits_.styles": typeof import("./app/routes/fruits_.styles.tsx");
   "routes/good.sunny-no1": typeof import("./app/routes/good.sunny-no1.tsx");
   "routes/sunny-home-no1": typeof import("./app/routes/sunny-home-no1.tsx");
+  "routes/api.daily-log": typeof import("./app/routes/api.daily-log.tsx");
   "routes/good.building": typeof import("./app/routes/good.building.tsx");
   "routes/materials.$id": typeof import("./app/routes/materials.$id.tsx");
+  "routes/api.projects": typeof import("./app/routes/api.projects.tsx");
+  "routes/api.projects.$id": typeof import("./app/routes/api.projects.$id.tsx");
   "routes/roots._index": typeof import("./app/routes/roots._index.tsx");
   "routes/tools._index": typeof import("./app/routes/tools._index.tsx");
   "routes/good.guides": typeof import("./app/routes/good.guides.tsx");
   "routes/science.$id": typeof import("./app/routes/science.$id.tsx");
   "routes/stories.$id": typeof import("./app/routes/stories.$id.tsx");
   "routes/tools.loads": typeof import("./app/routes/tools.loads.tsx");
+  "routes/api.humans": typeof import("./app/routes/api.humans.tsx");
+  "routes/api.humans.$id": typeof import("./app/routes/api.humans.$id.tsx");
   "routes/api.upload": typeof import("./app/routes/api.upload.tsx");
   "routes/magic-link": typeof import("./app/routes/magic-link.tsx");
   "routes/plant-seed": typeof import("./app/routes/plant-seed.tsx");
