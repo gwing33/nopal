@@ -14,6 +14,9 @@ type Pages = {
   "/": {
     params: {};
   };
+  "/docs/api/visualize-data-structure": {
+    params: {};
+  };
   "/fruits/good-building-system/:id": {
     params: {
       "id": string;
@@ -259,7 +262,11 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/api/building-system/categories" | "/api/building-system/categories/:id" | "/fruits/good-building-system" | "/api/building-system/systems" | "/api/building-system/systems/:id" | "/api/calendar/calendars/:id" | "/api/calendar/collections" | "/api/calendar/collections/:collectionId/calendars" | "/api/calendar/collections/:id" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/api/project-messages" | "/api/project-messages/:id" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/fruits/daily-log" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/fruits/styles" | "/good/sunny-no1" | "/sunny-home-no1" | "/api/daily-log" | "/good/building" | "/materials/:id" | "/api/projects" | "/api/projects/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/api/humans" | "/api/humans/:id" | "/api/upload" | "/magic-link" | "/plant-seed" | "/tools/mtf" | "/docs/api" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
+    page: "/" | "/docs/api/visualize-data-structure" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/api/building-system/categories" | "/api/building-system/categories/:id" | "/fruits/good-building-system" | "/api/building-system/systems" | "/api/building-system/systems/:id" | "/api/calendar/calendars/:id" | "/api/calendar/collections" | "/api/calendar/collections/:collectionId/calendars" | "/api/calendar/collections/:id" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/api/project-messages" | "/api/project-messages/:id" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/fruits/daily-log" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/fruits/styles" | "/good/sunny-no1" | "/sunny-home-no1" | "/api/daily-log" | "/good/building" | "/materials/:id" | "/api/projects" | "/api/projects/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/api/humans" | "/api/humans/:id" | "/api/upload" | "/magic-link" | "/plant-seed" | "/tools/mtf" | "/docs/api" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
+  };
+  "routes/docs.api_.visualize-data-structure.tsx": {
+    id: "routes/docs.api_.visualize-data-structure";
+    page: "/docs/api/visualize-data-structure";
   };
   "routes/fruits_.good-building-system_.$id.tsx": {
     id: "routes/fruits_.good-building-system_.$id";
@@ -557,6 +564,7 @@ type RouteFiles = {
 
 type RouteModules = {
   "root": typeof import("./app/root.tsx");
+  "routes/docs.api_.visualize-data-structure": typeof import("./app/routes/docs.api_.visualize-data-structure.tsx");
   "routes/fruits_.good-building-system_.$id": typeof import("./app/routes/fruits_.good-building-system_.$id.tsx");
   "routes/fruits_.good-building-system_.new": typeof import("./app/routes/fruits_.good-building-system_.new.tsx");
   "routes/api.building-system.categories": typeof import("./app/routes/api.building-system.categories.tsx");
