@@ -1,6 +1,6 @@
 import { redirect, useLoaderData } from "react-router";
 import type { LoaderFunctionArgs } from "react-router";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
 import { getUser } from "../modules/auth/auth.server";
@@ -29,8 +29,6 @@ type GraphNode = {
   kind: NodeKind;
   description: string;
   color: string;
-  x: number;
-  y: number;
   fields: FieldDef[];
   endpoints?: string[];
   table?: string;
@@ -42,12 +40,12 @@ type GraphEdge = {
   dashed?: boolean;
 };
 
-// ─── Layout Constants ─────────────────────────────────────────────────────────
+// ─── Canvas + Node Dimensions ─────────────────────────────────────────────────
 
 const NW = 200; // node width
 const NH = 80; // node height
-const CANVAS_W = 1440;
-const CANVAS_H = 840;
+const CANVAS_W = 2200;
+const CANVAS_H = 1600;
 
 // ─── Graph Data ───────────────────────────────────────────────────────────────
 
@@ -59,8 +57,6 @@ const NODES: GraphNode[] = [
     kind: "base",
     description: "Base record type. All DB entities extend this.",
     color: "#888888",
-    x: 590,
-    y: 40,
     table: "—",
     fields: [
       {
@@ -83,8 +79,6 @@ const NODES: GraphNode[] = [
     kind: "entity",
     description: "A system user — architect, client, or team member.",
     color: "#4a90d9",
-    x: 80,
-    y: 180,
     table: "humans",
     endpoints: [
       "GET /api/humans",
@@ -105,8 +99,6 @@ const NODES: GraphNode[] = [
     kind: "enum",
     description: "Permission level for a Human.",
     color: "#5da06d",
-    x: 30,
-    y: 370,
     fields: [
       { name: "Super", type: "literal" },
       { name: "Admin", type: "literal" },
@@ -122,8 +114,6 @@ const NODES: GraphNode[] = [
     kind: "entity",
     description: "A human's personal daily log entry (one per day).",
     color: "#9b59b6",
-    x: 250,
-    y: 400,
     table: "daily_logs",
     endpoints: ["GET /api/daily-log", "POST /api/daily-log"],
     fields: [
@@ -147,8 +137,6 @@ const NODES: GraphNode[] = [
     kind: "entity",
     description: "A message thread entry on a project.",
     color: "#c0608a",
-    x: 80,
-    y: 580,
     table: "project_messages",
     endpoints: [
       "GET /api/project-messages",
@@ -191,8 +179,6 @@ const NODES: GraphNode[] = [
     kind: "entity",
     description: "A build or guide engagement.",
     color: "#e07b3f",
-    x: 500,
-    y: 180,
     table: "projects",
     endpoints: [
       "GET /api/projects",
@@ -227,8 +213,6 @@ const NODES: GraphNode[] = [
     kind: "value",
     description: "A project timeline phase.",
     color: "#b07d1a",
-    x: 800,
-    y: 150,
     fields: [
       { name: "startDate", type: "string", description: "ISO 8601" },
       { name: "endDate", type: "string", description: "ISO 8601" },
@@ -241,8 +225,6 @@ const NODES: GraphNode[] = [
     kind: "enum",
     description: "Type of project engagement.",
     color: "#5da06d",
-    x: 760,
-    y: 310,
     fields: [
       { name: "Guide", type: "literal" },
       { name: '"Design+Build"', type: "literal" },
@@ -254,8 +236,6 @@ const NODES: GraphNode[] = [
     kind: "value",
     description: "[minCost, maxCost] tuple in dollars.",
     color: "#b07d1a",
-    x: 1000,
-    y: 310,
     fields: [
       { name: "[0]", type: "number", description: "Min cost" },
       { name: "[1]", type: "number", description: "Max cost" },
@@ -267,8 +247,6 @@ const NODES: GraphNode[] = [
     kind: "enum",
     description: "Nopal lifecycle stage for a project.",
     color: "#5da06d",
-    x: 500,
-    y: 470,
     fields: [
       { name: "seed", type: "literal" },
       { name: "sprout", type: "literal" },
@@ -283,8 +261,6 @@ const NODES: GraphNode[] = [
     kind: "value",
     description: "Associates a Human with a Project.",
     color: "#b07d1a",
-    x: 300,
-    y: 310,
     fields: [
       { name: "humanId", type: "string", refId: "Human" },
       { name: "role", type: "ProjectRole", refId: "ProjectRole" },
@@ -296,8 +272,6 @@ const NODES: GraphNode[] = [
     kind: "enum",
     description: "Role of a human within a project.",
     color: "#5da06d",
-    x: 280,
-    y: 500,
     fields: [
       { name: "Client", type: "literal" },
       { name: "Guide", type: "literal" },
@@ -312,8 +286,6 @@ const NODES: GraphNode[] = [
     kind: "entity",
     description: "A top-level building system category.",
     color: "#4a90d9",
-    x: 1020,
-    y: 180,
     table: "bs_categories",
     endpoints: [
       "GET /api/building-system/categories",
@@ -335,8 +307,6 @@ const NODES: GraphNode[] = [
     kind: "entity",
     description: "A specific building technique or product.",
     color: "#e07b3f",
-    x: 1020,
-    y: 400,
     table: "building_systems",
     endpoints: [
       "GET /api/building-system/systems",
@@ -360,8 +330,6 @@ const NODES: GraphNode[] = [
     kind: "value",
     description: "A markdown content block.",
     color: "#b07d1a",
-    x: 1190,
-    y: 560,
     fields: [
       { name: "type", type: '"markdown"' },
       { name: "md", type: "string", description: "Markdown content" },
@@ -375,8 +343,6 @@ const NODES: GraphNode[] = [
     kind: "entity",
     description: "A named group of calendars linked to a human or project.",
     color: "#4a90d9",
-    x: 500,
-    y: 580,
     table: "calendar_collections",
     endpoints: [
       "GET /api/calendar/collections",
@@ -409,8 +375,6 @@ const NODES: GraphNode[] = [
     kind: "enum",
     description: "How a calendar collection is associated.",
     color: "#5da06d",
-    x: 320,
-    y: 710,
     fields: [
       { name: "human", type: "literal" },
       { name: "project", type: "literal" },
@@ -423,8 +387,6 @@ const NODES: GraphNode[] = [
     kind: "entity",
     description: "A calendar within a collection.",
     color: "#e07b3f",
-    x: 780,
-    y: 580,
     table: "calendars",
     endpoints: [
       "GET /api/calendar/collections/:id/calendars",
@@ -453,8 +415,6 @@ const NODES: GraphNode[] = [
     kind: "enum",
     description: "Calendar backend type.",
     color: "#5da06d",
-    x: 970,
-    y: 710,
     fields: [
       { name: "internal", type: "literal" },
       { name: "google", type: "literal" },
@@ -494,6 +454,101 @@ const EDGES: GraphEdge[] = [
   { from: "CalendarCollection", to: "Project", dashed: true },
 ];
 
+// ─── Layout ───────────────────────────────────────────────────────────────────
+
+/**
+ * Positions domain clusters on the canvas. Each cluster has an `anchor` (the
+ * top-left reference point for that domain group) and a list of nodes with
+ * [dx, dy] pixel offsets from that anchor.
+ *
+ * Benefits over a strict grid:
+ *   • Moving an entire domain = change one anchor value.
+ *   • Nodes within a domain fan out at angles, so edges are visible diagonals
+ *     rather than straight lines obscured by node alignment.
+ *   • Fine-tune any single node by adjusting its [dx, dy] pair.
+ */
+function layoutGroups(
+  groups: ReadonlyArray<{
+    label: string;
+    anchor: { x: number; y: number };
+    nodes: ReadonlyArray<readonly [id: string, dx: number, dy: number]>;
+  }>,
+): Record<string, { x: number; y: number }> {
+  const positions: Record<string, { x: number; y: number }> = {};
+  for (const { anchor, nodes } of groups) {
+    for (const [id, dx, dy] of nodes) {
+      positions[id] = { x: anchor.x + dx, y: anchor.y + dy };
+    }
+  }
+  return positions;
+}
+
+const INITIAL_POSITIONS = layoutGroups([
+  // ── Base ─────────────────────────────────────────────────────────────────
+  {
+    label: "base",
+    anchor: { x: 620, y: 30 },
+    nodes: [["Data", 0, 0]],
+  },
+
+  // ── Human domain (left) ───────────────────────────────────────────────────
+  // Anchor = Human entity. DailyLog and ProjectMessage hang below; Role fans
+  // right so the Human→Role edge is a visible diagonal.
+  {
+    label: "humans",
+    anchor: { x: 80, y: 170 },
+    nodes: [
+      ["Human", 0, 0],
+      ["Role", -20, 160],
+      ["DailyLog", 220, 250],
+      ["ProjectMessage", 0, 340],
+    ],
+  },
+
+  // ── Project domain (center) ───────────────────────────────────────────────
+  // Anchor = Project entity. Phase goes upper-right; value/enum types fan
+  // right and below; ProjectHuman sits between Human and Project so both
+  // outgoing edges (→ Human, → Project) are clear diagonals.
+  {
+    label: "projects",
+    anchor: { x: 560, y: 160 },
+    nodes: [
+      ["Project", 0, 0],
+      ["Phase", 320, -100],
+      ["ProjectType", 260, 130],
+      ["CostRange", 500, 100],
+      ["NopalPhase", 80, 260],
+      ["ProjectHuman", -210, 150],
+      ["ProjectRole", -270, 350],
+    ],
+  },
+
+  // ── Building System (right) ───────────────────────────────────────────────
+  {
+    label: "building-system",
+    anchor: { x: 1280, y: 110 },
+    nodes: [
+      ["BsCategory", 0, 0],
+      ["BuildingSystem", 0, 210],
+      ["MarkdownBlock", 220, 330],
+    ],
+  },
+
+  // ── Calendar (lower center) ───────────────────────────────────────────────
+  // Sits below the project cluster. CalendarCollection references both Human
+  // and Project via dashed edges, creating long visible cross-domain diagonals.
+  {
+    label: "calendar",
+    anchor: { x: 520, y: 590 },
+    nodes: [
+      ["CalendarCollection", 0, 0],
+      ["Calendar", 280, 0],
+      ["CalendarCollectionType", -180, 130],
+      ["CalendarType", 460, 120],
+    ],
+  },
+]);
+
 // ─── Kind Config ──────────────────────────────────────────────────────────────
 
 const KIND_CONFIG: Record<
@@ -526,7 +581,7 @@ const METHOD_COLORS: Record<string, { bg: string; text: string }> = {
   GET: { bg: "rgba(93,160,109,0.14)", text: "#2a6e40" },
   POST: { bg: "rgba(130,86,163,0.14)", text: "#6a30a3" },
   PUT: { bg: "rgba(176,125,26,0.14)", text: "#7a5010" },
-  DELETE: { bg: "rgba(166,59,49,0.14)", text: "#a03b31" },
+  DELETE: { bg: "rgba(166,59,49,0.14)", text: "var(--red)" },
 };
 
 // ─── SVG Edge Helpers ─────────────────────────────────────────────────────────
@@ -537,14 +592,14 @@ function rectEdgeDist(nx: number, ny: number, hw: number, hh: number): number {
   return Math.min(tx, ty);
 }
 
-function edgePath(from: GraphNode, to: GraphNode): string {
+function edgePath(fx: number, fy: number, tx: number, ty: number): string {
   const hw = NW / 2;
   const hh = NH / 2;
 
-  const x1 = from.x + hw;
-  const y1 = from.y + hh;
-  const x2 = to.x + hw;
-  const y2 = to.y + hh;
+  const x1 = fx + hw;
+  const y1 = fy + hh;
+  const x2 = tx + hw;
+  const y2 = ty + hh;
 
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -583,46 +638,67 @@ function edgePath(from: GraphNode, to: GraphNode): string {
 
 function NodeCard({
   node,
+  x,
+  y,
   isSelected,
   dimmed,
+  isDragging,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
   onClick,
 }: {
   node: GraphNode;
+  x: number;
+  y: number;
   isSelected: boolean;
   dimmed: boolean;
+  isDragging: boolean;
+  onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerMove: (e: React.PointerEvent<HTMLDivElement>) => void;
+  onPointerUp: (e: React.PointerEvent<HTMLDivElement>) => void;
   onClick: () => void;
 }) {
   const kc = KIND_CONFIG[node.kind];
 
   return (
     <div
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
       onClick={(e) => {
         e.stopPropagation();
         onClick();
       }}
       style={{
         position: "absolute",
-        left: node.x,
-        top: node.y,
+        left: x,
+        top: y,
         width: NW,
         height: NH,
-        background: "#ffffff",
-        border: `1.5px solid ${isSelected ? node.color : "#e0d8d0"}`,
+        background: "var(--white)",
+        border: `1.5px solid ${isSelected ? node.color : "var(--foreground)"}`,
         borderLeft: `5px solid ${node.color}`,
         borderRadius: 8,
-        cursor: "pointer",
+        cursor: isDragging ? "grabbing" : "grab",
         padding: "10px 12px 10px 10px",
         boxSizing: "border-box",
-        boxShadow: isSelected
-          ? `0 4px 18px ${node.color}55`
-          : "0 1px 4px rgba(63,43,70,0.08)",
-        transition: "box-shadow 0.15s, border-color 0.15s, opacity 0.15s",
+        boxShadow: isDragging
+          ? `0 8px 28px ${node.color}44`
+          : isSelected
+            ? `0 4px 18px ${node.color}55`
+            : "0 1px 4px rgba(63,43,70,0.08)",
+        transition: isDragging
+          ? "box-shadow 0.1s"
+          : "box-shadow 0.15s, border-color 0.15s, opacity 0.15s",
         display: "flex",
         flexDirection: "column",
         gap: 5,
         overflow: "hidden",
         opacity: dimmed ? 0.35 : 1,
         userSelect: "none",
+        touchAction: "none",
+        zIndex: isDragging ? 50 : isSelected ? 10 : 1,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -646,7 +722,7 @@ function NodeCard({
           style={{
             fontSize: 12,
             fontWeight: 700,
-            color: "#3f2b46",
+            color: "var(--purple)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -661,7 +737,7 @@ function NodeCard({
           margin: 0,
           fontSize: 10,
           lineHeight: 1.4,
-          color: "#817186",
+          color: "var(--text-subtle)",
           overflow: "hidden",
           maxHeight: "2.8em",
         }}
@@ -673,7 +749,7 @@ function NodeCard({
           style={{
             fontFamily: "monospace",
             fontSize: 9,
-            color: "#aaa",
+            color: "var(--text-subtle)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -707,8 +783,8 @@ function DetailPanel({
       style={{
         width: 310,
         minWidth: 310,
-        background: "#ffffff",
-        borderLeft: "1px solid #e0d8d0",
+        background: "var(--white)",
+        borderLeft: "1px solid var(--foreground)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -758,8 +834,8 @@ function DetailPanel({
                   style={{
                     fontSize: 9,
                     fontFamily: "monospace",
-                    color: "#999",
-                    background: "rgba(0,0,0,0.05)",
+                    color: "var(--text-subtle)",
+                    background: "var(--midground)",
                     padding: "2px 6px",
                     borderRadius: 3,
                   }}
@@ -772,7 +848,7 @@ function DetailPanel({
               style={{
                 fontSize: 16,
                 fontWeight: 700,
-                color: "#3f2b46",
+                color: "var(--purple)",
                 marginBottom: 5,
                 lineHeight: 1.2,
               }}
@@ -783,7 +859,7 @@ function DetailPanel({
               style={{
                 margin: 0,
                 fontSize: 12,
-                color: "#605060",
+                color: "var(--text-subtle)",
                 lineHeight: 1.5,
               }}
             >
@@ -794,7 +870,7 @@ function DetailPanel({
                 style={{
                   margin: "8px 0 0",
                   fontSize: 10,
-                  color: "#888",
+                  color: "var(--text-subtle)",
                 }}
               >
                 extends{" "}
@@ -803,9 +879,9 @@ function DetailPanel({
                   style={{
                     fontFamily: "monospace",
                     fontSize: 10,
-                    background: "rgba(136,136,136,0.12)",
-                    color: "#555",
-                    border: "1px solid rgba(136,136,136,0.25)",
+                    background: "var(--midground)",
+                    color: "var(--purple)",
+                    border: "1px solid var(--foreground)",
                     borderRadius: 3,
                     padding: "0 5px",
                     cursor: "pointer",
@@ -823,7 +899,7 @@ function DetailPanel({
               background: "none",
               border: "none",
               cursor: "pointer",
-              color: "#999",
+              color: "var(--text-subtle)",
               fontSize: 20,
               lineHeight: 1,
               padding: "0 0 0 8px",
@@ -854,7 +930,7 @@ function DetailPanel({
                 fontFamily: "monospace",
                 fontWeight: 700,
                 letterSpacing: "0.1em",
-                color: "#aaa",
+                color: "var(--text-subtle)",
                 marginBottom: 8,
                 textTransform: "uppercase",
               }}
@@ -868,10 +944,10 @@ function DetailPanel({
                   <div
                     key={f.name}
                     style={{
-                      background: "#f9f7f5",
+                      background: "var(--farground)",
                       borderRadius: 6,
                       padding: "7px 10px",
-                      border: "1px solid #ede4da",
+                      border: "1px solid var(--midground)",
                     }}
                   >
                     <div
@@ -887,12 +963,18 @@ function DetailPanel({
                           fontFamily: "monospace",
                           fontSize: 11,
                           fontWeight: 700,
-                          color: "#3f2b46",
+                          color: "var(--purple)",
                         }}
                       >
                         {f.name}
                         {f.optional && (
-                          <span style={{ color: "#bbb", fontWeight: 400 }}>
+                          <span
+                            style={{
+                              color: "var(--text-subtle)",
+                              fontWeight: 400,
+                              opacity: 0.6,
+                            }}
+                          >
                             ?
                           </span>
                         )}
@@ -920,8 +1002,8 @@ function DetailPanel({
                           style={{
                             fontFamily: "monospace",
                             fontSize: 10,
-                            color: "#888",
-                            background: "rgba(0,0,0,0.05)",
+                            color: "var(--text-subtle)",
+                            background: "var(--midground)",
                             padding: "0 5px",
                             borderRadius: 3,
                             lineHeight: "18px",
@@ -936,7 +1018,7 @@ function DetailPanel({
                         style={{
                           margin: "3px 0 0",
                           fontSize: 10,
-                          color: "#888",
+                          color: "var(--text-subtle)",
                           lineHeight: 1.4,
                         }}
                       >
@@ -959,7 +1041,7 @@ function DetailPanel({
                 fontFamily: "monospace",
                 fontWeight: 700,
                 letterSpacing: "0.1em",
-                color: "#aaa",
+                color: "var(--text-subtle)",
                 marginBottom: 8,
                 textTransform: "uppercase",
               }}
@@ -1000,7 +1082,7 @@ function DetailPanel({
                     </span>
                     <span
                       style={{
-                        color: "#504050",
+                        color: "var(--purple)",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
@@ -1035,17 +1117,17 @@ function Legend() {
         display: "flex",
         gap: 20,
         padding: "10px 18px",
-        borderBottom: "1px solid #e0d8d0",
+        borderBottom: "1px solid var(--foreground)",
         flexWrap: "wrap",
         alignItems: "center",
-        background: "#fefcf9",
+        background: "var(--farground)",
         fontSize: 11,
       }}
     >
       <span
         style={{
           fontWeight: 700,
-          color: "#817186",
+          color: "var(--text-subtle)",
           fontSize: 10,
           marginRight: 2,
         }}
@@ -1082,7 +1164,7 @@ function Legend() {
             >
               {kc.badge}
             </span>
-            <span style={{ color: "#817186" }}>{label}</span>
+            <span style={{ color: "var(--text-subtle)" }}>{label}</span>
           </div>
         );
       })}
@@ -1093,14 +1175,14 @@ function Legend() {
           gap: 6,
           marginLeft: 8,
           paddingLeft: 16,
-          borderLeft: "1px solid #e0d8d0",
+          borderLeft: "1px solid var(--foreground)",
         }}
       >
         <svg width="26" height="10" style={{ flexShrink: 0 }}>
           <line x1="0" y1="5" x2="22" y2="5" stroke="#bbb" strokeWidth="1.5" />
           <polygon points="20,2.5 26,5 20,7.5" fill="#bbb" />
         </svg>
-        <span style={{ color: "#817186" }}>field ref</span>
+        <span style={{ color: "var(--text-subtle)" }}>field ref</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <svg width="26" height="10" style={{ flexShrink: 0 }}>
@@ -1115,17 +1197,17 @@ function Legend() {
           />
           <polygon points="20,2.5 26,5 20,7.5" fill="#ccc" />
         </svg>
-        <span style={{ color: "#817186" }}>optional ref</span>
+        <span style={{ color: "var(--text-subtle)" }}>optional ref</span>
       </div>
       <div
         style={{
           marginLeft: "auto",
           fontSize: 10,
-          color: "#aaa",
+          color: "var(--text-subtle)",
           fontStyle: "italic",
         }}
       >
-        Click a node to inspect · scroll to pan
+        Click a node to inspect · scroll to pan · middle-click drag to pan
       </div>
     </div>
   );
@@ -1136,6 +1218,37 @@ function Legend() {
 export default function DataStructureVisualizer() {
   const { user } = useLoaderData<typeof loader>();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isPanning, setIsPanning] = useState(false);
+
+  // ── Positions state (computed once from NODE_GRID before first render) ────
+  const [positions, setPositions] = useState<
+    Record<string, { x: number; y: number }>
+  >(() => ({ ...INITIAL_POSITIONS }));
+
+  // ── Drag tracking ────────────────────────────────────────────────────────
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  const dragRef = useRef<{
+    nodeId: string;
+    pointerId: number;
+    startPX: number;
+    startPY: number;
+    origX: number;
+    origY: number;
+    moved: boolean;
+  } | null>(null);
+
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const panRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    scrollLeft: number;
+    scrollTop: number;
+  } | null>(null);
+
+  // Prevents the click-after-pointerup from toggling selection after a drag
+  const didDragRef = useRef(false);
 
   const selectedNode = NODES.find((n) => n.id === selectedId) ?? null;
 
@@ -1151,7 +1264,103 @@ export default function DataStructureVisualizer() {
 
   const nodeById = (id: string) => NODES.find((n) => n.id === id);
 
+  // ── Drag handlers ────────────────────────────────────────────────────────
+  function handlePointerDown(
+    nodeId: string,
+    e: React.PointerEvent<HTMLDivElement>,
+  ) {
+    e.stopPropagation();
+    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+    const pos = positions[nodeId];
+    dragRef.current = {
+      nodeId,
+      pointerId: e.pointerId,
+      startPX: e.clientX,
+      startPY: e.clientY,
+      origX: pos.x,
+      origY: pos.y,
+      moved: false,
+    };
+    setDraggingId(nodeId);
+  }
+
+  function handlePointerMove(
+    nodeId: string,
+    e: React.PointerEvent<HTMLDivElement>,
+  ) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId || drag.nodeId !== nodeId)
+      return;
+
+    const dx = e.clientX - drag.startPX;
+    const dy = e.clientY - drag.startPY;
+
+    if (!drag.moved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+      drag.moved = true;
+    }
+
+    if (drag.moved) {
+      setPositions((prev) => ({
+        ...prev,
+        [nodeId]: { x: drag.origX + dx, y: drag.origY + dy },
+      }));
+    }
+  }
+
+  function handlePointerUp(
+    nodeId: string,
+    e: React.PointerEvent<HTMLDivElement>,
+  ) {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId || drag.nodeId !== nodeId)
+      return;
+
+    if (drag.moved) {
+      didDragRef.current = true;
+    }
+    dragRef.current = null;
+    setDraggingId(null);
+  }
+
+  // ── Selection ─────────────────────────────────────────────────────────────
+  // ── Middle-mouse pan handlers ─────────────────────────────────────────────
+  function handleCanvasPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.button !== 1) return;
+    e.preventDefault(); // suppress autoscroll cursor
+    const el = canvasRef.current;
+    if (!el) return;
+    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+    panRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      scrollLeft: el.scrollLeft,
+      scrollTop: el.scrollTop,
+    };
+    setIsPanning(true);
+  }
+
+  function handleCanvasPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const pan = panRef.current;
+    if (!pan || pan.pointerId !== e.pointerId) return;
+    const el = canvasRef.current;
+    if (!el) return;
+    el.scrollLeft = pan.scrollLeft - (e.clientX - pan.startX);
+    el.scrollTop = pan.scrollTop - (e.clientY - pan.startY);
+  }
+
+  function handleCanvasPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    const pan = panRef.current;
+    if (!pan || pan.pointerId !== e.pointerId) return;
+    panRef.current = null;
+    setIsPanning(false);
+  }
+
   function handleNodeClick(id: string) {
+    if (didDragRef.current) {
+      didDragRef.current = false;
+      return;
+    }
     setSelectedId((prev) => (prev === id ? null : id));
   }
 
@@ -1171,10 +1380,9 @@ export default function DataStructureVisualizer() {
           }}
         >
           <div
-            className="font-mono font-bold"
+            className="font-mono font-bold subtle-text"
             style={{
               fontSize: 10,
-              color: "#817186",
               marginBottom: 6,
               letterSpacing: "0.08em",
             }}
@@ -1182,23 +1390,18 @@ export default function DataStructureVisualizer() {
             NOPAL — DEVELOPER DOCS
           </div>
           <h1
+            className="purple-light-text"
             style={{
               fontSize: "1.9rem",
               fontWeight: 700,
-              color: "#7f5b8b",
               marginBottom: 8,
               lineHeight: 1.2,
             }}
           >
             Data Structure Visualizer
           </h1>
-          <p style={{ fontSize: 13, color: "#817186", margin: "0 0 6px" }}>
-            All core data types and their relationships at a glance. Click any
-            node to inspect its fields and linked API endpoints. Type-links in
-            the panel navigate to related nodes.
-          </p>
-          <div style={{ fontSize: 12, color: "#aaa" }}>
-            Viewing as <strong style={{ color: "#817186" }}>{user.name}</strong>
+          <div className="subtle-text">
+            Viewing as <strong className="purple-text">{user.name}</strong>
           </div>
         </div>
 
@@ -1206,7 +1409,7 @@ export default function DataStructureVisualizer() {
         <div
           style={{
             margin: "0 20px 60px",
-            border: "1px solid #e0d8d0",
+            border: "1px solid var(--foreground)",
             borderRadius: 12,
             overflow: "hidden",
             display: "flex",
@@ -1219,15 +1422,20 @@ export default function DataStructureVisualizer() {
           <div style={{ display: "flex", flex: 1, minHeight: 620 }}>
             {/* Scrollable canvas */}
             <div
+              ref={canvasRef}
               style={{
                 flex: 1,
                 overflow: "auto",
-                background: "#faf8f5",
+                background: "var(--farground)",
                 backgroundImage:
-                  "radial-gradient(circle, #ddd5ca 1px, transparent 1px)",
+                  "radial-gradient(circle, var(--midground) 1px, transparent 1px)",
                 backgroundSize: "24px 24px",
+                cursor: isPanning ? "grabbing" : "auto",
               }}
               onClick={handleCanvasClick}
+              onPointerDown={handleCanvasPointerDown}
+              onPointerMove={handleCanvasPointerMove}
+              onPointerUp={handleCanvasPointerUp}
             >
               <div
                 style={{
@@ -1281,11 +1489,11 @@ export default function DataStructureVisualizer() {
                   </defs>
 
                   {EDGES.map((edge, i) => {
-                    const from = nodeById(edge.from);
-                    const to = nodeById(edge.to);
-                    if (!from || !to) return null;
+                    const fromPos = positions[edge.from];
+                    const toPos = positions[edge.to];
+                    if (!fromPos || !toPos) return null;
 
-                    const d = edgePath(from, to);
+                    const d = edgePath(fromPos.x, fromPos.y, toPos.x, toPos.y);
                     if (!d) return null;
 
                     const isActive =
@@ -1319,18 +1527,27 @@ export default function DataStructureVisualizer() {
 
                 {/* Node cards */}
                 {NODES.map((node) => {
+                  const pos = positions[node.id];
                   const isSelected = node.id === selectedId;
+                  const isDragging = node.id === draggingId;
                   const dimmed =
                     selectedId !== null &&
                     !isSelected &&
+                    !isDragging &&
                     !connectedIds.has(node.id);
 
                   return (
                     <NodeCard
                       key={node.id}
                       node={node}
+                      x={pos?.x ?? 0}
+                      y={pos?.y ?? 0}
                       isSelected={isSelected}
                       dimmed={dimmed}
+                      isDragging={isDragging}
+                      onPointerDown={(e) => handlePointerDown(node.id, e)}
+                      onPointerMove={(e) => handlePointerMove(node.id, e)}
+                      onPointerUp={(e) => handlePointerUp(node.id, e)}
                       onClick={() => handleNodeClick(node.id)}
                     />
                   );

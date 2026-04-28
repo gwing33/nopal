@@ -33,18 +33,22 @@ function HamburgerIcon({ open }: { open: boolean }) {
   );
 }
 
-const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `text-sm font-mono py-2 rounded block ${
-    isActive ? "font-bold" : "purple-light-text"
-  }`;
+type NavLinkProps = {
+  isActive: boolean;
+};
 
-const navLinkStyle = ({ isActive }: { isActive: boolean }) =>
+const navLinkClass = ({ isActive }: NavLinkProps) => {
+  const defaultClasses = "text-sm font-mono p-2 rounded block";
+  if (isActive) return `${defaultClasses} midground-bg`;
+
+  return `${defaultClasses} purple-light-text`;
+};
+
+const navLinkStyle = () =>
   ({
-    ...(isActive
-      ? { color: "var(--purple)", background: "var(--farground)" }
-      : {}),
     textDecoration: "none",
     transition: "background 150ms, color 150ms",
+    marginLeft: "-0.5rem",
   }) as React.CSSProperties;
 
 export function AppLayout({ children }: { children?: ReactNode }) {
