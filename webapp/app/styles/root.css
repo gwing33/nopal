@@ -577,6 +577,13 @@ body {
 }
 
 /* Text Colors */
+.purple-text {
+  color: var(--purple);
+  @media (prefers-color-scheme: dark) {
+    color: var(--white);
+  }
+}
+
 .purple-light-text {
   color: var(--purple-light);
   @media (prefers-color-scheme: dark) {
@@ -1021,6 +1028,13 @@ body {
   background-color: var(--midground);
   @media (prefers-color-scheme: dark) {
     background-color: var(--dark-midground);
+  }
+}
+
+.farground-bg {
+  background-color: var(--farground);
+  @media (prefers-color-scheme: dark) {
+    background-color: var(--dark-farground);
   }
 }
 

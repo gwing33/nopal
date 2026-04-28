@@ -46,13 +46,7 @@ function Label({ children }: { children: React.ReactNode }) {
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code
-      className="text-xs font-mono px-1.5 py-0.5 rounded"
-      style={{
-        background: "var(--midground)",
-        color: "var(--purple)",
-      }}
-    >
+    <code className="text-xs font-mono px-1.5 py-0.5 rounded farground-bg purple-text">
       {children}
     </code>
   );
@@ -965,10 +959,9 @@ export default function FruitsStyles() {
                           {token}
                         </span>
                         <span
-                          className="shrink-0"
+                          className="shrink-0 purple-light-text"
                           style={{
                             minWidth: "160px",
-                            color: "var(--purple-light)",
                           }}
                         >
                           {value}
@@ -1024,10 +1017,9 @@ export default function FruitsStyles() {
                           {token}
                         </span>
                         <span
-                          className="shrink-0"
+                          className="shrink-0 purple-light-text"
                           style={{
                             minWidth: "160px",
-                            color: "var(--purple-light)",
                           }}
                         >
                           {value}
@@ -1057,10 +1049,7 @@ export default function FruitsStyles() {
                     "blockquote",
                     "3px left border · var(--purple-light) · italic",
                   ],
-                  [
-                    "code",
-                    "var(--midground) bg · var(--purple) text · 3px radius",
-                  ],
+                  ["code", "farground-bg · purple-text · 3px radius"],
                   ["a", "var(--purple-light) · underline with offset"],
                   ["hr", "1px solid var(--midground)"],
                 ].map(([prop, desc]) => (
@@ -1092,32 +1081,36 @@ export default function FruitsStyles() {
                     {"// lazy import at the top of the route"}
                   </span>
                 </div>
-                <div>
-                  <span className="purple-text">{"const "}</span>
+                <div className="purple-text">
+                  <span>{"const "}</span>
                   {"MdxEditorClient = "}
-                  <span className="purple-text">{"lazy"}</span>
+                  <span>{"lazy"}</span>
                   {"(() => "}
-                  <span className="purple-text">{"import"}</span>
+                  <span>{"import"}</span>
                   {'("../components/MdxEditorClient"));'}
                 </div>
                 <div className="mt-3 subtle-text">
                   {"// in the render tree"}
                 </div>
-                <div>{"<Suspense fallback={<div>Loading editor…</div>}>"}</div>
-                <div style={{ paddingLeft: "16px" }}>
-                  {'<div className="rounded-lg overflow-hidden"'}
+                <div className="purple-text">
+                  <div>
+                    {"<Suspense fallback={<div>Loading editor…</div>}>"}
+                  </div>
+                  <div style={{ paddingLeft: "16px" }}>
+                    {'<div className="rounded-lg overflow-hidden"'}
+                  </div>
+                  <div style={{ paddingLeft: "32px" }}>
+                    {'style={{ border: "1px solid var(--midground)",'}
+                  </div>
+                  <div style={{ paddingLeft: "48px" }}>
+                    {'background: "var(--farground)" }}>'}
+                  </div>
+                  <div style={{ paddingLeft: "32px" }}>
+                    {"<MdxEditorClient markdown={md} onChange={setMd} />"}
+                  </div>
+                  <div style={{ paddingLeft: "16px" }}>{"</div>"}</div>
+                  <div>{"</Suspense>"}</div>
                 </div>
-                <div style={{ paddingLeft: "32px" }}>
-                  {'style={{ border: "1px solid var(--midground)",'}
-                </div>
-                <div style={{ paddingLeft: "48px" }}>
-                  {'background: "var(--farground)" }}>'}
-                </div>
-                <div style={{ paddingLeft: "32px" }}>
-                  {"<MdxEditorClient markdown={md} onChange={setMd} />"}
-                </div>
-                <div style={{ paddingLeft: "16px" }}>{"</div>"}</div>
-                <div>{"</Suspense>"}</div>
               </div>
             </div>
           </div>

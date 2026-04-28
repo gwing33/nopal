@@ -110,9 +110,8 @@ function Code({ children }: { children: React.ReactNode }) {
 function Pre({ children }: { children: string }) {
   return (
     <pre
+      className="farground-bg"
       style={{
-        background: "var(--purple)",
-        color: "var(--yellow-light)",
         fontFamily: "monospace",
         fontSize: "0.78rem",
         lineHeight: 1.6,
@@ -121,7 +120,6 @@ function Pre({ children }: { children: string }) {
         overflowX: "auto",
         margin: "8px 0",
         whiteSpace: "pre",
-        border: "1px solid var(--foreground)",
       }}
     >
       {children}
