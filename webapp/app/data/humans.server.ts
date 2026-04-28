@@ -9,7 +9,7 @@ import {
   remove,
 } from "./generic.server";
 
-export type Role = "Super" | "Admin" | "Human";
+export type Role = "Super" | "Admin" | "Human" | "MaybeHuman";
 
 export type Human = Data & {
   email: string;
@@ -24,15 +24,24 @@ export async function getHumans(): Promise<Humans | undefined> {
 }
 
 export async function getHumanByEmail(
-  email: string
+  email: string,
 ): Promise<Human | undefined> {
   const result = await query<[Human[]]>(
     `SELECT * FROM humans WHERE email = $email;`,
     {
       email,
-    }
+    },
   );
 
+  const record = result?.[0]?.[0] || undefined;
+  return record ? formatRecord(record) : undefined;
+}
+
+export async function getHumanById(id: string): Promise<Human | undefined> {
+  const result = await query<[Human[]]>(
+    `SELECT * FROM humans WHERE id = $id;`,
+    { id: new RecordId("humans", id) },
+  );
   const record = result?.[0]?.[0] || undefined;
   return record ? formatRecord(record) : undefined;
 }
@@ -49,7 +58,7 @@ export async function createHuman(data: {
 
 export async function updateHuman(
   id: string,
-  data: { email: string; name: string; role: Role }
+  data: { email: string; name: string; role: Role },
 ): Promise<Human | undefined> {
   const result = await upsert(`humans:${id}`, data);
   const record = Array.isArray(result) ? result[0] : result;

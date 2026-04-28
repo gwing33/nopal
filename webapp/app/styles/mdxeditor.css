@@ -61,6 +61,16 @@
   background: var(--farground);
 }
 
+/* ── Chat input variant — compact initial height ──────────────────────────── *
+ * Applied alongside .mdx-editor-wrapper on the chat send panel.              *
+ * The border on .mdx-editor-wrapper is overridden inline so the Personal     *
+ * Note active state can change the border colour dynamically.                */
+.mdx-editor-chat .mdxeditor [class*="_contentEditable_"],
+.mdx-editor-chat .mdxeditor [class*="_rootContentEditableWrapper_"] {
+  min-height: 52px;
+  padding: 10px 14px;
+}
+
 /* ── Content / editable area ─────────────────────────────────────────────── */
 .mdxeditor [class*="_contentEditable_"],
 .mdxeditor [class*="_rootContentEditableWrapper_"] {
@@ -437,6 +447,10 @@
   overflow: visible;
   z-index: 10;
   transform: translateY(-50%);
+  /* Prevent text selection and the iOS callout bubble during long-press */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   box-shadow:
     0 4px 14px rgba(63, 43, 70, 0.35),
     0 0 0 2.5px rgba(255, 255, 255, 0.92);
@@ -518,7 +532,7 @@
 
 .nopal-tray {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   align-items: center;
   gap: 6px;
   padding: 8px 10px;
@@ -547,6 +561,10 @@
   transition:
     box-shadow 0.15s,
     opacity 0.15s;
+  /* Prevent text selection and the iOS callout bubble during long-press */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .nopal-tray-item:hover:not(.nopal-tray-item--uploading) {
@@ -620,13 +638,7 @@
   min-height: 80px;
 }
 
-/* ── Preview toggle bar ───────────────────────────────────────────────────── */
-
-.nopal-preview-toggle-bar {
-  display: flex;
-  justify-content: center;
-  padding: 4px 0;
-}
+/* ── Preview toggle (lives inside the tray, pinned left via margin-right: auto) ── */
 
 .nopal-preview-toggle {
   display: inline-block;
@@ -649,8 +661,68 @@
   border-color: var(--purple-light, #a78bfa);
 }
 
+/* ── Placeholder text ─────────────────────────────────────────────────────── *
+ * The placeholder <div> shares the _contentEditable_ class, so it already   *
+ * inherits our font-size (0.9375rem), line-height (1.2), and padding (16px). *
+ * But it is position:absolute;top:0 inside _rootContentEditableWrapper_,     *
+ * which also receives our padding:16px — so actual text sits at 32px while   *
+ * the placeholder would land at 16px. Shift it down to realign.             */
+
+.mdxeditor [class*="_placeholder_"] {
+  top: 16px;
+  color: color-mix(in srgb, var(--text-subtle, #817186) 55%, transparent);
+}
+
+/* Hide the moment the editor receives focus, even when still empty */
+.mdxeditor:focus-within [class*="_placeholder_"] {
+  display: none;
+}
+
+/* Chat variant uses 10px top padding instead of 16px */
+.mdx-editor-chat .mdxeditor [class*="_placeholder_"] {
+  top: 10px;
+}
+
 /* ── Dark mode overrides ─────────────────────────────────────────────────── *
  * Mirrors the app's @media (prefers-color-scheme: dark) pattern.             */
+/* ── Touch / coarse-pointer overrides ────────────────────────────────────── *
+ * On touch screens (phones/tablets) there is no hover, so:                  *
+ *  • chips and tray items get larger tap targets                             *
+ *  • the index label is always visible (no hover required)                  *
+ *  • the tray add-button is also enlarged                                    */
+
+@media (hover: none) and (pointer: coarse) {
+  /* Larger chip so it's easier to long-press */
+  .nopal-image-chip {
+    width: 44px;
+    height: 44px;
+    right: 10px;
+  }
+
+  /* Always show the index label — touch users can't hover to reveal it */
+  .nopal-image-chip-label {
+    opacity: 1;
+    font-size: 8px;
+  }
+
+  /* Slightly larger tray thumbnails for easier tapping */
+  .nopal-tray-item {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Larger add button */
+  .nopal-tray-add {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Bigger preview toggle tap area */
+  .nopal-preview-toggle {
+    padding: 5px 14px;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   .mdxeditor.mdxeditor {
     background-color: var(--dark-farground);
@@ -817,5 +889,13 @@
   .nopal-preview-toggle:hover {
     color: var(--moon, #c4c6fc);
     border-color: var(--moon, #c4c6fc);
+  }
+
+  .mdxeditor [class*="_placeholder_"] {
+    color: color-mix(
+      in srgb,
+      var(--text-subtle-dark, #c8b8ce) 45%,
+      transparent
+    );
   }
 }

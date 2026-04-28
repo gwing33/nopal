@@ -25,6 +25,24 @@ type Pages = {
   "/fruits/good-building-system": {
     params: {};
   };
+  "/api/calendar/calendars/:id": {
+    params: {
+      "id": string;
+    };
+  };
+  "/api/calendar/collections": {
+    params: {};
+  };
+  "/api/calendar/collections/:collectionId/calendars": {
+    params: {
+      "collectionId": string;
+    };
+  };
+  "/api/calendar/collections/:id": {
+    params: {
+      "id": string;
+    };
+  };
   "/tools/frames-volume-calc": {
     params: {};
   };
@@ -110,6 +128,9 @@ type Pages = {
   "/magic-link": {
     params: {};
   };
+  "/plant-seed": {
+    params: {};
+  };
   "/tools/mtf": {
     params: {};
   };
@@ -192,7 +213,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/fruits/good-building-system" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/fruits/daily-log" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/fruits/styles" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/api/upload" | "/magic-link" | "/tools/mtf" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
+    page: "/" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/fruits/good-building-system" | "/api/calendar/calendars/:id" | "/api/calendar/collections" | "/api/calendar/collections/:collectionId/calendars" | "/api/calendar/collections/:id" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/fruits/daily-log" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/fruits/styles" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/api/upload" | "/magic-link" | "/plant-seed" | "/tools/mtf" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
   };
   "routes/fruits_.good-building-system_.$id.tsx": {
     id: "routes/fruits_.good-building-system_.$id";
@@ -205,6 +226,22 @@ type RouteFiles = {
   "routes/fruits_.good-building-system.tsx": {
     id: "routes/fruits_.good-building-system";
     page: "/fruits/good-building-system";
+  };
+  "routes/api.calendar.calendars.$id.tsx": {
+    id: "routes/api.calendar.calendars.$id";
+    page: "/api/calendar/calendars/:id";
+  };
+  "routes/api.calendar.collections.tsx": {
+    id: "routes/api.calendar.collections";
+    page: "/api/calendar/collections" | "/api/calendar/collections/:collectionId/calendars" | "/api/calendar/collections/:id";
+  };
+  "routes/api.calendar.collections.$collectionId.calendars.tsx": {
+    id: "routes/api.calendar.collections.$collectionId.calendars";
+    page: "/api/calendar/collections/:collectionId/calendars";
+  };
+  "routes/api.calendar.collections.$id.tsx": {
+    id: "routes/api.calendar.collections.$id";
+    page: "/api/calendar/collections/:id";
   };
   "routes/tools.frames-volume-calc.tsx": {
     id: "routes/tools.frames-volume-calc";
@@ -305,6 +342,10 @@ type RouteFiles = {
   "routes/magic-link.tsx": {
     id: "routes/magic-link";
     page: "/magic-link";
+  };
+  "routes/plant-seed.tsx": {
+    id: "routes/plant-seed";
+    page: "/plant-seed";
   };
   "routes/tools.mtf.tsx": {
     id: "routes/tools.mtf";
@@ -425,6 +466,10 @@ type RouteModules = {
   "routes/fruits_.good-building-system_.$id": typeof import("./app/routes/fruits_.good-building-system_.$id.tsx");
   "routes/fruits_.good-building-system_.new": typeof import("./app/routes/fruits_.good-building-system_.new.tsx");
   "routes/fruits_.good-building-system": typeof import("./app/routes/fruits_.good-building-system.tsx");
+  "routes/api.calendar.calendars.$id": typeof import("./app/routes/api.calendar.calendars.$id.tsx");
+  "routes/api.calendar.collections": typeof import("./app/routes/api.calendar.collections.tsx");
+  "routes/api.calendar.collections.$collectionId.calendars": typeof import("./app/routes/api.calendar.collections.$collectionId.calendars.tsx");
+  "routes/api.calendar.collections.$id": typeof import("./app/routes/api.calendar.collections.$id.tsx");
   "routes/tools.frames-volume-calc": typeof import("./app/routes/tools.frames-volume-calc.tsx");
   "routes/tools.grade-differential": typeof import("./app/routes/tools.grade-differential.tsx");
   "routes/tools.building-envelope": typeof import("./app/routes/tools.building-envelope.tsx");
@@ -450,6 +495,7 @@ type RouteModules = {
   "routes/tools.loads": typeof import("./app/routes/tools.loads.tsx");
   "routes/api.upload": typeof import("./app/routes/api.upload.tsx");
   "routes/magic-link": typeof import("./app/routes/magic-link.tsx");
+  "routes/plant-seed": typeof import("./app/routes/plant-seed.tsx");
   "routes/tools.mtf": typeof import("./app/routes/tools.mtf.tsx");
   "routes/scc-demo": typeof import("./app/routes/scc-demo.tsx");
   "routes/contact": typeof import("./app/routes/contact.tsx");

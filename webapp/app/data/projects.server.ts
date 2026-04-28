@@ -25,6 +25,8 @@ export type Phases = Phase[];
 /** [minCost, maxCost] */
 export type CostRange = [number, number];
 
+export type NopalPhase = "seed" | "sprout" | "seedling" | "flower" | "renewing";
+
 export type Project = Data & {
   name: string;
   northStar: string;
@@ -37,6 +39,8 @@ export type Project = Data & {
   updatedAt: string;
   createdBy: string;
   updatedBy: string;
+  nopalPhase: NopalPhase;
+  ideaOverview: string;
 };
 
 export type Projects = Collection<Project>;
@@ -50,6 +54,8 @@ export type ProjectInput = {
   humans: ProjectHuman[];
   costRange: CostRange;
   actorId: string;
+  nopalPhase?: NopalPhase;
+  ideaOverview?: string;
 };
 
 export async function getProjects(): Promise<Projects | undefined> {
@@ -59,7 +65,7 @@ export async function getProjects(): Promise<Projects | undefined> {
 export async function getProjectById(id: string): Promise<Project | undefined> {
   const result = await query<[Project[]]>(
     `SELECT * FROM projects WHERE id = $id;`,
-    { id: new RecordId("projects", id) }
+    { id: new RecordId("projects", id) },
   );
 
   const record = result?.[0]?.[0] || undefined;
@@ -67,7 +73,7 @@ export async function getProjectById(id: string): Promise<Project | undefined> {
 }
 
 export async function createProject(
-  data: ProjectInput
+  data: ProjectInput,
 ): Promise<Project | undefined> {
   const { actorId, ...fields } = data;
   const now = new Date().toISOString();
@@ -86,7 +92,7 @@ export async function createProject(
 
 export async function updateProject(
   id: string,
-  data: Partial<Omit<ProjectInput, "actorId">> & { actorId: string }
+  data: Partial<Omit<ProjectInput, "actorId">> & { actorId: string },
 ): Promise<Project | undefined> {
   const { actorId, ...fields } = data;
 
@@ -108,8 +114,38 @@ export async function deleteProject(id: string): Promise<void> {
   await remove("projects", id);
 }
 
+/** Creates a new project in the seed phase, called from the public /plant-seed form */
+export async function createSeedProject(data: {
+  name: string;
+  northStar: string;
+  ideaOverview: string;
+  humanId: string;
+  humanRole: ProjectRole;
+  actorId: string;
+}): Promise<Project | undefined> {
+  const { humanId, humanRole, actorId, ...fields } = data;
+  const now = new Date().toISOString();
+
+  const result = await upsert("projects", {
+    ...fields,
+    nopalPhase: "seed" as NopalPhase,
+    type: "Guide" as ProjectType,
+    address: "",
+    phases: [],
+    humans: [{ humanId, role: humanRole }],
+    costRange: [0, 0] as CostRange,
+    createdAt: now,
+    updatedAt: now,
+    createdBy: actorId,
+    updatedBy: actorId,
+  });
+
+  const record = Array.isArray(result) ? result[0] : result;
+  return record ? formatRecord(record as unknown as Project) : undefined;
+}
+
 export async function getProjectsByHumanId(
-  humanId: string
+  humanId: string,
 ): Promise<Project[]> {
   const result = await getProjects();
   const all = result?.data ?? [];

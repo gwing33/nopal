@@ -19,6 +19,7 @@ import {
   useState,
   useCallback,
   useMemo,
+  type ReactNode,
 } from "react";
 import { useMarkdown } from "../hooks/useMarkdown";
 
@@ -29,6 +30,8 @@ const NOPAL_MARKER = "\n\n# Nopal Markdown\nFiles";
 const FILE_LINE_RE = /^\[(\d+)\]\s+(.+)$/;
 const STACK_THRESHOLD = 32;
 const PLACEMENT_RE = /^\[nopal-image\]\[(\d+)\]$|^\[(\d+)\]$/;
+
+const LONG_PRESS_MS = 250;
 
 // ── SVG data URIs ────────────────────────────────────────────────────────────
 
@@ -99,6 +102,21 @@ interface MdxEditorClientProps {
   onChange: (md: string) => void;
   uploadFile?: (file: File) => Promise<string>;
   onEditorReady?: (handle: EditorHandle) => void;
+  placeholder?: string;
+  trayButtons?: ReactNode;
+}
+
+/** State tracked while a touch drag is in progress. */
+interface TouchDragState {
+  /** Whether the item came from the tray or is a placed chip. */
+  type: "tray" | "chip";
+  fileIndex: number;
+  startX: number;
+  startY: number;
+  /** Long-press timer handle; null once it has fired. */
+  timer: ReturnType<typeof setTimeout> | null;
+  /** Becomes true once the long-press delay has elapsed and the drag is live. */
+  active: boolean;
 }
 
 // ── Document parsing / serialization ─────────────────────────────────────────
@@ -189,6 +207,8 @@ export default function MdxEditorClient({
   onChange,
   uploadFile,
   onEditorReady,
+  placeholder = "Write...",
+  trayButtons,
 }: MdxEditorClientProps) {
   const [initialState] = useState(() => {
     const { userContent, files } = parseDocument(markdown);
@@ -213,7 +233,7 @@ export default function MdxEditorClient({
   const filesRef = useRef<FileEntry[]>(initialState.files);
   const editorTextRef = useRef(initialState.editorText);
   const placementsRef = useRef<ImagePlacement[]>(initialState.placements);
-  /** Tracks the snap-point index chosen by the last dragover event. */
+  /** Tracks the snap-point index chosen by the last dragover / touchmove event. */
   const snappedBlocksAboveRef = useRef<number>(0);
   /** Always holds the latest addFilesCore so the stable EditorHandle can call it. */
   const addFilesCoreRef = useRef<(files: File[]) => Promise<void>>(
@@ -225,6 +245,14 @@ export default function MdxEditorClient({
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const editorBodyRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(false);
+
+  // ── Touch-drag refs ─────────────────────────────────────────────────────
+  /** Live state for an in-progress touch drag; null when idle. */
+  const touchDragRef = useRef<TouchDragState | null>(null);
+  /** The floating ghost element that follows the user's finger. */
+  const touchGhostRef = useRef<HTMLDivElement | null>(null);
+  /** Reference to the tray element — used to detect drop-back-on-tray. */
+  const trayRef = useRef<HTMLDivElement>(null);
 
   const [isDragging, setIsDragging] = useState(false);
   const [dotY, setDotY] = useState(0);
@@ -320,61 +348,147 @@ export default function MdxEditorClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Global dragover tracking — snaps dot to paragraph-gap positions ────
-  useEffect(() => {
-    if (!isDragging) return;
-    const onMove = (e: DragEvent) => {
-      const containerRect = editorContainerRef.current?.getBoundingClientRect();
-      if (!containerRect) return;
+  // ── Shared snap-point computation (mouse drag + touch drag) ────────────
+  /**
+   * Given a viewport clientY, finds the nearest paragraph-gap snap point
+   * within the editor content, updates the dot indicator, and stores the
+   * block-above index for use when the drop is committed.
+   */
+  const computeAndSetSnapPoint = useCallback((clientY: number) => {
+    const containerRect = editorContainerRef.current?.getBoundingClientRect();
+    if (!containerRect) return;
+
+    const bodyEl = editorBodyRef.current;
+    const contentEl = bodyEl?.querySelector('[contenteditable="true"]');
+    const blocks = contentEl
+      ? (Array.from(contentEl.children) as HTMLElement[])
+      : [];
+
+    const rawY = clientY - containerRect.top;
+
+    if (blocks.length === 0) {
+      setDotY(Math.max(0, Math.min(rawY, containerRect.height)));
+      snappedBlocksAboveRef.current = 0;
+      return;
+    }
+
+    // Build N+1 snap points: before block 0, between each adjacent pair,
+    // and after the last block.
+    const snapPoints: number[] = [];
+    snapPoints.push(blocks[0].getBoundingClientRect().top - containerRect.top);
+    for (let i = 0; i < blocks.length - 1; i++) {
+      const b = blocks[i].getBoundingClientRect().bottom - containerRect.top;
+      const t = blocks[i + 1].getBoundingClientRect().top - containerRect.top;
+      snapPoints.push((b + t) / 2);
+    }
+    snapPoints.push(
+      blocks[blocks.length - 1].getBoundingClientRect().bottom -
+        containerRect.top,
+    );
+
+    let bestIdx = 0;
+    let bestDist = Math.abs(snapPoints[0] - rawY);
+    for (let i = 1; i < snapPoints.length; i++) {
+      const d = Math.abs(snapPoints[i] - rawY);
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
+    }
+
+    setDotY(snapPoints[bestIdx]);
+    snappedBlocksAboveRef.current = bestIdx;
+  }, []);
+
+  // ── Shared drop-commit logic (mouse drag + touch drag) ─────────────────
+  /**
+   * Converts the current snapped block index into a paragraph position and
+   * either adds a new placement (from tray) or moves an existing one (chip).
+   */
+  const performDrop = useCallback(
+    (isReposition: boolean, fileIndex: number) => {
+      const blocksAbove = snappedBlocksAboveRef.current;
 
       const bodyEl = editorBodyRef.current;
       const contentEl = bodyEl?.querySelector('[contenteditable="true"]');
-      const blocks = contentEl
-        ? (Array.from(contentEl.children) as HTMLElement[])
-        : [];
+      const totalBlocks = contentEl ? contentEl.children.length : 0;
 
-      const rawY = e.clientY - containerRect.top;
+      const text = editorTextRef.current;
+      const paragraphs = text.split("\n\n").filter((p) => p.trim() !== "");
+      const afterParagraphIndex =
+        totalBlocks > 0
+          ? Math.min(
+              Math.round((blocksAbove / totalBlocks) * paragraphs.length),
+              paragraphs.length,
+            )
+          : paragraphs.length;
 
-      if (blocks.length === 0) {
-        setDotY(Math.max(0, Math.min(rawY, containerRect.height)));
-        snappedBlocksAboveRef.current = 0;
-        return;
+      if (isReposition) {
+        setPlacements((prev) => [
+          ...prev.filter((p) => p.fileIndex !== fileIndex),
+          { fileIndex, afterParagraphIndex },
+        ]);
+      } else {
+        setPlacements((prev) => [...prev, { fileIndex, afterParagraphIndex }]);
       }
+    },
+    [],
+  );
 
-      // Build N+1 snap points: before block 0, between each adjacent pair,
-      // and after the last block.  snapPoints[i] is the Y where inserting
-      // AFTER paragraph i-1 would visually land.
-      const snapPoints: number[] = [];
-      snapPoints.push(
-        blocks[0].getBoundingClientRect().top - containerRect.top,
-      );
-      for (let i = 0; i < blocks.length - 1; i++) {
-        const b = blocks[i].getBoundingClientRect().bottom - containerRect.top;
-        const t = blocks[i + 1].getBoundingClientRect().top - containerRect.top;
-        snapPoints.push((b + t) / 2);
-      }
-      snapPoints.push(
-        blocks[blocks.length - 1].getBoundingClientRect().bottom -
-          containerRect.top,
-      );
+  // ── Touch ghost helpers ─────────────────────────────────────────────────
 
-      // Find the nearest snap point
-      let bestIdx = 0;
-      let bestDist = Math.abs(snapPoints[0] - rawY);
-      for (let i = 1; i < snapPoints.length; i++) {
-        const d = Math.abs(snapPoints[i] - rawY);
-        if (d < bestDist) {
-          bestDist = d;
-          bestIdx = i;
-        }
-      }
+  /** Creates a fixed-position ghost element that follows the user's finger. */
+  const createTouchGhost = useCallback(
+    (fileIndex: number, clientX: number, clientY: number) => {
+      if (touchGhostRef.current) return; // already created
 
-      setDotY(snapPoints[bestIdx]);
-      snappedBlocksAboveRef.current = bestIdx;
-    };
+      const file = filesRef.current.find((f) => f.index === fileIndex);
+
+      const ghost = document.createElement("div");
+      ghost.style.cssText = [
+        "position: fixed",
+        "width: 52px",
+        "height: 52px",
+        "border-radius: 50%",
+        "overflow: hidden",
+        "box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 3px rgba(167,139,250,0.85)",
+        "opacity: 0.9",
+        "pointer-events: none",
+        "z-index: 10000",
+        `left: ${clientX - 26}px`,
+        `top: ${clientY - 65}px`,
+        "will-change: left, top",
+        "transition: none",
+      ].join("; ");
+
+      const img = document.createElement("img");
+      img.src = file?.isImage && file.url ? file.url : FILE_ICON_URI;
+      img.style.cssText =
+        "width: 100%; height: 100%; object-fit: cover; display: block;";
+      ghost.appendChild(img);
+
+      document.body.appendChild(ghost);
+      touchGhostRef.current = ghost as HTMLDivElement;
+    },
+    [],
+  );
+
+  /** Removes the ghost element from the DOM. */
+  const destroyTouchGhost = useCallback(() => {
+    const ghost = touchGhostRef.current;
+    if (ghost?.parentNode) {
+      ghost.parentNode.removeChild(ghost);
+      touchGhostRef.current = null;
+    }
+  }, []);
+
+  // ── Global mouse dragover tracking ─────────────────────────────────────
+  useEffect(() => {
+    if (!isDragging) return;
+    const onMove = (e: DragEvent) => computeAndSetSnapPoint(e.clientY);
     document.addEventListener("dragover", onMove);
     return () => document.removeEventListener("dragover", onMove);
-  }, [isDragging]);
+  }, [isDragging, computeAndSetSnapPoint]);
 
   // ── Chip position computation ───────────────────────────────────────────
   useLayoutEffect(() => {
@@ -471,6 +585,8 @@ export default function MdxEditorClient({
     [addFilesCore],
   );
 
+  // ── Mouse drag handlers ─────────────────────────────────────────────────
+
   const handleTrayDragStart = useCallback(
     (e: React.DragEvent, index: number) => {
       e.dataTransfer.setData("application/x-nopal-file-index", String(index));
@@ -510,36 +626,9 @@ export default function MdxEditorClient({
       const fileIndex = parseInt(chipIndexStr || fileIndexStr);
       const isReposition = !!chipIndexStr;
       setIsDragging(false);
-
-      // Use the snap-point index accumulated during dragover — it already
-      // corresponds to the gap between paragraphs.
-      const blocksAbove = snappedBlocksAboveRef.current;
-
-      const bodyEl = editorBodyRef.current;
-      const contentEl = bodyEl?.querySelector('[contenteditable="true"]');
-      const totalBlocks = contentEl ? contentEl.children.length : 0;
-
-      const text = editorTextRef.current;
-      const paragraphs = text.split("\n\n").filter((p) => p.trim() !== "");
-      const afterParagraphIndex =
-        totalBlocks > 0
-          ? Math.min(
-              Math.round((blocksAbove / totalBlocks) * paragraphs.length),
-              paragraphs.length,
-            )
-          : paragraphs.length;
-
-      if (isReposition) {
-        // Remove the old placement and insert at the new position
-        setPlacements((prev) => [
-          ...prev.filter((p) => p.fileIndex !== fileIndex),
-          { fileIndex, afterParagraphIndex },
-        ]);
-      } else {
-        setPlacements((prev) => [...prev, { fileIndex, afterParagraphIndex }]);
-      }
+      performDrop(isReposition, fileIndex);
     },
-    [],
+    [performDrop],
   );
 
   const handleRemovePlacement = useCallback((fileIndex: number) => {
@@ -580,6 +669,191 @@ export default function MdxEditorClient({
     },
     [handleRemovePlacement],
   );
+
+  // ── Global touch tracking (always-on, checks ref before acting) ────────
+  /**
+   * Registers document-level touch listeners once on mount.
+   *
+   * - touchmove: cancels the long-press timer if the finger moves before it
+   *   fires (so normal page scrolling still works); once a drag IS active it
+   *   prevents scroll and updates the ghost + snap dot.
+   * - touchend: commits the drop (or removes a chip placement if dropped on
+   *   the tray), then cleans up.
+   * - touchcancel: cancels the whole operation cleanly.
+   *
+   * Using { passive: false } on touchmove is required so we can call
+   * preventDefault() during an active drag.
+   */
+  useEffect(() => {
+    const onTouchMove = (e: TouchEvent) => {
+      const state = touchDragRef.current;
+      if (!state) return;
+
+      const touch = e.touches[0];
+
+      if (!state.active) {
+        // Not yet dragging — cancel the long-press if the finger moved
+        // enough that the user is clearly trying to scroll.
+        const dx = touch.clientX - state.startX;
+        const dy = touch.clientY - state.startY;
+        if (Math.sqrt(dx * dx + dy * dy) > 8) {
+          if (state.timer) clearTimeout(state.timer);
+          touchDragRef.current = null;
+        }
+        return;
+      }
+
+      // Active drag — prevent the browser from scrolling under the finger.
+      e.preventDefault();
+
+      // Move the ghost to follow the fingertip (offset upward so the chip
+      // is visible above the finger).
+      const ghost = touchGhostRef.current;
+      if (ghost) {
+        ghost.style.left = `${touch.clientX - 26}px`;
+        ghost.style.top = `${touch.clientY - 65}px`;
+      }
+
+      computeAndSetSnapPoint(touch.clientY);
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      const state = touchDragRef.current;
+      if (!state) return;
+
+      if (state.timer) clearTimeout(state.timer);
+
+      if (!state.active) {
+        // Long-press never fired — this was just a tap; let click handle it.
+        touchDragRef.current = null;
+        return;
+      }
+
+      const touch = e.changedTouches[0];
+
+      // Determine whether the finger lifted over the tray.
+      const trayRect = trayRef.current?.getBoundingClientRect();
+      const isOverTray =
+        !!trayRect &&
+        touch.clientX >= trayRect.left &&
+        touch.clientX <= trayRect.right &&
+        touch.clientY >= trayRect.top &&
+        touch.clientY <= trayRect.bottom;
+
+      if (state.type === "chip" && isOverTray) {
+        // Dragging a placed chip back onto the tray removes the placement.
+        handleRemovePlacement(state.fileIndex);
+      } else if (!(state.type === "tray" && isOverTray)) {
+        // Place (or reposition) in the editor, unless the user dragged a
+        // tray item and dropped it back on the tray (i.e. they changed
+        // their mind — in that case we do nothing).
+        performDrop(state.type === "chip", state.fileIndex);
+      }
+
+      destroyTouchGhost();
+      touchDragRef.current = null;
+      setIsDragging(false);
+    };
+
+    const onTouchCancel = () => {
+      const state = touchDragRef.current;
+      if (!state) return;
+      if (state.timer) clearTimeout(state.timer);
+      destroyTouchGhost();
+      touchDragRef.current = null;
+      setIsDragging(false);
+    };
+
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+    document.addEventListener("touchend", onTouchEnd);
+    document.addEventListener("touchcancel", onTouchCancel);
+
+    return () => {
+      document.removeEventListener("touchmove", onTouchMove);
+      document.removeEventListener("touchend", onTouchEnd);
+      document.removeEventListener("touchcancel", onTouchCancel);
+    };
+    // All dependencies are stable (empty-dep useCallback / setState setters).
+  }, [
+    computeAndSetSnapPoint,
+    destroyTouchGhost,
+    handleRemovePlacement,
+    performDrop,
+  ]);
+
+  // ── Touch drag handlers ─────────────────────────────────────────────────
+
+  /**
+   * Called on touchstart for a tray item.  Starts the long-press timer;
+   * if it fires the item enters drag mode.  A small movement before the
+   * timer fires cancels it so the user can still scroll the tray.
+   */
+  const handleTrayTouchStart = useCallback(
+    (e: React.TouchEvent, fileIndex: number) => {
+      const file = filesRef.current.find((f) => f.index === fileIndex);
+      if (file?.status !== "ready") return;
+
+      const touch = e.touches[0];
+      const startX = touch.clientX;
+      const startY = touch.clientY;
+
+      const timer = setTimeout(() => {
+        if (!touchDragRef.current) return;
+        touchDragRef.current.active = true;
+        setIsDragging(true);
+        createTouchGhost(fileIndex, startX, startY);
+        // Haptic feedback on devices that support it.
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+          navigator.vibrate(25);
+        }
+      }, LONG_PRESS_MS);
+
+      touchDragRef.current = {
+        type: "tray",
+        fileIndex,
+        startX,
+        startY,
+        timer,
+        active: false,
+      };
+    },
+    [createTouchGhost],
+  );
+
+  /**
+   * Called on touchstart for a placed-file chip.  Same long-press pattern
+   * as the tray, but also collapses any expanded group before dragging.
+   */
+  const handleChipTouchStart = useCallback(
+    (e: React.TouchEvent, fileIndex: number) => {
+      const touch = e.touches[0];
+      const startX = touch.clientX;
+      const startY = touch.clientY;
+
+      const timer = setTimeout(() => {
+        if (!touchDragRef.current) return;
+        touchDragRef.current.active = true;
+        setExpandedGroupKey(null);
+        setIsDragging(true);
+        createTouchGhost(fileIndex, startX, startY);
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+          navigator.vibrate(25);
+        }
+      }, LONG_PRESS_MS);
+
+      touchDragRef.current = {
+        type: "chip",
+        fileIndex,
+        startX,
+        startY,
+        timer,
+        active: false,
+      };
+    },
+    [createTouchGhost],
+  );
+
+  // ── Text / paste handlers ───────────────────────────────────────────────
 
   const handleUserContentChange = useCallback((newMd: string) => {
     setEditorText(newMd);
@@ -622,6 +896,7 @@ export default function MdxEditorClient({
           ref={editorRef}
           markdown={initialState.editorText}
           onChange={handleUserContentChange}
+          placeholder={placeholder}
           plugins={[
             headingsPlugin(),
             listsPlugin(),
@@ -678,6 +953,7 @@ export default function MdxEditorClient({
                 draggable
                 onDragStart={(e) => handleChipDragStart(e, chip.fileIndex)}
                 onDragEnd={handleChipDragEnd}
+                onTouchStart={(e) => handleChipTouchStart(e, chip.fileIndex)}
                 onClick={() => {
                   if (isStack && !isExpanded) {
                     setExpandedGroupKey(group.key);
@@ -775,99 +1051,110 @@ export default function MdxEditorClient({
         </>
       )}
 
-      {/* Preview toggle button */}
-      <div className="nopal-preview-toggle-bar">
+      {/* Tray — always visible; preview toggle on left, file chips on right */}
+      <div
+        ref={trayRef}
+        className="nopal-tray"
+        onDragOver={
+          uploadFile && !isPreview ? handleTrayChipDragOver : undefined
+        }
+        onDrop={uploadFile && !isPreview ? handleTrayChipDrop : undefined}
+      >
+        {/* Preview toggle — pinned to the left via auto right-margin */}
         <button
           className="nopal-preview-toggle"
+          style={{ marginRight: "auto" }}
           onClick={() => setIsPreview((v) => !v)}
         >
           {isPreview ? "← edit" : "preview"}
         </button>
+
+        {/* File chips + add button — edit mode + uploadFile only */}
+        {uploadFile && !isPreview && (
+          <>
+            {trayFiles.map((file) => (
+              <div
+                key={file.index}
+                className={[
+                  "nopal-tray-item",
+                  file.status === "uploading"
+                    ? "nopal-tray-item--uploading"
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                draggable={file.status === "ready"}
+                onDragStart={
+                  file.status === "ready"
+                    ? (e) => handleTrayDragStart(e, file.index)
+                    : undefined
+                }
+                onDragEnd={handleTrayDragEnd}
+                onTouchStart={(e) => handleTrayTouchStart(e, file.index)}
+                title={`[${file.index}] ${file.name}`}
+              >
+                {file.status === "uploading" ? (
+                  <img
+                    src={TRAY_LOADING_URI}
+                    width={28}
+                    height={28}
+                    alt="uploading"
+                    style={{ display: "block" }}
+                  />
+                ) : file.isImage && file.url ? (
+                  <img
+                    src={file.url}
+                    alt={file.name}
+                    className="nopal-tray-item-thumb"
+                  />
+                ) : (
+                  <img
+                    src={TRAY_FILE_URI}
+                    width={28}
+                    height={28}
+                    alt={file.name}
+                    style={{ display: "block" }}
+                  />
+                )}
+                <span className="nopal-tray-item-badge">[{file.index}]</span>
+              </div>
+            ))}
+
+            <button
+              className="nopal-tray-add"
+              onClick={() => fileInputRef.current?.click()}
+              title="Attach photos or files"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf,.h264"
+              multiple
+              style={{ display: "none" }}
+              onChange={handleFileSelect}
+            />
+          </>
+        )}
+
+        {/* Extra buttons supplied by the parent — rendered after the + button */}
+        {trayButtons}
       </div>
-
-      {/* File tray (edit mode only) */}
-      {uploadFile && !isPreview && (
-        <div
-          className="nopal-tray"
-          onDragOver={handleTrayChipDragOver}
-          onDrop={handleTrayChipDrop}
-        >
-          {trayFiles.map((file) => (
-            <div
-              key={file.index}
-              className={[
-                "nopal-tray-item",
-                file.status === "uploading" ? "nopal-tray-item--uploading" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              draggable={file.status === "ready"}
-              onDragStart={
-                file.status === "ready"
-                  ? (e) => handleTrayDragStart(e, file.index)
-                  : undefined
-              }
-              onDragEnd={handleTrayDragEnd}
-              title={`[${file.index}] ${file.name}`}
-            >
-              {file.status === "uploading" ? (
-                <img
-                  src={TRAY_LOADING_URI}
-                  width={28}
-                  height={28}
-                  alt="uploading"
-                  style={{ display: "block" }}
-                />
-              ) : file.isImage && file.url ? (
-                <img
-                  src={file.url}
-                  alt={file.name}
-                  className="nopal-tray-item-thumb"
-                />
-              ) : (
-                <img
-                  src={TRAY_FILE_URI}
-                  width={28}
-                  height={28}
-                  alt={file.name}
-                  style={{ display: "block" }}
-                />
-              )}
-              <span className="nopal-tray-item-badge">[{file.index}]</span>
-            </div>
-          ))}
-
-          <button
-            className="nopal-tray-add"
-            onClick={() => fileInputRef.current?.click()}
-            title="Attach photos or files"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          </button>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,.pdf,.h264"
-            multiple
-            style={{ display: "none" }}
-            onChange={handleFileSelect}
-          />
-        </div>
-      )}
     </div>
   );
 }
