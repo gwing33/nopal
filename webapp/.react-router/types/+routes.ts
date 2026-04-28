@@ -134,6 +134,9 @@ type Pages = {
   "/tools/mtf": {
     params: {};
   };
+  "/docs/api": {
+    params: {};
+  };
   "/scc-demo": {
     params: {};
   };
@@ -213,7 +216,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/fruits/good-building-system" | "/api/calendar/calendars/:id" | "/api/calendar/collections" | "/api/calendar/collections/:collectionId/calendars" | "/api/calendar/collections/:id" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/fruits/daily-log" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/fruits/styles" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/api/upload" | "/magic-link" | "/plant-seed" | "/tools/mtf" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
+    page: "/" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/fruits/good-building-system" | "/api/calendar/calendars/:id" | "/api/calendar/collections" | "/api/calendar/collections/:collectionId/calendars" | "/api/calendar/collections/:id" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/fruits/daily-log" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/fruits/styles" | "/good/sunny-no1" | "/sunny-home-no1" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/api/upload" | "/magic-link" | "/plant-seed" | "/tools/mtf" | "/docs/api" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
   };
   "routes/fruits_.good-building-system_.$id.tsx": {
     id: "routes/fruits_.good-building-system_.$id";
@@ -350,6 +353,10 @@ type RouteFiles = {
   "routes/tools.mtf.tsx": {
     id: "routes/tools.mtf";
     page: "/tools/mtf";
+  };
+  "routes/docs.api.tsx": {
+    id: "routes/docs.api";
+    page: "/docs/api";
   };
   "routes/scc-demo.tsx": {
     id: "routes/scc-demo";
@@ -497,6 +504,7 @@ type RouteModules = {
   "routes/magic-link": typeof import("./app/routes/magic-link.tsx");
   "routes/plant-seed": typeof import("./app/routes/plant-seed.tsx");
   "routes/tools.mtf": typeof import("./app/routes/tools.mtf.tsx");
+  "routes/docs.api": typeof import("./app/routes/docs.api.tsx");
   "routes/scc-demo": typeof import("./app/routes/scc-demo.tsx");
   "routes/contact": typeof import("./app/routes/contact.tsx");
   "routes/explore": typeof import("./app/routes/explore.tsx");
