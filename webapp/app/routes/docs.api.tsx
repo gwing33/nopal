@@ -483,10 +483,42 @@ http://localhost:5173    # local dev`}</Pre>
 
           <div className="font-bold mb-2">Human</div>
           <Pre>{`{
-  "_id":    string,                                    // SurrealDB record ID
-  "email":  string,
-  "name":   string,
-  "role":   "Super" | "Admin" | "Human" | "MaybeHuman"
+  "_id":             string,                                    // SurrealDB record ID
+  "email":           string,
+  "name":            string,
+  "role":            "Super" | "Admin" | "Human" | "MaybeHuman",
+  "pfp":             string | undefined,                        // profile picture URL
+  "officeHours":     OfficeHours | undefined,                   // per-day availability windows
+  "scheduledEvents": ScheduledEvent[] | undefined               // upcoming all-day events
+}`}</Pre>
+
+          <div className="font-bold mt-4 mb-2">
+            OfficeHours / OfficeHoursEntry
+          </div>
+          <Pre>{`// OfficeHours — one entry per day of the week
+{
+  "monday":    OfficeHoursEntry,
+  "tuesday":   OfficeHoursEntry,
+  "wednesday": OfficeHoursEntry,
+  "thursday":  OfficeHoursEntry,
+  "friday":    OfficeHoursEntry,
+  "saturday":  OfficeHoursEntry,
+  "sunday":    OfficeHoursEntry
+}
+
+// OfficeHoursEntry
+{
+  "enabled": boolean,
+  "start":   string,   // "HH:MM"
+  "end":     string    // "HH:MM"
+}`}</Pre>
+
+          <div className="font-bold mt-4 mb-2">ScheduledEvent</div>
+          <Pre>{`{
+  "id":        string,   // unique identifier
+  "name":      string,   // display name, e.g. "Vacation"
+  "startDate": string,   // "YYYY-MM-DD"
+  "endDate":   string    // "YYYY-MM-DD"
 }`}</Pre>
 
           <div className="font-bold mt-5 mb-2">Project</div>

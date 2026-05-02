@@ -10,14 +10,21 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const form = await request.formData();
   const file = form.get("file");
+  const type = form.get("type");
 
   if (!(file instanceof File)) {
     return Response.json({ error: "No file provided" }, { status: 400 });
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const filename = `daily-log/${user._id}/${Date.now()}-${safeName}`;
+
+  let filename: string;
+  if (type === "pfp") {
+    filename = `profile/${user._id}/pfp-${Date.now()}.jpg`;
+  } else {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    filename = `daily-log/${user._id}/${Date.now()}-${safeName}`;
+  }
 
   try {
     const url = await uploadPublicFileToS3(buffer, filename);
@@ -26,7 +33,7 @@ export async function action({ request }: ActionFunctionArgs) {
     console.error("S3 upload error:", err);
     return Response.json(
       { error: err instanceof Error ? err.message : "Upload failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

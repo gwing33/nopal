@@ -91,6 +91,19 @@ const NODES: GraphNode[] = [
       { name: "email", type: "string" },
       { name: "name", type: "string" },
       { name: "role", type: "Role", refId: "Role" },
+      { name: "pfp", type: "string", optional: true },
+      {
+        name: "officeHours",
+        type: "OfficeHours",
+        refId: "OfficeHours",
+        optional: true,
+      },
+      {
+        name: "scheduledEvents",
+        type: "ScheduledEvent[]",
+        refId: "ScheduledEvent",
+        optional: true,
+      },
     ],
   },
   {
@@ -104,6 +117,53 @@ const NODES: GraphNode[] = [
       { name: "Admin", type: "literal" },
       { name: "Human", type: "literal" },
       { name: "MaybeHuman", type: "literal" },
+    ],
+  },
+
+  // ── Human value types ─────────────────────────────────────────────────────
+  {
+    id: "OfficeHours",
+    label: "OfficeHours",
+    kind: "value",
+    description: "Per-day availability windows for a human.",
+    color: "#d4875a",
+    fields: [
+      { name: "monday", type: "OfficeHoursEntry", refId: "OfficeHoursEntry" },
+      { name: "tuesday", type: "OfficeHoursEntry", refId: "OfficeHoursEntry" },
+      {
+        name: "wednesday",
+        type: "OfficeHoursEntry",
+        refId: "OfficeHoursEntry",
+      },
+      { name: "thursday", type: "OfficeHoursEntry", refId: "OfficeHoursEntry" },
+      { name: "friday", type: "OfficeHoursEntry", refId: "OfficeHoursEntry" },
+      { name: "saturday", type: "OfficeHoursEntry", refId: "OfficeHoursEntry" },
+      { name: "sunday", type: "OfficeHoursEntry", refId: "OfficeHoursEntry" },
+    ],
+  },
+  {
+    id: "OfficeHoursEntry",
+    label: "OfficeHoursEntry",
+    kind: "value",
+    description: "A single day's office hours window.",
+    color: "#d4875a",
+    fields: [
+      { name: "enabled", type: "boolean" },
+      { name: "start", type: "string", description: "HH:MM" },
+      { name: "end", type: "string", description: "HH:MM" },
+    ],
+  },
+  {
+    id: "ScheduledEvent",
+    label: "ScheduledEvent",
+    kind: "value",
+    description: "An upcoming all-day or multi-day event for a human.",
+    color: "#b07d1a",
+    fields: [
+      { name: "id", type: "string" },
+      { name: "name", type: "string" },
+      { name: "startDate", type: "string", description: "YYYY-MM-DD" },
+      { name: "endDate", type: "string", description: "YYYY-MM-DD" },
     ],
   },
 
@@ -425,6 +485,9 @@ const NODES: GraphNode[] = [
 const EDGES: GraphEdge[] = [
   // Human domain
   { from: "Human", to: "Role" },
+  { from: "Human", to: "OfficeHours" },
+  { from: "Human", to: "ScheduledEvent" },
+  { from: "OfficeHours", to: "OfficeHoursEntry" },
   { from: "DailyLog", to: "Human" },
 
   // Project messages
@@ -500,8 +563,11 @@ const INITIAL_POSITIONS = layoutGroups([
     nodes: [
       ["Human", 0, 0],
       ["Role", -20, 160],
-      ["DailyLog", 220, 250],
-      ["ProjectMessage", 0, 340],
+      ["OfficeHours", 260, 60],
+      ["OfficeHoursEntry", 420, 200],
+      ["ScheduledEvent", 260, 220],
+      ["DailyLog", 0, 310],
+      ["ProjectMessage", 0, 460],
     ],
   },
 
