@@ -26,12 +26,6 @@ const TOOLS: Tool[] = [
     href: "/tools/do-not-use",
   },
   {
-    name: "Thermal Inertia",
-    description:
-      "Compare thermal diffusivity of common insulation and structural materials. Understand how thermal inertia affects real-world comfort beyond R-values alone.",
-    href: "/tools/thermal-inertia",
-  },
-  {
     name: "Building Envelope",
     description:
       "Evaluate your building envelope — air tightness, ventilation, and fresh air strategy — and see where your home lands on the health vs efficiency quadrant.",
@@ -62,6 +56,13 @@ const TOOLS: Tool[] = [
     name: "Medium Timber Framing",
     description: "Size and generate takeoffs for MTF",
     href: "/tools/mtf",
+    inDevelopment: true,
+  },
+  {
+    name: "Thermal Inertia",
+    description:
+      "Compare thermal diffusivity of common insulation and structural materials. Understand how thermal inertia affects real-world comfort beyond R-values alone.",
+    href: "/tools/thermal-inertia",
     inDevelopment: true,
   },
 ];
