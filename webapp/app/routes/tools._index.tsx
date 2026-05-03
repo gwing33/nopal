@@ -26,6 +26,12 @@ const TOOLS: Tool[] = [
     href: "/tools/do-not-use",
   },
   {
+    name: "Thermal Inertia",
+    description:
+      "Compare thermal diffusivity of common insulation and structural materials. Understand how thermal inertia affects real-world comfort beyond R-values alone.",
+    href: "/tools/thermal-inertia",
+  },
+  {
     name: "Building Envelope",
     description:
       "Evaluate your building envelope — air tightness, ventilation, and fresh air strategy — and see where your home lands on the health vs efficiency quadrant.",
