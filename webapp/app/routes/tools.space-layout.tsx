@@ -69,7 +69,23 @@ type CubeInstruction = {
   depth: number;
   location: { referenceItemId?: string; offset: P3; rotation: P3 };
 };
-type Instruction = ElevationGridInstruction | CubeInstruction;
+type PlaneSegment = { distance: number; angle: number };
+type PlaneInstruction = {
+  type: "plane-instruction";
+  /** XZ = horizontal floor/ceiling; XY = vertical south/north wall; ZY = vertical east/west wall */
+  axis: "XZ" | "XY" | "ZY";
+  /** Starting 2D point in the plane's local coords (u, v) */
+  start: P2;
+  /** Constant value on the perpendicular axis: Y for XZ, Z for XY, X for ZY */
+  offset: number;
+  /** Each step walks the perimeter; polygon auto-closes back to start */
+  segments: PlaneSegment[];
+  hidden?: boolean;
+};
+type Instruction =
+  | ElevationGridInstruction
+  | CubeInstruction
+  | PlaneInstruction;
 
 type MeshFace = { vertices: P3[]; normal: P3; kind: FaceKind };
 type MeshGeo = { vertices: P3[]; faces: MeshFace[] };
@@ -426,6 +442,61 @@ function subtractBoxFromItem(item: SceneItem, subGeo: MeshGeo): SceneItem {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   PLANE INSTRUCTION HELPERS
+═══════════════════════════════════════════════════════════ */
+/**
+ * Walk the segments to produce the polygon's 2D vertices (in the plane's
+ * local u/v coordinates). The returned array starts at `instr.start`; the
+ * polygon is closed — the last implicit edge connects back to start.
+ *
+ * Angle convention
+ *   XZ (floor)  : compass bearing — 0° = North (−Z), 90° = East (+X)
+ *   XY / ZY     : standard CCW from the +u axis — 0° = right, 90° = up
+ */
+function computePlanePoints(instr: PlaneInstruction): P2[] {
+  const pts: P2[] = [instr.start];
+  let [u, v] = instr.start;
+  for (const seg of instr.segments) {
+    const rad = (seg.angle * Math.PI) / 180;
+    if (instr.axis === "XZ") {
+      // compass bearing → world XZ  (N=−Z, E=+X, S=+Z, W=−X)
+      u += Math.sin(rad) * seg.distance;
+      v += -Math.cos(rad) * seg.distance;
+    } else {
+      // standard angle: 0° = right (+u), 90° = up (+v)
+      u += Math.cos(rad) * seg.distance;
+      v += Math.sin(rad) * seg.distance;
+    }
+    pts.push([u, v]);
+  }
+  return pts;
+}
+
+/** Turn a PlaneInstruction into a two-sided flat MeshGeo. */
+function buildPlaneGeo(instr: PlaneInstruction): MeshGeo {
+  const pts2D = computePlanePoints(instr);
+  const pts3D: P3[] = pts2D.map(([u, v]) => {
+    if (instr.axis === "XZ") return [u, instr.offset, v];
+    if (instr.axis === "XY") return [u, v, instr.offset];
+    /* ZY */ return [instr.offset, v, u];
+  });
+  // Provide both front and back face so the polygon is visible from each side.
+  const cfg: Record<PlaneInstruction["axis"], [P3, P3, FaceKind, FaceKind]> = {
+    XZ: [[0, 1, 0], [0, -1, 0], "top", "bottom"],
+    XY: [[0, 0, -1], [0, 0, 1], "front", "back"],
+    ZY: [[1, 0, 0], [-1, 0, 0], "right", "left"],
+  };
+  const [n1, n2, k1, k2] = cfg[instr.axis];
+  return {
+    vertices: pts3D,
+    faces: [
+      { vertices: pts3D, normal: n1, kind: k1 },
+      { vertices: [...pts3D].reverse(), normal: n2, kind: k2 },
+    ],
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════
    SCENE BUILDING  (Scene, Instruction) => Scene
 ═══════════════════════════════════════════════════════════ */
 function buildScene(journey: Journey, upToStep: number): Scene {
@@ -433,6 +504,16 @@ function buildScene(journey: Journey, upToStep: number): Scene {
   let nextId = 0;
   for (let si = 0; si <= upToStep && si < journey.steps.length; si++) {
     for (const instr of journey.steps[si].instructions) {
+      if (instr.type === "plane-instruction") {
+        if (!instr.hidden && instr.segments.length > 0) {
+          const geo = buildPlaneGeo(instr);
+          scene = {
+            ...scene,
+            items: [...scene.items, { id: `plane-${nextId++}`, geos: [geo] }],
+          };
+        }
+        continue;
+      }
       if (instr.type !== "cube-instruction") continue;
       const { mode, width, height, depth, location } = instr;
       const [ox, oy, oz] = location.offset;
@@ -986,6 +1067,7 @@ function ElevGrid({
   elevY,
   gridSize,
   scale,
+  gridN,
   elevPoints,
   selectedPoint,
   onPointClick,
@@ -995,12 +1077,15 @@ function ElevGrid({
   elevY: number;
   gridSize: number;
   scale: number;
+  /** Half-extent in grid cells: grid runs from -gridN to +gridN in X and Z. */
+  gridN: number;
   elevPoints: P3[];
   selectedPoint: [number, number] | null;
   onPointClick: ((x: number, z: number) => void) | null;
 }) {
-  const R = 8 * PX_PER_FOOT,
-    n = Math.ceil(R / gridSize);
+  const n = gridN;
+  // Compass labels sit at the outermost grid line so they always frame the grid.
+  const compassR = n * gridSize;
   const lines: React.ReactNode[] = [];
   const ln = (key: string, p1: P2, p2: P2, bold: boolean, dash: boolean) => (
     <line
@@ -1127,12 +1212,36 @@ function ElevGrid({
       return nodes;
     };
 
-    const pad = gridSize * 0.6; // how far outside the grid edge to place labels
+    const pad = gridSize * 0.6; // how far outside the outermost line to place labels
     lines.push(
-      ...compassLabel("N", [0, elevY, R], [0, elevY, R + pad], "N", true),
-      ...compassLabel("S", [0, elevY, -R], [0, elevY, -R - pad], "S", false),
-      ...compassLabel("E", [R, elevY, 0], [R + pad, elevY, 0], "E", false),
-      ...compassLabel("W", [-R, elevY, 0], [-R - pad, elevY, 0], "W", false),
+      ...compassLabel(
+        "N",
+        [0, elevY, compassR],
+        [0, elevY, compassR + pad],
+        "N",
+        true,
+      ),
+      ...compassLabel(
+        "S",
+        [0, elevY, -compassR],
+        [0, elevY, -compassR - pad],
+        "S",
+        false,
+      ),
+      ...compassLabel(
+        "E",
+        [compassR, elevY, 0],
+        [compassR + pad, elevY, 0],
+        "E",
+        false,
+      ),
+      ...compassLabel(
+        "W",
+        [-compassR, elevY, 0],
+        [-compassR - pad, elevY, 0],
+        "W",
+        false,
+      ),
     );
 
     // — Interactive dots —
@@ -1254,6 +1363,14 @@ function SceneRenderer({
   const scale = BASE_SCALE * zoom;
   const camDir = CAM_DIR[view];
 
+  // Grid half-extent: a few cells beyond the scene's world-space XZ footprint.
+  let maxAbsXZ = 0;
+  for (const item of scene.items)
+    for (const geo of item.geos)
+      for (const [x, , z] of geo.vertices)
+        maxAbsXZ = Math.max(maxAbsXZ, Math.abs(x), Math.abs(z));
+  const gridN = Math.max(4, Math.ceil(maxAbsXZ / gridSize) + 3);
+
   // Split faces into visible and hidden (back-facing)
   const visibleFaces: { face: MeshFace; depth: number }[] = [];
   const hiddenFaces: { face: MeshFace; depth: number }[] = [];
@@ -1299,6 +1416,7 @@ function SceneRenderer({
               elevY={scene.elevY}
               gridSize={gridSize}
               scale={scale}
+              gridN={gridN}
               elevPoints={elevPoints}
               selectedPoint={isEditingGrid ? selectedGridPoint : null}
               onPointClick={isEditingGrid ? onGridPointClick : null}
@@ -1885,6 +2003,17 @@ function StepEditorPanel({
     onChange({ ...step, instructions: [...step.instructions, newInstr] });
   };
 
+  const addPlaneInstr = () => {
+    const newInstr: PlaneInstruction = {
+      type: "plane-instruction",
+      axis: "XZ",
+      start: [0, 0],
+      offset: journeyElevY,
+      segments: [],
+    };
+    onChange({ ...step, instructions: [...step.instructions, newInstr] });
+  };
+
   return (
     <div
       style={{
@@ -1942,49 +2071,53 @@ function StepEditorPanel({
                   letterSpacing: "0.04em",
                 }}
               >
-                {instr.type === "cube-instruction" ? "Cube" : "Elevation Grid"}
+                {instr.type === "cube-instruction"
+                  ? "Cube"
+                  : instr.type === "plane-instruction"
+                    ? `Plane · ${instr.axis}`
+                    : "Elevation Grid"}
               </span>
-              {instr.type === "cube-instruction" ? (
-                <button
-                  onClick={() => removeInstr(i)}
-                  title="Remove instruction"
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: MUTED,
-                    fontSize: 15,
-                    padding: 0,
-                    lineHeight: 1,
-                  }}
-                >
-                  ×
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    const newInstr = { ...instr, hidden: !instr.hidden };
-                    onChange({
-                      ...step,
-                      instructions: step.instructions.map((ins) =>
-                        ins === instr ? newInstr : ins,
-                      ),
-                    });
-                  }}
-                  title={instr.hidden ? "Show grid" : "Hide grid"}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: instr.hidden ? MUTED : PURPLE,
-                    fontSize: 13,
-                    padding: 0,
-                    lineHeight: 1,
-                  }}
-                >
-                  {instr.hidden ? "○" : "●"}
-                </button>
-              )}
+              <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                {/* Visibility toggle — planes and elevation grid */}
+                {(instr.type === "plane-instruction" ||
+                  instr.type === "elevation-grid-instruction") && (
+                  <button
+                    onClick={() =>
+                      updateInstr(i, { ...instr, hidden: !instr.hidden })
+                    }
+                    title={instr.hidden ? "Show" : "Hide"}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: instr.hidden ? MUTED : PURPLE,
+                      fontSize: 13,
+                      padding: 0,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {instr.hidden ? "○" : "●"}
+                  </button>
+                )}
+                {/* Remove — cubes and planes */}
+                {instr.type !== "elevation-grid-instruction" && (
+                  <button
+                    onClick={() => removeInstr(i)}
+                    title="Remove instruction"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: MUTED,
+                      fontSize: 15,
+                      padding: 0,
+                      lineHeight: 1,
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             </div>
 
             {instr.type === "cube-instruction" && (
@@ -2279,6 +2412,446 @@ function StepEditorPanel({
                   </>
                 );
               })()}
+
+            {/* ──── PLANE INSTRUCTION ──── */}
+            {instr.type === "plane-instruction" &&
+              (() => {
+                const pl = instr as PlaneInstruction;
+                const updatePl = (patch: Partial<PlaneInstruction>) =>
+                  updateInstr(i, { ...pl, ...patch });
+
+                const axisLabels: Record<PlaneInstruction["axis"], string> = {
+                  XZ: "Floor / ceiling (horizontal)",
+                  XY: "Wall — S/N facing (vertical)",
+                  ZY: "Wall — E/W facing (vertical)",
+                };
+                const startLabels: Record<
+                  PlaneInstruction["axis"],
+                  [string, string]
+                > = {
+                  XZ: ["X — East", "Z — South"],
+                  XY: ["X — East", "Y — Up"],
+                  ZY: ["Z — South", "Y — Up"],
+                };
+                const offsetLabels: Record<PlaneInstruction["axis"], string> = {
+                  XZ: "Y — Elevation",
+                  XY: "Z — Depth",
+                  ZY: "X — Position",
+                };
+
+                const dirBtns =
+                  pl.axis === "XZ"
+                    ? [
+                        { label: "N", angle: 0 },
+                        { label: "E", angle: 90 },
+                        { label: "S", angle: 180 },
+                        { label: "W", angle: 270 },
+                      ]
+                    : [
+                        { label: "→", angle: 0 },
+                        { label: "↑", angle: 90 },
+                        { label: "←", angle: 180 },
+                        { label: "↓", angle: 270 },
+                      ];
+
+                const pts2D = computePlanePoints(pl);
+                const pvW = 108,
+                  pvH = 72,
+                  pvPad = 10;
+                const uArr = pts2D.map((p) => p[0]);
+                const vArr = pts2D.map((p) => p[1]);
+                const minU = Math.min(...uArr),
+                  maxU = Math.max(...uArr);
+                const minV = Math.min(...vArr),
+                  maxV = Math.max(...vArr);
+                const rangeU = Math.max(maxU - minU, 1);
+                const rangeV = Math.max(maxV - minV, 1);
+                const sc = Math.min(
+                  (pvW - pvPad * 2) / rangeU,
+                  (pvH - pvPad * 2) / rangeV,
+                );
+                const offU = pvW / 2 - ((minU + maxU) / 2) * sc;
+                const offV = pvH / 2 + ((minV + maxV) / 2) * sc;
+                const toSvg = ([u, v]: P2): P2 => [
+                  offU + u * sc,
+                  pl.axis === "XZ" ? offV + v * sc : offV - v * sc,
+                ];
+                const svgPts = pts2D.map(toSvg);
+                const pathD =
+                  svgPts.length > 1
+                    ? "M " +
+                      svgPts[0][0].toFixed(1) +
+                      " " +
+                      svgPts[0][1].toFixed(1) +
+                      " " +
+                      svgPts
+                        .slice(1)
+                        .map(
+                          (p) => "L " + p[0].toFixed(1) + " " + p[1].toFixed(1),
+                        )
+                        .join(" ") +
+                      " Z"
+                    : "";
+
+                const [sl0, sl1] = startLabels[pl.axis];
+
+                return (
+                  <>
+                    {/* Axis selector */}
+                    <div style={{ marginBottom: 9 }}>
+                      <span style={labelCapStyle}>Plane</span>
+                      <div style={{ display: "flex", gap: 4, marginBottom: 3 }}>
+                        {(["XZ", "XY", "ZY"] as const).map((ax) => {
+                          const active = pl.axis === ax;
+                          return (
+                            <button
+                              key={ax}
+                              onClick={() => updatePl({ axis: ax })}
+                              title={axisLabels[ax]}
+                              style={{
+                                flex: 1,
+                                padding: "4px 0",
+                                border: `1px solid ${active ? PURPLE : BORDER}`,
+                                borderRadius: 5,
+                                background: active ? "#f0ebf8" : "transparent",
+                                color: active ? PURPLE : MUTED,
+                                cursor: "pointer",
+                                fontSize: 11,
+                                fontWeight: active ? 600 : 400,
+                                fontFamily: "monospace",
+                              }}
+                            >
+                              {ax}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <span style={{ fontSize: 10, color: MUTED }}>
+                        {axisLabels[pl.axis]}
+                      </span>
+                    </div>
+
+                    {/* Start point + offset */}
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr 1fr",
+                        gap: 5,
+                        marginBottom: 9,
+                      }}
+                    >
+                      <label>
+                        <span style={labelCapStyle}>
+                          {sl0} ({ulabel})
+                        </span>
+                        <input
+                          type="number"
+                          step={stepSize}
+                          value={
+                            Math.round(toLenUnit(pl.start[0], units) * 1000) /
+                            1000
+                          }
+                          style={{ ...inputStyle, padding: "4px 5px" }}
+                          onChange={(e) =>
+                            updatePl({
+                              start: [
+                                fromLenUnit(Number(e.target.value), units),
+                                pl.start[1],
+                              ],
+                            })
+                          }
+                        />
+                      </label>
+                      <label>
+                        <span style={labelCapStyle}>
+                          {sl1} ({ulabel})
+                        </span>
+                        <input
+                          type="number"
+                          step={stepSize}
+                          value={
+                            Math.round(toLenUnit(pl.start[1], units) * 1000) /
+                            1000
+                          }
+                          style={{ ...inputStyle, padding: "4px 5px" }}
+                          onChange={(e) =>
+                            updatePl({
+                              start: [
+                                pl.start[0],
+                                fromLenUnit(Number(e.target.value), units),
+                              ],
+                            })
+                          }
+                        />
+                      </label>
+                      <label>
+                        <span style={labelCapStyle}>
+                          {offsetLabels[pl.axis]} ({ulabel})
+                        </span>
+                        <input
+                          type="number"
+                          step={stepSize}
+                          value={
+                            Math.round(toLenUnit(pl.offset, units) * 1000) /
+                            1000
+                          }
+                          style={{ ...inputStyle, padding: "4px 5px" }}
+                          onChange={(e) =>
+                            updatePl({
+                              offset: fromLenUnit(
+                                Number(e.target.value),
+                                units,
+                              ),
+                            })
+                          }
+                        />
+                      </label>
+                    </div>
+
+                    {/* Segments list */}
+                    <div style={{ marginBottom: 9 }}>
+                      <span style={labelCapStyle}>
+                        Segments{" "}
+                        {pl.segments.length > 0
+                          ? `· ${pl.segments.length} — closes back to start`
+                          : "· none yet"}
+                      </span>
+
+                      {pl.segments.map((seg, si) => (
+                        <div
+                          key={si}
+                          style={{
+                            display: "flex",
+                            gap: 4,
+                            alignItems: "flex-end",
+                            marginBottom: 5,
+                          }}
+                        >
+                          {/* Index */}
+                          <span
+                            style={{
+                              fontSize: 9,
+                              color: MUTED,
+                              fontFamily: "monospace",
+                              minWidth: 14,
+                              textAlign: "right",
+                              paddingBottom: 5,
+                            }}
+                          >
+                            {si + 1}
+                          </span>
+
+                          {/* Distance */}
+                          <label style={{ flex: 1 }}>
+                            <span style={labelCapStyle}>dist ({ulabel})</span>
+                            <input
+                              type="number"
+                              min={0}
+                              step={stepSize}
+                              value={
+                                Math.round(
+                                  toLenUnit(seg.distance, units) * 1000,
+                                ) / 1000
+                              }
+                              style={{ ...inputStyle, padding: "4px 5px" }}
+                              onChange={(e) => {
+                                const segs = [...pl.segments];
+                                segs[si] = {
+                                  ...seg,
+                                  distance: fromLenUnit(
+                                    Number(e.target.value),
+                                    units,
+                                  ),
+                                };
+                                updatePl({ segments: segs });
+                              }}
+                            />
+                          </label>
+
+                          {/* Angle */}
+                          <label style={{ flex: 1 }}>
+                            <span style={labelCapStyle}>
+                              {pl.axis === "XZ" ? "bearing °" : "angle °"}
+                            </span>
+                            <input
+                              type="number"
+                              step={1}
+                              value={Math.round(seg.angle * 10) / 10}
+                              style={{ ...inputStyle, padding: "4px 5px" }}
+                              onChange={(e) => {
+                                const segs = [...pl.segments];
+                                segs[si] = {
+                                  ...seg,
+                                  angle: Number(e.target.value),
+                                };
+                                updatePl({ segments: segs });
+                              }}
+                            />
+                          </label>
+
+                          {/* Quick-direction 2×2 grid */}
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "1fr 1fr",
+                              gap: 2,
+                              paddingBottom: 2,
+                            }}
+                          >
+                            {dirBtns.map((d) => (
+                              <button
+                                key={d.angle}
+                                title={`${d.label} (${d.angle}°)`}
+                                onClick={() => {
+                                  const segs = [...pl.segments];
+                                  segs[si] = { ...seg, angle: d.angle };
+                                  updatePl({ segments: segs });
+                                }}
+                                style={{
+                                  width: 18,
+                                  height: 18,
+                                  fontSize: 9,
+                                  border: `1px solid ${
+                                    seg.angle === d.angle ? PURPLE : BORDER
+                                  }`,
+                                  borderRadius: 3,
+                                  background:
+                                    seg.angle === d.angle
+                                      ? "#f0ebf8"
+                                      : "transparent",
+                                  color: seg.angle === d.angle ? PURPLE : MUTED,
+                                  cursor: "pointer",
+                                  padding: 0,
+                                  lineHeight: 1,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                {d.label}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Remove segment */}
+                          <button
+                            onClick={() => {
+                              const segs = pl.segments.filter(
+                                (_, j) => j !== si,
+                              );
+                              updatePl({ segments: segs });
+                            }}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              color: MUTED,
+                              fontSize: 13,
+                              padding: 0,
+                              paddingBottom: 4,
+                              lineHeight: 1,
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+
+                      {/* Add segment button */}
+                      <button
+                        onClick={() =>
+                          updatePl({
+                            segments: [
+                              ...pl.segments,
+                              { distance: PX_PER_FOOT, angle: 0 },
+                            ],
+                          })
+                        }
+                        style={{
+                          width: "100%",
+                          marginTop: 3,
+                          padding: "4px 0",
+                          border: `1px dashed ${BORDER}`,
+                          borderRadius: 5,
+                          background: "transparent",
+                          color: MUTED,
+                          cursor: "pointer",
+                          fontSize: 11,
+                        }}
+                      >
+                        + Add Segment
+                      </button>
+                    </div>
+
+                    {/* Inline preview SVG */}
+                    {pl.segments.length > 0 && (
+                      <div>
+                        <span style={labelCapStyle}>
+                          Preview — {pts2D.length} pts
+                        </span>
+                        <div
+                          style={{
+                            background: "#f0ebf8",
+                            borderRadius: 6,
+                            padding: 4,
+                            display: "flex",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <svg
+                            width={pvW}
+                            height={pvH}
+                            style={{ display: "block", overflow: "visible" }}
+                          >
+                            {pathD && (
+                              <path
+                                d={pathD}
+                                fill="rgba(127,91,139,0.14)"
+                                stroke={PURPLE}
+                                strokeWidth={1.5}
+                                strokeLinejoin="round"
+                              />
+                            )}
+                            {svgPts[0] && (
+                              <circle
+                                cx={svgPts[0][0]}
+                                cy={svgPts[0][1]}
+                                r={3}
+                                fill={PURPLE}
+                              />
+                            )}
+                            {svgPts.length > 1 &&
+                              svgPts.slice(0, -1).map(([ax, ay], ki) => {
+                                const [bx, by] = svgPts[ki + 1];
+                                const mx = (ax + bx) / 2;
+                                const my = (ay + by) / 2;
+                                const ddx = bx - ax;
+                                const ddy = by - ay;
+                                const len = Math.sqrt(ddx * ddx + ddy * ddy);
+                                if (len < 4) return null;
+                                const ux = ddx / len;
+                                const uy = ddy / len;
+                                const hs = 4;
+                                return (
+                                  <polygon
+                                    key={ki}
+                                    points={
+                                      `${(mx + ux * hs).toFixed(1)},${(my + uy * hs).toFixed(1)} ` +
+                                      `${(mx - ux * hs - uy * hs * 0.6).toFixed(1)},${(my - uy * hs + ux * hs * 0.6).toFixed(1)} ` +
+                                      `${(mx - ux * hs + uy * hs * 0.6).toFixed(1)},${(my - uy * hs - ux * hs * 0.6).toFixed(1)}`
+                                    }
+                                    fill={PURPLE}
+                                    opacity={0.6}
+                                  />
+                                );
+                              })}
+                          </svg>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
           </div>
         ))}
 
@@ -2302,6 +2875,25 @@ function StepEditorPanel({
             }}
           >
             + Add Cube
+          </button>
+          <button
+            onClick={addPlaneInstr}
+            style={{
+              flex: 1,
+              padding: "7px 0",
+              border: `1px dashed ${BORDER}`,
+              borderRadius: 6,
+              background: "transparent",
+              color: MUTED,
+              cursor: "pointer",
+              fontSize: 12,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 5,
+            }}
+          >
+            + Add Plane
           </button>
           <button
             onClick={onDeleteStep}
