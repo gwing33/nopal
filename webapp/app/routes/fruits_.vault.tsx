@@ -885,8 +885,17 @@ export default function VaultPage() {
     useLoaderData<typeof loader>();
   const { revalidate } = useRevalidator();
 
-  // ── Panel selection state ──────────────────────────────────────────────────
+  // ── Sidebar drawer (mobile) ───────────────────────────────────────────────────────────
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // ── Panel selection state ───────────────────────────────────────────────────────────────
   const [panel, setPanel] = useState<PanelTarget>({ kind: "my-root" });
+
+  // Navigate to a panel and close the mobile drawer.
+  const handleSelectPanel = useCallback((target: PanelTarget) => {
+    setPanel(target);
+    setSidebarOpen(false);
+  }, []);
 
   // ── Modals / inline UI ────────────────────────────────────────────────────
   const [shareFolder, setShareFolder] = useState<VaultFolder | null>(null);
@@ -1152,7 +1161,15 @@ export default function VaultPage() {
     <AppLayout>
       <div className="vault-layout">
         {/* ═══ LEFT PANEL: Folder Tree ══════════════════════════════════════ */}
-        <div className="vault-sidebar">
+        {/* Backdrop: closes drawer when tapped on mobile */}
+        <div
+          className={`vault-sidebar-backdrop${sidebarOpen ? " vault-sidebar-backdrop--visible" : ""}`}
+          onClick={() => setSidebarOpen(false)}
+        />
+
+        <div
+          className={`vault-sidebar${sidebarOpen ? " vault-sidebar--open" : ""}`}
+        >
           {/* ── My Files ──────────────────────────────────────────────────────────── */}
           <button
             className="vault-section-btn"
@@ -1169,7 +1186,7 @@ export default function VaultPage() {
               {/* Root item */}
               <button
                 className={`vault-sidebar-item ${panel.kind === "my-root" ? "vault-sidebar-item--active" : ""}`}
-                onClick={() => setPanel({ kind: "my-root" })}
+                onClick={() => handleSelectPanel({ kind: "my-root" })}
               >
                 /
               </button>
@@ -1198,7 +1215,10 @@ export default function VaultPage() {
                       }
                       depth={0}
                       onSelect={(f) =>
-                        setPanel({ kind: "my-folder", folderId: f._id })
+                        handleSelectPanel({
+                          kind: "my-folder",
+                          folderId: f._id,
+                        })
                       }
                       onRename={(f) => setRenamingFolderId(f._id)}
                       onShare={(f) => setShareFolder(f)}
@@ -1266,7 +1286,7 @@ export default function VaultPage() {
                               <button
                                 className={`vault-sidebar-item ${panel.kind === "shared-folder" && panel.folderId === f._id ? "vault-sidebar-item--active" : ""}`}
                                 onClick={() =>
-                                  setPanel({
+                                  handleSelectPanel({
                                     kind: "shared-folder",
                                     folderId: f._id,
                                     ownerName,
@@ -1289,6 +1309,42 @@ export default function VaultPage() {
         <div className="vault-main">
           {/* Header row */}
           <div className="vault-panel-header">
+            {/* Sidebar toggle — only visible on mobile via CSS */}
+            <button
+              className="vault-sidebar-toggle"
+              onClick={() => setSidebarOpen((o) => !o)}
+              aria-label={sidebarOpen ? "Close folders" : "Open folders"}
+            >
+              {sidebarOpen ? (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
+                  <line x1="2" y1="2" x2="14" y2="14" />
+                  <line x1="14" y1="2" x2="2" y2="14" />
+                </svg>
+              ) : (
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
+                  <line x1="2" y1="4" x2="14" y2="4" />
+                  <line x1="2" y1="8" x2="14" y2="8" />
+                  <line x1="2" y1="12" x2="14" y2="12" />
+                </svg>
+              )}
+            </button>
+
             {/* Breadcrumb */}
             <h2
               className="font-mono font-bold text-sm purple-light-text"

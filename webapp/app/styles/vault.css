@@ -32,6 +32,67 @@
   gap: 16px;
 }
 
+/* ── Sidebar toggle button (hidden on desktop) ──────────────────────────── */
+
+.vault-sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--foreground);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 5px 9px;
+  line-height: 1;
+  flex-shrink: 0;
+  color: var(--text-subtle);
+  @media (prefers-color-scheme: dark) {
+    border-color: var(--dark-foreground);
+    color: var(--text-subtle-dark);
+  }
+}
+
+/* ── Backdrop (hidden on desktop) ────────────────────────────────────────── */
+
+.vault-sidebar-backdrop {
+  display: none;
+}
+
+/* ── Mobile: sidebar becomes a fixed slide-in drawer ────────────────────── */
+
+@media (max-width: 859px) {
+  .vault-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 200;
+    width: 280px;
+    transform: translateX(-100%);
+    transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .vault-sidebar--open {
+    transform: translateX(0);
+  }
+
+  .vault-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 199;
+  }
+
+  /* Show backdrop only when open */
+  .vault-sidebar-backdrop--visible {
+    display: block;
+  }
+
+  .vault-sidebar-toggle {
+    display: flex;
+  }
+}
+
 /* ── Sidebar items ───────────────────────────────────────────────────────── */
 
 /* Collapsible section header (My Files, Shared with me) */
