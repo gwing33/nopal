@@ -15,6 +15,7 @@ import {
 } from "../data/vault.server";
 import { getHumans, getHumansById } from "../data/humans.server";
 import { AppLayout } from "../components/AppLayout";
+import "../styles/vault.css";
 
 /** Client-safe lock check — no server imports needed. */
 function isFileRefLocked(file: FileRef): boolean {
@@ -167,36 +168,9 @@ function ShareModal({
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.4)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 100,
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: "var(--background)",
-          border: "1px solid var(--midground)",
-          borderRadius: "10px",
-          padding: "24px",
-          minWidth: "300px",
-          maxWidth: "400px",
-          width: "100%",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3
-          className="font-bold text-sm font-mono mb-4"
-          style={{ color: "var(--purple)" }}
-        >
-          Share "{folder.name}"
-        </h3>
+    <div className="vault-modal-backdrop" onClick={onClose}>
+      <div className="vault-modal" onClick={(e) => e.stopPropagation()}>
+        <h3 className="vault-modal-title">Share "{folder.name}"</h3>
 
         {/* Mode selector */}
         <div
@@ -238,15 +212,7 @@ function ShareModal({
 
         {/* Human list — only when "specific" */}
         {mode === "specific" && (
-          <div
-            style={{
-              border: "1px solid var(--midground)",
-              borderRadius: "6px",
-              marginBottom: "16px",
-              maxHeight: "220px",
-              overflowY: "auto",
-            }}
-          >
+          <div className="vault-human-list">
             {allHumans.length === 0 ? (
               <p
                 className="text-xs font-mono"
@@ -260,15 +226,7 @@ function ShareModal({
                 return (
                   <label
                     key={h._id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      padding: "8px 12px",
-                      cursor: "pointer",
-                      borderBottom: "1px solid var(--farground)",
-                      background: checked ? "var(--farground)" : "transparent",
-                    }}
+                    className={`vault-human-row ${checked ? "vault-human-row--checked" : ""}`}
                   >
                     <input
                       type="checkbox"
@@ -309,16 +267,8 @@ function ShareModal({
                           toggle(h._id);
                         }}
                         title="Remove"
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          color: "#e05",
-                          fontSize: "16px",
-                          lineHeight: 1,
-                          padding: "0 2px",
-                          flexShrink: 0,
-                        }}
+                        className="vault-action-btn vault-action-btn--danger"
+                        style={{ flexShrink: 0, fontSize: "16px" }}
                       >
                         ×
                       </button>
@@ -346,24 +296,13 @@ function ShareModal({
         >
           <button
             onClick={onClose}
-            className="text-xs font-mono px-3 py-1.5 rounded"
-            style={{
-              background: "var(--farground)",
-              border: "1px solid var(--midground)",
-              cursor: "pointer",
-            }}
+            className="btn-outline text-xs font-mono px-3 py-1.5 rounded"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="text-xs font-mono px-3 py-1.5 rounded"
-            style={{
-              background: "var(--purple)",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
-            }}
+            className="btn-purple text-xs font-mono px-3 py-1.5 rounded"
           >
             Save
           </button>
@@ -389,35 +328,9 @@ function MoveModal({
   const [selected, setSelected] = useState<string | null>(file.folder_id);
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.4)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 100,
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: "var(--background)",
-          border: "1px solid var(--midground)",
-          borderRadius: "8px",
-          padding: "24px",
-          minWidth: "280px",
-          maxWidth: "360px",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3
-          className="font-bold text-sm font-mono mb-4"
-          style={{ color: "var(--purple)" }}
-        >
-          Move "{file.name}"
-        </h3>
+    <div className="vault-modal-backdrop" onClick={onClose}>
+      <div className="vault-modal" onClick={(e) => e.stopPropagation()}>
+        <h3 className="vault-modal-title">Move "{file.name}"</h3>
         <div
           style={{
             display: "flex",
@@ -426,14 +339,7 @@ function MoveModal({
             marginBottom: "20px",
           }}
         >
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              cursor: "pointer",
-            }}
-          >
+          <label className="vault-move-option">
             <input
               type="radio"
               checked={selected === null}
@@ -443,15 +349,7 @@ function MoveModal({
             <span className="text-sm font-mono">Root (no folder)</span>
           </label>
           {myFolders.map((f) => (
-            <label
-              key={f._id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                cursor: "pointer",
-              }}
-            >
+            <label key={f._id} className="vault-move-option">
               <input
                 type="radio"
                 checked={selected === f._id}
@@ -467,12 +365,7 @@ function MoveModal({
         >
           <button
             onClick={onClose}
-            className="text-xs font-mono px-3 py-1.5 rounded"
-            style={{
-              background: "var(--farground)",
-              border: "1px solid var(--midground)",
-              cursor: "pointer",
-            }}
+            className="btn-outline text-xs font-mono px-3 py-1.5 rounded"
           >
             Cancel
           </button>
@@ -481,13 +374,7 @@ function MoveModal({
               onMove(selected);
               onClose();
             }}
-            className="text-xs font-mono px-3 py-1.5 rounded"
-            style={{
-              background: "var(--purple)",
-              color: "white",
-              border: "none",
-              cursor: "pointer",
-            }}
+            className="btn-purple text-xs font-mono px-3 py-1.5 rounded"
           >
             Move
           </button>
@@ -529,16 +416,7 @@ function FolderTreeItem({
   return (
     <div style={{ marginLeft: depth * 12 }}>
       <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "2px",
-          borderRadius: "5px",
-          background: active ? "var(--farground)" : "transparent",
-          padding: "2px 4px",
-          position: "relative",
-        }}
-        className="group"
+        className={`vault-folder-row ${active ? "vault-folder-row--active" : ""}`}
       >
         {/* Expand toggle */}
         <button
@@ -561,21 +439,7 @@ function FolderTreeItem({
         {/* Folder name */}
         <button
           onClick={() => onSelect(folder)}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            textAlign: "left",
-            flex: 1,
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: "13px",
-            color: active ? "var(--purple)" : "var(--text-subtle)",
-            fontWeight: active ? "bold" : "normal",
-            padding: "3px 0",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
+          className={`vault-folder-name-btn ${active ? "vault-folder-name-btn--active" : ""}`}
           title={
             folder.shared_with === "everyone"
               ? "Shared with everyone"
@@ -595,35 +459,12 @@ function FolderTreeItem({
               e.stopPropagation();
               setMenuOpen((x) => !x);
             }}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--text-subtle)",
-              fontSize: "14px",
-              padding: "0 4px",
-              opacity: menuOpen ? 1 : 0,
-              transition: "opacity 150ms",
-            }}
-            className="folder-menu-btn"
+            className="vault-folder-menu-trigger"
           >
             ···
           </button>
           {menuOpen && (
-            <div
-              style={{
-                position: "absolute",
-                right: 0,
-                top: "100%",
-                background: "var(--background)",
-                border: "1px solid var(--midground)",
-                borderRadius: "6px",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                zIndex: 50,
-                minWidth: "120px",
-                overflow: "hidden",
-              }}
-            >
+            <div className="vault-folder-menu">
               {[
                 {
                   label: "Rename",
@@ -650,26 +491,7 @@ function FolderTreeItem({
                 <button
                   key={label}
                   onClick={action}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    textAlign: "left",
-                    background: "none",
-                    border: "none",
-                    padding: "8px 14px",
-                    cursor: "pointer",
-                    fontFamily: "var(--font-mono, monospace)",
-                    fontSize: "12px",
-                    color: label === "Delete" ? "#e05" : "var(--foreground)",
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background =
-                      "var(--farground)";
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background =
-                      "none";
-                  }}
+                  className={`vault-folder-menu-item ${label === "Delete" ? "vault-folder-menu-item--danger" : ""}`}
                 >
                   {label}
                 </button>
@@ -723,18 +545,8 @@ function FileCard({
 
   return (
     <div
-      className="group"
-      style={{
-        border: "1px solid var(--midground)",
-        borderRadius: "8px",
-        padding: "12px",
-        background: "var(--farground)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "6px",
-        position: "relative",
-        cursor: isMd ? "pointer" : "default",
-      }}
+      className="vault-file-card"
+      style={{ cursor: isMd ? "pointer" : "default" }}
       onClick={isMd ? () => onEditMd(file) : undefined}
     >
       {/* Icon + name */}
@@ -795,25 +607,14 @@ function FileCard({
 
       {/* Action buttons (hover) — hidden for locked daily-log files */}
       {isOwned && !isLocked && (
-        <div
-          className="file-actions"
-          style={{
-            position: "absolute",
-            top: "8px",
-            right: "8px",
-            display: "flex",
-            gap: "4px",
-            opacity: 0,
-            transition: "opacity 150ms",
-          }}
-        >
+        <div className="vault-file-actions">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onRename(file);
             }}
             title="Rename"
-            style={actionBtnStyle}
+            className="vault-action-btn"
           >
             ✏️
           </button>
@@ -823,7 +624,7 @@ function FileCard({
               onMove(file);
             }}
             title="Move"
-            style={actionBtnStyle}
+            className="vault-action-btn"
           >
             📂
           </button>
@@ -833,7 +634,7 @@ function FileCard({
               onDelete(file);
             }}
             title="Delete"
-            style={{ ...actionBtnStyle, color: "#e05" }}
+            className="vault-action-btn vault-action-btn--danger"
           >
             🗑️
           </button>
@@ -842,16 +643,6 @@ function FileCard({
     </div>
   );
 }
-
-const actionBtnStyle: React.CSSProperties = {
-  background: "var(--background)",
-  border: "1px solid var(--midground)",
-  borderRadius: "4px",
-  cursor: "pointer",
-  fontSize: "13px",
-  padding: "2px 5px",
-  lineHeight: 1.2,
-};
 
 // ─── Markdown Editor Modal ────────────────────────────────────────────────────
 
@@ -868,45 +659,24 @@ function MdEditorModal({
 
   return (
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.5)",
-        display: "flex",
-        alignItems: "stretch",
-        justifyContent: "center",
-        zIndex: 100,
-        padding: "32px",
-      }}
+      className="vault-modal-backdrop"
+      style={{ alignItems: "stretch", padding: "32px" }}
       onClick={onClose}
     >
       <div
+        className="vault-modal"
         style={{
-          background: "var(--background)",
-          border: "1px solid var(--midground)",
-          borderRadius: "10px",
           display: "flex",
           flexDirection: "column",
-          width: "100%",
           maxWidth: "760px",
           overflow: "hidden",
+          padding: 0,
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div
-          style={{
-            padding: "14px 20px",
-            borderBottom: "1px solid var(--midground)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <span
-            className="text-sm font-mono font-bold"
-            style={{ color: "var(--purple)" }}
-          >
+        <div className="vault-panel-header" style={{ padding: "14px 20px" }}>
+          <span className="vault-modal-title" style={{ marginBottom: 0 }}>
             📝 {file.name}
           </span>
           <div style={{ display: "flex", gap: "8px" }}>
@@ -915,24 +685,13 @@ function MdEditorModal({
                 onSave(content);
                 onClose();
               }}
-              className="text-xs font-mono px-3 py-1.5 rounded"
-              style={{
-                background: "var(--purple)",
-                color: "white",
-                border: "none",
-                cursor: "pointer",
-              }}
+              className="btn-purple text-xs font-mono px-3 py-1.5 rounded"
             >
               Save
             </button>
             <button
               onClick={onClose}
-              className="text-xs font-mono px-3 py-1.5 rounded"
-              style={{
-                background: "var(--farground)",
-                border: "1px solid var(--midground)",
-                cursor: "pointer",
-              }}
+              className="btn-outline text-xs font-mono px-3 py-1.5 rounded"
             >
               Cancel
             </button>
@@ -943,18 +702,8 @@ function MdEditorModal({
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          style={{
-            flex: 1,
-            resize: "none",
-            border: "none",
-            outline: "none",
-            padding: "20px",
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: "13px",
-            lineHeight: 1.65,
-            background: "var(--background)",
-            color: "var(--foreground)",
-          }}
+          className="vault-md-textarea"
+          style={{ padding: "20px", fontSize: "13px", lineHeight: 1.65 }}
           autoFocus
         />
       </div>
@@ -1001,16 +750,8 @@ function NewFolderInput({
           else onDone("");
         }}
         placeholder="Folder name"
-        className="font-mono text-xs"
-        style={{
-          flex: 1,
-          border: "1px solid var(--purple)",
-          borderRadius: "4px",
-          padding: "3px 6px",
-          background: "var(--farground)",
-          color: "var(--foreground)",
-          outline: "none",
-        }}
+        className="vault-inline-input font-mono text-xs"
+        style={{ flex: 1 }}
       />
     </div>
   );
@@ -1043,16 +784,8 @@ function RenameInput({
         if (e.key === "Escape") onDone("");
       }}
       onBlur={submit}
-      className="font-mono text-xs"
-      style={{
-        border: "1px solid var(--purple)",
-        borderRadius: "4px",
-        padding: "3px 8px",
-        background: "var(--farground)",
-        color: "var(--foreground)",
-        outline: "none",
-        width: "100%",
-      }}
+      className="vault-inline-input font-mono text-xs"
+      style={{ width: "100%" }}
     />
   );
 }
@@ -1267,86 +1000,16 @@ export default function VaultPage() {
     return acc;
   }, {});
 
-  // ─── Styles ────────────────────────────────────────────────────────────────
-
-  const sectionHeaderStyle: React.CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    cursor: "pointer",
-    background: "none",
-    border: "none",
-    padding: "6px 4px",
-    width: "100%",
-    textAlign: "left",
-    fontFamily: "var(--font-mono, monospace)",
-    fontSize: "11px",
-    fontWeight: "bold",
-    letterSpacing: "0.05em",
-    textTransform: "uppercase",
-    color: "var(--text-subtle)",
-  };
-
-  const rootItemStyle = (active: boolean): React.CSSProperties => ({
-    display: "block",
-    width: "100%",
-    background: active ? "var(--farground)" : "none",
-    border: "none",
-    borderRadius: "5px",
-    padding: "4px 8px",
-    cursor: "pointer",
-    textAlign: "left",
-    fontFamily: "var(--font-mono, monospace)",
-    fontSize: "13px",
-    color: active ? "var(--purple)" : "var(--text-subtle)",
-    fontWeight: active ? "bold" : "normal",
-  });
-
-  const actionBtnBarStyle: React.CSSProperties = {
-    background: "var(--farground)",
-    border: "1px solid var(--midground)",
-    borderRadius: "6px",
-    padding: "5px 10px",
-    cursor: "pointer",
-    fontFamily: "var(--font-mono, monospace)",
-    fontSize: "12px",
-    color: "var(--purple-light)",
-  };
-
-  // ─── Render ────────────────────────────────────────────────────────────────
+  // ─── Render ──────────────────────────────────────────────────────────────────────
 
   return (
     <AppLayout>
-      {/* Hover-reveal file action buttons via CSS */}
-      <style>{`
-        .group:hover .file-actions { opacity: 1 !important; }
-        .group:hover .folder-menu-btn { opacity: 1 !important; }
-      `}</style>
-
-      <div
-        style={{
-          display: "flex",
-          height: "100%",
-          minHeight: "calc(100vh - 60px)",
-          overflow: "hidden",
-        }}
-      >
+      <div className="vault-layout">
         {/* ═══ LEFT PANEL: Folder Tree ══════════════════════════════════════ */}
-        <div
-          style={{
-            width: "240px",
-            flexShrink: 0,
-            borderRight: "1px solid var(--midground)",
-            overflowY: "auto",
-            padding: "16px 10px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "4px",
-          }}
-        >
-          {/* ── My Files ─────────────────────────────────────────────── */}
+        <div className="vault-sidebar">
+          {/* ── My Files ──────────────────────────────────────────────────────────── */}
           <button
-            style={sectionHeaderStyle}
+            className="vault-section-btn"
             onClick={() => setMyFilesOpen((x) => !x)}
           >
             <span>{myFilesOpen ? "▼" : "▶"}</span>
@@ -1359,7 +1022,7 @@ export default function VaultPage() {
             >
               {/* Root item */}
               <button
-                style={rootItemStyle(panel.kind === "my-root")}
+                className={`vault-sidebar-item ${panel.kind === "my-root" ? "vault-sidebar-item--active" : ""}`}
                 onClick={() => setPanel({ kind: "my-root" })}
               >
                 📂 Root
@@ -1415,7 +1078,8 @@ export default function VaultPage() {
           {sharedFolders.length > 0 && (
             <>
               <button
-                style={{ ...sectionHeaderStyle, marginTop: "12px" }}
+                className="vault-section-btn"
+                style={{ marginTop: "12px" }}
                 onClick={() => setSharedOpen((x) => !x)}
               >
                 <span>{sharedOpen ? "▼" : "▶"}</span>
@@ -1429,8 +1093,8 @@ export default function VaultPage() {
                     return (
                       <div key={ownerId}>
                         <button
+                          className="vault-sidebar-item"
                           style={{
-                            ...rootItemStyle(false),
                             fontSize: "12px",
                             display: "flex",
                             alignItems: "center",
@@ -1454,10 +1118,7 @@ export default function VaultPage() {
                           folders.map((f) => (
                             <div key={f._id} style={{ marginLeft: "16px" }}>
                               <button
-                                style={rootItemStyle(
-                                  panel.kind === "shared-folder" &&
-                                    panel.folderId === f._id,
-                                )}
+                                className={`vault-sidebar-item ${panel.kind === "shared-folder" && panel.folderId === f._id ? "vault-sidebar-item--active" : ""}`}
                                 onClick={() =>
                                   setPanel({
                                     kind: "shared-folder",
@@ -1479,30 +1140,13 @@ export default function VaultPage() {
         </div>
 
         {/* ═══ RIGHT PANEL: File List ════════════════════════════════════════ */}
-        <div
-          style={{
-            flex: 1,
-            overflowY: "auto",
-            padding: "20px 24px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "20px",
-          }}
-        >
+        <div className="vault-main">
           {/* Header row */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "10px",
-            }}
-          >
+          <div className="vault-panel-header">
             {/* Breadcrumb */}
             <h2
-              className="font-mono font-bold text-sm"
-              style={{ color: "var(--purple)", margin: 0 }}
+              className="font-mono font-bold text-sm purple-light-text"
+              style={{ margin: 0 }}
             >
               {breadcrumb}
             </h2>
@@ -1511,19 +1155,17 @@ export default function VaultPage() {
             {isMyPanel && (
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 <button
-                  style={actionBtnBarStyle}
+                  className="vault-toolbar-btn"
                   onClick={() => setAddingFolder(true)}
                 >
                   + New Folder
                 </button>
-                <button style={actionBtnBarStyle} onClick={createMdFile}>
+                <button className="vault-toolbar-btn" onClick={createMdFile}>
                   + New .md File
                 </button>
                 <button
-                  style={{
-                    ...actionBtnBarStyle,
-                    opacity: uploading ? 0.6 : 1,
-                  }}
+                  className="vault-toolbar-btn"
+                  style={{ opacity: uploading ? 0.6 : 1 }}
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
                 >
@@ -1545,12 +1187,8 @@ export default function VaultPage() {
           {/* File grid */}
           {visibleFiles.length === 0 ? (
             <div
-              className="text-sm font-mono"
-              style={{
-                color: "var(--text-subtle)",
-                padding: "40px 0",
-                textAlign: "center",
-              }}
+              className="text-sm font-mono subtle-text"
+              style={{ padding: "40px 0", textAlign: "center" }}
             >
               {isMyPanel
                 ? "No files here yet. Upload one or create a .md file."
@@ -1570,12 +1208,8 @@ export default function VaultPage() {
                 return renamingFileId === file._id && !locked ? (
                   <div
                     key={file._id}
-                    style={{
-                      border: "1px solid var(--purple)",
-                      borderRadius: "8px",
-                      padding: "12px",
-                      background: "var(--farground)",
-                    }}
+                    className="vault-file-card"
+                    style={{ borderColor: "var(--purple)" }}
                   >
                     <RenameInput
                       initialValue={file.name}
