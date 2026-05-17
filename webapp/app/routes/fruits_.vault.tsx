@@ -13,7 +13,7 @@ import {
   getSharedFoldersForHuman,
   getFileRefsByFolderIds,
 } from "../data/vault.server";
-import { getHumansById } from "../data/humans.server";
+import { getHumans, getHumansById } from "../data/humans.server";
 import { AppLayout } from "../components/AppLayout";
 
 /** Client-safe lock check — no server imports needed. */
@@ -41,11 +41,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const user = await getUser(request);
   if (!user) return redirect("/login");
 
-  const [myFiles, myFolders, sharedFolders] = await Promise.all([
-    getFileRefsByHuman(user._id),
-    getFoldersByHuman(user._id),
-    getSharedFoldersForHuman(user._id),
-  ]);
+  const [myFiles, myFolders, sharedFolders, humansCollection] =
+    await Promise.all([
+      getFileRefsByHuman(user._id),
+      getFoldersByHuman(user._id),
+      getSharedFoldersForHuman(user._id),
+      getHumans(),
+    ]);
 
   const sharedFolderIds = sharedFolders.map((f) => f._id);
   const sharedFiles = await getFileRefsByFolderIds(sharedFolderIds);
@@ -61,12 +63,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
     ownerHumanId: f.human_id,
   }));
 
+  // All humans except the current user — passed to the client for the share modal
+  const allOtherHumans = (humansCollection?.data ?? []).filter(
+    (h) => h._id !== user._id,
+  );
+
   return {
     user,
     myFiles,
     myFolders,
     sharedFolders: sharedFoldersWithOwner,
     sharedFiles,
+    allOtherHumans,
   };
 }
 
@@ -95,25 +103,67 @@ function formatDate(iso: string): string {
   });
 }
 
+// ─── Folder icon helper ───────────────────────────────────────────────────────
+
+function folderIcon(shared_with: VaultFolder["shared_with"]): string {
+  if (shared_with === "everyone") return "🌍";
+  if (Array.isArray(shared_with) && shared_with.length > 0) return "👥";
+  return "📁";
+}
+
 // ─── Share Modal ──────────────────────────────────────────────────────────────
+
+type HumanEntry = { _id: string; name: string; email: string };
 
 function ShareModal({
   folder,
+  allHumans,
   onClose,
   onSave,
 }: {
   folder: VaultFolder;
+  allHumans: HumanEntry[];
   onClose: () => void;
   onSave: (shared_with: string[] | "everyone") => void;
 }) {
   const current = folder.shared_with;
-  const [mode, setMode] = useState<"private" | "everyone">(
-    current === "everyone" ? "everyone" : "private",
+
+  const [mode, setMode] = useState<"private" | "everyone" | "specific">(
+    current === "everyone"
+      ? "everyone"
+      : Array.isArray(current) && current.length > 0
+        ? "specific"
+        : "private",
   );
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    new Set(Array.isArray(current) ? current : []),
+  );
+
+  const toggle = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
   const handleSave = () => {
-    onSave(mode === "everyone" ? "everyone" : []);
+    if (mode === "everyone") onSave("everyone");
+    else if (mode === "specific") onSave([...selectedIds]);
+    else onSave([]);
     onClose();
+  };
+
+  const inputStyle: React.CSSProperties = {
+    accentColor: "var(--purple)",
+    cursor: "pointer",
+    flexShrink: 0,
+  };
+  const radioRowStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    cursor: "pointer",
   };
 
   return (
@@ -133,10 +183,11 @@ function ShareModal({
         style={{
           background: "var(--background)",
           border: "1px solid var(--midground)",
-          borderRadius: "8px",
+          borderRadius: "10px",
           padding: "24px",
-          minWidth: "280px",
-          maxWidth: "360px",
+          minWidth: "300px",
+          maxWidth: "400px",
+          width: "100%",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -146,47 +197,150 @@ function ShareModal({
         >
           Share "{folder.name}"
         </h3>
+
+        {/* Mode selector */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             gap: "10px",
-            marginBottom: "20px",
+            marginBottom: "16px",
           }}
         >
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              cursor: "pointer",
-            }}
-          >
+          <label style={radioRowStyle}>
             <input
               type="radio"
               checked={mode === "private"}
               onChange={() => setMode("private")}
-              style={{ accentColor: "var(--purple)" }}
+              style={inputStyle}
             />
-            <span className="text-sm font-mono">Private (only me)</span>
+            <span className="text-sm font-mono">🔒 Private (only me)</span>
           </label>
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              cursor: "pointer",
-            }}
-          >
+          <label style={radioRowStyle}>
             <input
               type="radio"
               checked={mode === "everyone"}
               onChange={() => setMode("everyone")}
-              style={{ accentColor: "var(--purple)" }}
+              style={inputStyle}
             />
-            <span className="text-sm font-mono">Everyone in the app</span>
+            <span className="text-sm font-mono">🌍 Everyone in the app</span>
+          </label>
+          <label style={radioRowStyle}>
+            <input
+              type="radio"
+              checked={mode === "specific"}
+              onChange={() => setMode("specific")}
+              style={inputStyle}
+            />
+            <span className="text-sm font-mono">👥 Specific people</span>
           </label>
         </div>
+
+        {/* Human list — only when "specific" */}
+        {mode === "specific" && (
+          <div
+            style={{
+              border: "1px solid var(--midground)",
+              borderRadius: "6px",
+              marginBottom: "16px",
+              maxHeight: "220px",
+              overflowY: "auto",
+            }}
+          >
+            {allHumans.length === 0 ? (
+              <p
+                className="text-xs font-mono"
+                style={{ color: "var(--text-subtle)", padding: "12px" }}
+              >
+                No other humans found.
+              </p>
+            ) : (
+              allHumans.map((h) => {
+                const checked = selectedIds.has(h._id);
+                return (
+                  <label
+                    key={h._id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      padding: "8px 12px",
+                      cursor: "pointer",
+                      borderBottom: "1px solid var(--farground)",
+                      background: checked ? "var(--farground)" : "transparent",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggle(h._id)}
+                      style={inputStyle}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        className="text-sm font-mono"
+                        style={{
+                          color: "var(--foreground)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {h.name || h.email}
+                      </div>
+                      {h.name && (
+                        <div
+                          className="text-xs font-mono"
+                          style={{
+                            color: "var(--text-subtle)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {h.email}
+                        </div>
+                      )}
+                    </div>
+                    {checked && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          toggle(h._id);
+                        }}
+                        title="Remove"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "#e05",
+                          fontSize: "16px",
+                          lineHeight: 1,
+                          padding: "0 2px",
+                          flexShrink: 0,
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </label>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* Currently shared summary (for "specific" mode) */}
+        {mode === "specific" && selectedIds.size > 0 && (
+          <p
+            className="text-xs font-mono"
+            style={{ color: "var(--text-subtle)", marginBottom: "12px" }}
+          >
+            Shared with {selectedIds.size} person
+            {selectedIds.size !== 1 ? "s" : ""}
+          </p>
+        )}
+
         <div
           style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}
         >
@@ -422,8 +576,16 @@ function FolderTreeItem({
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
           }}
+          title={
+            folder.shared_with === "everyone"
+              ? "Shared with everyone"
+              : Array.isArray(folder.shared_with) &&
+                  folder.shared_with.length > 0
+                ? `Shared with ${folder.shared_with.length} person${folder.shared_with.length !== 1 ? "s" : ""}`
+                : undefined
+          }
         >
-          📁 {folder.name}
+          {folderIcon(folder.shared_with)} {folder.name}
         </button>
 
         {/* "..." menu */}
@@ -898,7 +1060,7 @@ function RenameInput({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function VaultPage() {
-  const { myFiles, myFolders, sharedFolders, sharedFiles } =
+  const { myFiles, myFolders, sharedFolders, sharedFiles, allOtherHumans } =
     useLoaderData<typeof loader>();
   const { revalidate } = useRevalidator();
 
@@ -1447,6 +1609,7 @@ export default function VaultPage() {
       {shareFolder && (
         <ShareModal
           folder={shareFolder}
+          allHumans={allOtherHumans}
           onClose={() => setShareFolder(null)}
           onSave={(shared_with) => shareFolder_(shareFolder._id, shared_with)}
         />

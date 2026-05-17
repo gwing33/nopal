@@ -257,13 +257,11 @@ function TodayLogEntry({
   today,
   content,
   onChange,
-  onBlur,
 }: {
   date: string;
   today: string;
   content: string;
   onChange: (v: string) => void;
-  onBlur: (v: string) => void;
 }) {
   const [isClient, setIsClient] = useState(false);
   const contentRef = useRef(content);
@@ -401,14 +399,7 @@ function TodayLogEntry({
         </span>
       </div>
 
-      <div
-        onBlur={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-            onBlur(contentRef.current);
-          }
-        }}
-        className="mdx-editor-wrapper"
-      >
+      <div className="mdx-editor-wrapper">
         {isClient ? (
           <Suspense
             fallback={
@@ -566,7 +557,6 @@ export default function DailyLogPage() {
           today={today}
           content={todayContent}
           onChange={handleChange}
-          onBlur={handleBlur}
         />
 
         {/* Invisible anchor scrolled into view once today resolves */}
