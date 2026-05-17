@@ -83,6 +83,14 @@ export function AppLayout({ children }: { children?: ReactNode }) {
           >
             Daily Log
           </NavLink>
+          <NavLink
+            to="/fruits/vault"
+            prefetch="intent"
+            className={navLinkClass}
+            style={navLinkStyle}
+          >
+            Vault
+          </NavLink>
           {isAdmin && (
             <NavLink
               to="/fruits/all-projects"
@@ -172,6 +180,15 @@ export function AppLayout({ children }: { children?: ReactNode }) {
               onClick={closeMenu}
             >
               Daily Log
+            </NavLink>
+            <NavLink
+              to="/fruits/vault"
+              prefetch="intent"
+              className={navLinkClass}
+              style={navLinkStyle}
+              onClick={closeMenu}
+            >
+              Vault
             </NavLink>
             {isAdmin && (
               <NavLink

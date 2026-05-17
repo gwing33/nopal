@@ -24,13 +24,13 @@ export async function getHumans(): Promise<Humans | undefined> {
 }
 
 export async function getHumanByEmail(
-  email: string
+  email: string,
 ): Promise<Human | undefined> {
   const result = await query<[Human[]]>(
     `SELECT * FROM humans WHERE email = $email;`,
     {
       email,
-    }
+    },
   );
 
   const record = result?.[0]?.[0] || undefined;
@@ -49,7 +49,7 @@ export async function createHuman(data: {
 
 export async function updateHuman(
   id: string,
-  data: { email: string; name: string; role: Role }
+  data: { email: string; name: string; role: Role },
 ): Promise<Human | undefined> {
   const result = await upsert(`humans:${id}`, data);
   const record = Array.isArray(result) ? result[0] : result;
@@ -58,4 +58,13 @@ export async function updateHuman(
 
 export async function deleteHuman(id: string): Promise<void> {
   await remove("humans", id);
+}
+
+export async function getHumansById(ids: string[]): Promise<Human[]> {
+  if (!ids.length) return [];
+  const result = await query<[Human[]]>(
+    `SELECT * FROM humans WHERE id IN $ids`,
+    { ids: ids.map((id) => new RecordId("humans", id)) },
+  );
+  return (result?.[0] ?? []).map(formatRecord);
 }

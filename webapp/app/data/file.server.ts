@@ -1,6 +1,7 @@
 import {
   S3Client,
   PutObjectCommand,
+  DeleteObjectCommand,
   ObjectCannedACL,
 } from "@aws-sdk/client-s3";
 import type { S3ClientConfig } from "@aws-sdk/client-s3";
@@ -118,6 +119,20 @@ export async function uploadPublicFileToS3(
     return getPublicFileUrl(filename);
   } catch (err) {
     console.error("Error uploading file:", err);
+    throw err;
+  }
+}
+
+export async function deleteFromS3(key: string): Promise<void> {
+  const client = createS3Client();
+  const deleteCommand = new DeleteObjectCommand({
+    Bucket: process.env.BUCKET_NAME,
+    Key: key,
+  });
+  try {
+    await client.send(deleteCommand);
+  } catch (err) {
+    console.error("Error deleting file from S3:", err);
     throw err;
   }
 }

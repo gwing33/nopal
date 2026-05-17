@@ -32,7 +32,7 @@ export function formatRecord<T extends Data>({ id, ...data }: T): T {
 // Helps keep collection response consistent, handles extra pagination.
 export function formatCollection<T extends Data>(
   data: T[] = [],
-  { start = 0, limit = DEFAULT_LIMIT }: AllQueryOptions = {}
+  { start = 0, limit = DEFAULT_LIMIT }: AllQueryOptions = {},
 ): Collection<T> {
   if (!data.length) {
     return {
@@ -57,7 +57,7 @@ export function formatCollection<T extends Data>(
 export async function queryCollection<T extends Data>(
   query: string,
   params: Record<string, any> = {},
-  options: AllQueryOptions = {}
+  options: AllQueryOptions = {},
 ): Promise<Collection<T>> {
   const db = await getDb();
   if (!db) {
@@ -83,7 +83,7 @@ export async function queryCollection<T extends Data>(
 
 export async function query<T extends unknown[]>(
   query: string,
-  params: Record<string, any> = {}
+  params: Record<string, any> = {},
 ) {
   const db = await getDb();
   if (!db) {
@@ -103,10 +103,10 @@ export async function query<T extends unknown[]>(
 }
 
 export async function select<T extends Data>(
-  thing: RecordId
+  thing: RecordId,
 ): Promise<T | undefined>;
 export async function select<T extends Data>(
-  thing: string
+  thing: string,
 ): Promise<Collection<T> | undefined>;
 export async function select<T extends Data>(thing: RecordId | string) {
   const db = await getDb();
@@ -134,7 +134,7 @@ export async function select<T extends Data>(thing: RecordId | string) {
 
 export async function defineTable(name: string) {
   return await query(
-    `DEFINE TABLE IF NOT EXISTS ${name} TYPE ANY SCHEMALESS PERMISSIONS NONE`
+    `DEFINE TABLE IF NOT EXISTS ${name} TYPE ANY SCHEMALESS PERMISSIONS NONE`,
   );
 }
 
@@ -150,6 +150,27 @@ export async function remove(tb: string, id: string) {
     return result;
   } catch (err) {
     console.error("Failed to delete data:", err);
+  } finally {
+    await db.close();
+  }
+  return undefined;
+}
+
+export async function merge(
+  tb: string,
+  id: string,
+  data: Record<string, unknown>,
+) {
+  const db = await getDb();
+  if (!db) {
+    console.error("Database not initialized");
+    return undefined;
+  }
+  try {
+    const result = await db.merge(new RecordId(tb, id), data);
+    return result;
+  } catch (err) {
+    console.error("Failed to merge data:", err);
   } finally {
     await db.close();
   }
