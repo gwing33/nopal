@@ -18,6 +18,11 @@ import { getHumans, getHumansById } from "../data/humans.server";
 import { AppLayout } from "../components/AppLayout";
 import "../styles/vault.css";
 
+// ─── Upload constants ────────────────────────────────────────────────────────
+
+const CHUNK_SIZE = 10 * 1024 * 1024; // 10 MB per S3 multipart part
+const MULTIPART_THRESHOLD = 100 * 1024 * 1024; // switch to multipart for files ≥ 100 MB
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type SharedFolder = VaultFolder & {
@@ -1049,8 +1054,106 @@ export default function VaultPage() {
     revalidate();
   };
 
-  // Start an XHR upload so we can track per-byte progress.
-  // Captures the target folder at the moment the upload begins.
+  // Runs a multipart upload for large files. Progress advances with each
+  // completed part (staircase, but clear). On any error it aborts the S3
+  // multipart upload to avoid orphaned storage.
+  const runMultipartUpload = useCallback(
+    async (file: File, folderId: string | null, id: string) => {
+      // ── Init ─────────────────────────────────────────────────────────────────────
+      const initRes = await fetch("/api/vault/multipart-init", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: file.name,
+          contentType: file.type || "application/octet-stream",
+          folderId,
+          originalName: file.name,
+          size: file.size,
+        }),
+      });
+      if (!initRes.ok) {
+        const data = (await initRes.json()) as { error?: string };
+        throw new Error(data.error ?? `Init failed (${initRes.status})`);
+      }
+      const { uploadId, key } = (await initRes.json()) as {
+        uploadId: string;
+        key: string;
+      };
+
+      const numParts = Math.ceil(file.size / CHUNK_SIZE);
+      const parts: Array<{ PartNumber: number; ETag: string }> = [];
+
+      try {
+        // ── Upload parts ────────────────────────────────────────────────────────
+        for (let i = 0; i < numParts; i++) {
+          const start = i * CHUNK_SIZE;
+          const end = Math.min(start + CHUNK_SIZE, file.size);
+          const chunk = file.slice(start, end);
+
+          const partForm = new FormData();
+          partForm.append("uploadId", uploadId);
+          partForm.append("key", key);
+          partForm.append("partNumber", String(i + 1));
+          partForm.append("chunk", chunk);
+
+          const partRes = await fetch("/api/vault/multipart-part", {
+            method: "POST",
+            body: partForm,
+          });
+          if (!partRes.ok) {
+            const data = (await partRes.json()) as { error?: string };
+            throw new Error(
+              data.error ?? `Part ${i + 1} failed (${partRes.status})`,
+            );
+          }
+          const { ETag } = (await partRes.json()) as { ETag: string };
+          parts.push({ PartNumber: i + 1, ETag });
+
+          // Update progress after each completed part
+          const pct = Math.round(((i + 1) / numParts) * 100);
+          setPendingUploads((prev) =>
+            prev.map((p) => (p.id === id ? { ...p, progress: pct } : p)),
+          );
+        }
+
+        // ── Complete ───────────────────────────────────────────────────────────
+        const completeRes = await fetch("/api/vault/multipart-complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            uploadId,
+            key,
+            parts,
+            name: file.name,
+            folderId,
+            contentType: file.type || "application/octet-stream",
+            size: file.size,
+          }),
+        });
+        if (!completeRes.ok) {
+          const data = (await completeRes.json()) as { error?: string };
+          throw new Error(
+            data.error ?? `Complete failed (${completeRes.status})`,
+          );
+        }
+
+        setPendingUploads((prev) => prev.filter((p) => p.id !== id));
+        revalidate();
+      } catch (err) {
+        // Best-effort abort to clean up S3 resources
+        fetch("/api/vault/multipart-abort", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uploadId, key }),
+        }).catch(() => {});
+        throw err;
+      }
+    },
+    [revalidate, setPendingUploads],
+  );
+
+  // Start an upload. Uses XHR (with byte-level progress) for small files and
+  // multipart chunked upload (with per-part progress) for large ones.
   const startUpload = useCallback(
     (file: File, folderId: string | null) => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -1070,6 +1173,20 @@ export default function VaultPage() {
         },
       ]);
 
+      if (file.size >= MULTIPART_THRESHOLD) {
+        // Large file: chunked multipart (no proxy timeout risk)
+        runMultipartUpload(file, folderId, id).catch((err) => {
+          const error = err instanceof Error ? err.message : "Upload failed";
+          setPendingUploads((prev) =>
+            prev.map((p) =>
+              p.id === id ? { ...p, status: "error", error } : p,
+            ),
+          );
+        });
+        return;
+      }
+
+      // Small file: XHR with byte-level progress
       const formData = new FormData();
       formData.append("file", file);
       if (folderId) formData.append("folderId", folderId);
@@ -1090,7 +1207,7 @@ export default function VaultPage() {
           setPendingUploads((prev) => prev.filter((p) => p.id !== id));
           revalidate();
         } else {
-          let error = `Server error (HTTP ${xhr.status})`;
+          let error = `Server error (HTTP ${xhr.status})`;
           try {
             const data = JSON.parse(xhr.responseText) as { error?: string };
             if (data.error) error = data.error;
@@ -1137,7 +1254,7 @@ export default function VaultPage() {
       xhr.open("POST", "/api/vault/upload");
       xhr.send(formData);
     },
-    [revalidate],
+    [revalidate, runMultipartUpload, setPendingUploads],
   );
 
   const uploadFile = useCallback(

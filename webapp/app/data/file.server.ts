@@ -4,6 +4,10 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
   ObjectCannedACL,
+  CreateMultipartUploadCommand,
+  UploadPartCommand,
+  CompleteMultipartUploadCommand,
+  AbortMultipartUploadCommand,
 } from "@aws-sdk/client-s3";
 import type { S3ClientConfig } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -177,6 +181,70 @@ export async function deleteFromS3(key: string): Promise<void> {
     console.error("Error deleting file from S3:", err);
     throw err;
   }
+}
+
+export async function createMultipartUpload(
+  key: string,
+  contentType: string,
+): Promise<string> {
+  const client = createS3Client();
+  const cmd = new CreateMultipartUploadCommand({
+    Bucket: process.env.BUCKET_NAME,
+    Key: key,
+    ContentType: contentType,
+    ACL: ObjectCannedACL.public_read,
+  });
+  const result = await client.send(cmd);
+  if (!result.UploadId) throw new Error("S3 did not return an UploadId");
+  return result.UploadId;
+}
+
+export async function uploadMultipartPart(
+  key: string,
+  uploadId: string,
+  partNumber: number,
+  body: Buffer | Uint8Array,
+): Promise<string> {
+  const client = createS3Client();
+  const cmd = new UploadPartCommand({
+    Bucket: process.env.BUCKET_NAME,
+    Key: key,
+    UploadId: uploadId,
+    PartNumber: partNumber,
+    Body: body,
+  });
+  const result = await client.send(cmd);
+  if (!result.ETag) throw new Error(`No ETag returned for part ${partNumber}`);
+  return result.ETag;
+}
+
+export async function completeMultipartUpload(
+  key: string,
+  uploadId: string,
+  parts: Array<{ PartNumber: number; ETag: string }>,
+): Promise<string> {
+  const client = createS3Client();
+  const cmd = new CompleteMultipartUploadCommand({
+    Bucket: process.env.BUCKET_NAME,
+    Key: key,
+    UploadId: uploadId,
+    MultipartUpload: { Parts: parts },
+  });
+  await client.send(cmd);
+  return getPublicFileUrl(key);
+}
+
+export async function abortMultipartUpload(
+  key: string,
+  uploadId: string,
+): Promise<void> {
+  const client = createS3Client();
+  const cmd = new AbortMultipartUploadCommand({
+    Bucket: process.env.BUCKET_NAME,
+    Key: key,
+    UploadId: uploadId,
+  });
+  await client.send(cmd);
 }
 
 export function getFileContentType(filename: string): string {

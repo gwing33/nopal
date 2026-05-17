@@ -125,6 +125,18 @@ type Pages = {
   "/api/vault": {
     params: {};
   };
+  "/api/vault/multipart-complete": {
+    params: {};
+  };
+  "/api/vault/multipart-abort": {
+    params: {};
+  };
+  "/api/vault/multipart-init": {
+    params: {};
+  };
+  "/api/vault/multipart-part": {
+    params: {};
+  };
   "/api/vault/:fileId": {
     params: {
       "fileId": string;
@@ -226,7 +238,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/fruits/good-building-system" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/tools/thermal-inertia" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/tools/space-layout" | "/fruits/daily-log" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/fruits/styles" | "/good/sunny-no1" | "/sunny-home-no1" | "/fruits/vault" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/api/upload" | "/api/upload/presign" | "/magic-link" | "/api/vault" | "/api/vault/:fileId" | "/api/vault/folders" | "/api/vault/folders/:folderId" | "/api/vault/presign" | "/api/vault/upload" | "/tools/mtf" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
+    page: "/" | "/fruits/good-building-system/:id" | "/fruits/good-building-system/new" | "/fruits/good-building-system" | "/tools/frames-volume-calc" | "/tools/grade-differential" | "/tools/building-envelope" | "/grandpas-cabin-recipe" | "/tools/thermal-inertia" | "/fruits/all-projects" | "/fruits/projects/:id" | "/tools/erv-calculator" | "/tools/space-layout" | "/fruits/daily-log" | "/good/architecture" | "/tools/do-not-use" | "/good/consulting" | "/assemblies/:id" | "/fruits/styles" | "/good/sunny-no1" | "/sunny-home-no1" | "/fruits/vault" | "/good/building" | "/materials/:id" | "/roots" | "/tools" | "/good/guides" | "/science/:id" | "/stories/:id" | "/tools/loads" | "/api/upload" | "/api/upload/presign" | "/magic-link" | "/api/vault" | "/api/vault/multipart-complete" | "/api/vault/multipart-abort" | "/api/vault/multipart-init" | "/api/vault/multipart-part" | "/api/vault/:fileId" | "/api/vault/folders" | "/api/vault/folders/:folderId" | "/api/vault/presign" | "/api/vault/upload" | "/tools/mtf" | "/scc-demo" | "/contact" | "/explore" | "/fruits" | "/good/s" | "/health" | "/health/:key?" | "/logout" | "/verify" | "/about" | "/login" | "/mrgnt" | "/mrgnt/projects" | "/mrgnt/discord" | "/mrgnt/humans" | "/mrgnt/gbs" | "/path" | "/path/faq-1" | "/path/faq-2" | "/path/faq-3" | "/path/faq-4" | "/path/faq-5" | "/path/faq-6" | "/path/faq-7";
   };
   "routes/fruits_.good-building-system_.$id.tsx": {
     id: "routes/fruits_.good-building-system_.$id";
@@ -358,7 +370,23 @@ type RouteFiles = {
   };
   "routes/api.vault.tsx": {
     id: "routes/api.vault";
-    page: "/api/vault" | "/api/vault/:fileId" | "/api/vault/folders" | "/api/vault/folders/:folderId" | "/api/vault/presign" | "/api/vault/upload";
+    page: "/api/vault" | "/api/vault/multipart-complete" | "/api/vault/multipart-abort" | "/api/vault/multipart-init" | "/api/vault/multipart-part" | "/api/vault/:fileId" | "/api/vault/folders" | "/api/vault/folders/:folderId" | "/api/vault/presign" | "/api/vault/upload";
+  };
+  "routes/api.vault.multipart-complete.tsx": {
+    id: "routes/api.vault.multipart-complete";
+    page: "/api/vault/multipart-complete";
+  };
+  "routes/api.vault.multipart-abort.tsx": {
+    id: "routes/api.vault.multipart-abort";
+    page: "/api/vault/multipart-abort";
+  };
+  "routes/api.vault.multipart-init.tsx": {
+    id: "routes/api.vault.multipart-init";
+    page: "/api/vault/multipart-init";
+  };
+  "routes/api.vault.multipart-part.tsx": {
+    id: "routes/api.vault.multipart-part";
+    page: "/api/vault/multipart-part";
   };
   "routes/api.vault.$fileId.tsx": {
     id: "routes/api.vault.$fileId";
@@ -529,6 +557,10 @@ type RouteModules = {
   "routes/api.upload.presign": typeof import("./app/routes/api.upload.presign.tsx");
   "routes/magic-link": typeof import("./app/routes/magic-link.tsx");
   "routes/api.vault": typeof import("./app/routes/api.vault.tsx");
+  "routes/api.vault.multipart-complete": typeof import("./app/routes/api.vault.multipart-complete.tsx");
+  "routes/api.vault.multipart-abort": typeof import("./app/routes/api.vault.multipart-abort.tsx");
+  "routes/api.vault.multipart-init": typeof import("./app/routes/api.vault.multipart-init.tsx");
+  "routes/api.vault.multipart-part": typeof import("./app/routes/api.vault.multipart-part.tsx");
   "routes/api.vault.$fileId": typeof import("./app/routes/api.vault.$fileId.tsx");
   "routes/api.vault.folders": typeof import("./app/routes/api.vault.folders.tsx");
   "routes/api.vault.folders.$folderId": typeof import("./app/routes/api.vault.folders.$folderId.tsx");
