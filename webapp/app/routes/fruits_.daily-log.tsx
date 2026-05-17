@@ -312,58 +312,24 @@ function TodayLogEntry({
   // ── Upload helpers ────────────────────────────────────────────────────────
 
   const uploadFile = useCallback(async (file: File): Promise<string> => {
-    // Step 1: ask the server for a presigned PUT URL.
-    // Passing source=daily_log so the server auto-provisions the vault folder
-    // tree (daily-logs / YYYY-MM-DD) and returns the s3Key + folderId.
-    const presignRes = await fetch("/api/upload/presign", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        filename: file.name,
-        contentType: file.type,
-        source: "daily_log",
-      }),
-    });
-    if (!presignRes.ok) {
-      const err = (await presignRes.json()) as { error?: string };
-      throw new Error(err.error ?? `Presign failed: ${presignRes.status}`);
-    }
-    const { presignedUrl, publicUrl, s3Key, folderId } =
-      (await presignRes.json()) as {
-        presignedUrl: string;
-        publicUrl: string;
-        s3Key: string;
-        folderId?: string;
-      };
+    // Upload via the server — avoids any browser→S3 CORS issues.
+    // The server handles S3 upload + vault registration in one request.
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("source", "daily_log");
 
-    // Step 2: PUT the file directly to S3 — bytes never touch the server.
-    const uploadRes = await fetch(presignedUrl, {
-      method: "PUT",
-      headers: { "Content-Type": file.type },
-      body: file,
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
     });
-    if (!uploadRes.ok) {
-      throw new Error(
-        `S3 upload failed: ${uploadRes.status} ${uploadRes.statusText}`,
-      );
+
+    if (!res.ok) {
+      const err = (await res.json()) as { error?: string };
+      throw new Error(err.error ?? `Upload failed: ${res.status}`);
     }
 
-    // Step 3: Register the file in the vault (best-effort — don't block the editor).
-    fetch("/api/vault", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: file.name,
-        s3_url: publicUrl,
-        s3_key: s3Key,
-        content_type: file.type || "application/octet-stream",
-        folder_id: folderId ?? null,
-        size: file.size,
-        source: "daily_log",
-      }),
-    }).catch((err) => console.warn("Vault registration failed:", err));
-
-    return publicUrl;
+    const { url } = (await res.json()) as { url: string };
+    return url;
   }, []);
 
   // Build "Today — Monday, November 15, 2024"

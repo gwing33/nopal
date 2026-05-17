@@ -944,40 +944,28 @@ export default function VaultPage() {
   const uploadFile = async (file: File) => {
     setUploading(true);
     try {
-      const { presignedUrl, publicUrl, s3Key } = await apiFetch(
-        "/api/vault/presign",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            filename: file.name,
-            contentType: file.type || "application/octet-stream",
-            folderId: currentFolderId,
-          }),
-        },
-      );
+      // Send the file directly to our server — it handles the S3 upload
+      // server-side, so there are no browser→S3 CORS restrictions.
+      const formData = new FormData();
+      formData.append("file", file);
+      if (currentFolderId) formData.append("folderId", currentFolderId);
 
-      await fetch(presignedUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type || "application/octet-stream" },
-        body: file,
-      });
-
-      await apiFetch("/api/vault", {
+      const res = await fetch("/api/vault/upload", {
         method: "POST",
-        body: JSON.stringify({
-          name: file.name,
-          s3_url: publicUrl,
-          s3_key: s3Key,
-          content_type: file.type || "application/octet-stream",
-          folder_id: currentFolderId,
-          size: file.size,
-        }),
+        body: formData,
       });
+
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string };
+        throw new Error(data.error ?? `Upload failed: ${res.status}`);
+      }
 
       revalidate();
     } catch (err) {
       console.error("Upload failed:", err);
-      window.alert("Upload failed. Please try again.");
+      window.alert(
+        err instanceof Error ? err.message : "Upload failed. Please try again.",
+      );
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
