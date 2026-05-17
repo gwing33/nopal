@@ -28,6 +28,16 @@ export type FileRef = {
   updated_at: string;
 };
 
+/**
+ * A daily-log file is read-only once the upload date is no longer today.
+ * Safe to call on both client and server — no Node-only imports.
+ */
+export function isFileRefLocked(file: FileRef): boolean {
+  if (file.source !== "daily_log") return false;
+  const today = new Date().toISOString().slice(0, 10);
+  return file.created_at.slice(0, 10) !== today;
+}
+
 export type VaultFolder = {
   id: { tb: string; id: string };
   _id: string;

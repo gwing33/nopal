@@ -5,8 +5,8 @@ import {
   updateFileRef,
   deleteFileRef,
   computeMdUpdate,
-  isFileRefLocked,
 } from "../data/vault.server";
+import { isFileRefLocked } from "../data/vault.types";
 
 export async function action({ request, params }: ActionFunctionArgs) {
   const user = await getUser(request);

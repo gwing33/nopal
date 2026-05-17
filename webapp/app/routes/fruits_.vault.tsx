@@ -3,7 +3,8 @@ import type { LoaderFunctionArgs } from "react-router";
 import { redirect, useLoaderData, useRevalidator } from "react-router";
 import { useRef, useState, useCallback } from "react";
 import { getUser } from "../modules/auth/auth.server";
-// Types live in a server-free file — safe to import on the client.
+// Types + shared utils live in a server-free file — safe on client and server.
+import { isFileRefLocked } from "../data/vault.types";
 import type { FileRef, VaultFolder } from "../data/vault.types";
 // Server functions are only used inside `loader`; React Router strips them
 // from the client bundle automatically.
@@ -16,13 +17,6 @@ import {
 import { getHumans, getHumansById } from "../data/humans.server";
 import { AppLayout } from "../components/AppLayout";
 import "../styles/vault.css";
-
-/** Client-safe lock check — no server imports needed. */
-function isFileRefLocked(file: FileRef): boolean {
-  if (file.source !== "daily_log") return false;
-  const today = new Date().toISOString().slice(0, 10);
-  return file.created_at.slice(0, 10) !== today;
-}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
