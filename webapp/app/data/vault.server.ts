@@ -230,6 +230,74 @@ export async function deleteVaultFolderCascade(
   }
 }
 
+// ─── Daily-log vault sync ───────────────────────────────────────────────────
+
+/**
+ * Upserts the `readme.md` vault file for a given daily-log date.
+ *
+ * Folder structure created on-demand:
+ *   daily-logs  (root, parent_folder_id = null)
+ *     └── YYYY-MM-DD
+ *           └── readme.md  (content_type text/markdown, source daily_log)
+ *
+ * On the same calendar day the content is overwritten in-place.
+ * On subsequent days the old content is pushed to `md_versions` first
+ * (same logic as computeMdUpdate — shouldn't normally happen because the
+ * daily-log lock prevents editing past days, but it's handled gracefully).
+ */
+export async function upsertDailyLogReadme(
+  humanId: string,
+  dateStr: string, // YYYY-MM-DD
+  content: string,
+): Promise<FileRef | undefined> {
+  try {
+    // Ensure folder tree
+    const rootFolder = await getOrCreateVaultFolder(
+      humanId,
+      "daily-logs",
+      null,
+    );
+    const dateFolder = await getOrCreateVaultFolder(
+      humanId,
+      dateStr,
+      rootFolder._id,
+    );
+
+    // Find existing readme.md in this date folder
+    const result = await query<[FileRef[]]>(
+      `SELECT * FROM file_refs
+       WHERE human_id = $humanId
+         AND folder_id = $folderId
+         AND name = 'readme.md'
+       LIMIT 1`,
+      { humanId, folderId: dateFolder._id },
+    );
+    const existing = result?.[0]?.[0]
+      ? formatRecord(result[0][0] as FileRef)
+      : null;
+
+    if (existing) {
+      const { content: newContent, md_versions } = computeMdUpdate(
+        existing,
+        content,
+      );
+      return updateFileRef(existing._id, { content: newContent, md_versions });
+    }
+
+    return createFileRef({
+      human_id: humanId,
+      name: "readme.md",
+      content,
+      content_type: "text/markdown",
+      folder_id: dateFolder._id,
+      source: "daily_log",
+    });
+  } catch (err) {
+    console.error("upsertDailyLogReadme failed:", err);
+    return undefined;
+  }
+}
+
 // ─── .md versioning helper ────────────────────────────────────────────────────
 
 export function computeMdUpdate(

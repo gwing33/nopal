@@ -19,6 +19,7 @@ import {
   saveDailyLog,
   type DailyLog,
 } from "../data/dailyLog.server";
+import { upsertDailyLogReadme } from "../data/vault.server";
 import { useMarkdown } from "../hooks/useMarkdown";
 import { resolveNopalMarkdown } from "../util/nopalMarkdown";
 import projectStyles from "../styles/project.css?url";
@@ -85,24 +86,28 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const ct = request.headers.get("content-type") ?? "";
 
-  // ── JSON save ─────────────────────────────────────────────────────────────
+  // ── JSON save ──────────────────────────────────────────────────────────────────
   if (ct.includes("application/json")) {
     const body = await request.json();
     const { date, content } = body;
     if (!date || typeof content !== "string")
       return { error: "Invalid request" };
     const entry = await saveDailyLog(user._id, date, content);
+    // Keep vault readme.md in sync (fire-and-forget — errors are logged, not thrown)
+    upsertDailyLogReadme(user._id, date, content);
     return { success: true, entry };
   }
 
-  // ── Multipart: file upload OR form save ───────────────────────────────────
+  // ── Multipart: file upload OR form save ──────────────────────────────────
   const form = await request.formData();
 
-  // ── Regular form save ─────────────────────────────────────────────────────
+  // ── Regular form save ─────────────────────────────────────────────────────────
   const date = String(form.get("date") ?? "");
   const content = String(form.get("content") ?? "");
   if (!date || typeof content !== "string") return { error: "Invalid request" };
   const entry = await saveDailyLog(user._id, date, content);
+  // Keep vault readme.md in sync
+  upsertDailyLogReadme(user._id, date, content);
   return { success: true, entry };
 }
 
