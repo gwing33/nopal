@@ -1433,31 +1433,40 @@ export default function VaultPage() {
               aria-label={sidebarOpen ? "Close folders" : "Open folders"}
             >
               {sidebarOpen ? (
+                // layout-sidebar-right-expand — signals "collapse the open sidebar"
                 <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  <line x1="2" y1="2" x2="14" y2="14" />
-                  <line x1="14" y1="2" x2="2" y2="14" />
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12" />
+                  <path d="M15 4v16" />
+                  <path d="M10 10l-2 2l2 2" />
                 </svg>
               ) : (
+                // layout-sidebar-left-expand — signals "open the hidden sidebar"
                 <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  <line x1="2" y1="4" x2="14" y2="4" />
-                  <line x1="2" y1="8" x2="14" y2="8" />
-                  <line x1="2" y1="12" x2="14" y2="12" />
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12" />
+                  <path d="M9 4v16" />
+                  <path d="M14 10l2 2l-2 2" />
                 </svg>
               )}
             </button>
