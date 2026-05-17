@@ -309,18 +309,34 @@ function TodayLogEntry({
   // ── Upload helpers ────────────────────────────────────────────────────────
 
   const uploadFile = useCallback(async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch("/api/upload", {
+    // Step 1: ask the server for a presigned PUT URL.
+    const presignRes = await fetch("/api/upload/presign", {
       method: "POST",
-      body: formData,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ filename: file.name, contentType: file.type }),
     });
-    if (!res.ok) {
-      throw new Error(`Upload failed: ${res.status} ${res.statusText}`);
+    if (!presignRes.ok) {
+      const err = (await presignRes.json()) as { error?: string };
+      throw new Error(err.error ?? `Presign failed: ${presignRes.status}`);
     }
-    const data = (await res.json()) as { url?: string; error?: string };
-    if (!data.url) throw new Error(data.error ?? "Upload failed");
-    return data.url;
+    const { presignedUrl, publicUrl } = (await presignRes.json()) as {
+      presignedUrl: string;
+      publicUrl: string;
+    };
+
+    // Step 2: PUT the file directly to S3 — bytes never touch the server.
+    const uploadRes = await fetch(presignedUrl, {
+      method: "PUT",
+      headers: { "Content-Type": file.type },
+      body: file,
+    });
+    if (!uploadRes.ok) {
+      throw new Error(
+        `S3 upload failed: ${uploadRes.status} ${uploadRes.statusText}`,
+      );
+    }
+
+    return publicUrl;
   }, []);
 
   // Build "Today — Monday, November 15, 2024"

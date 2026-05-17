@@ -4,6 +4,7 @@ import {
   ObjectCannedACL,
 } from "@aws-sdk/client-s3";
 import type { S3ClientConfig } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 // S3_ENDPOINT        – full endpoint URL for the S3 client
 //                      local:  http://minio:9000  (internal Docker service name)
@@ -47,6 +48,38 @@ function createS3Client(): S3Client {
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
     },
   } as S3ClientConfig);
+}
+
+/**
+ * Generate a short-lived presigned PUT URL so the browser can upload a file
+ * directly to S3 without routing the bytes through the server.
+ *
+ * @param filename  The S3 key (e.g. "daily-log/user123/1234567890-video.mp4")
+ * @param contentType  MIME type of the file being uploaded
+ * @param expiresIn  Seconds until the URL expires (default: 300 = 5 minutes)
+ * @returns { presignedUrl, publicUrl }
+ */
+export async function getPresignedUploadUrl(
+  filename: string,
+  contentType: string,
+  expiresIn = 300,
+): Promise<{ presignedUrl: string; publicUrl: string }> {
+  const client = createS3Client();
+
+  const putCommand = new PutObjectCommand({
+    Bucket: process.env.BUCKET_NAME,
+    Key: filename,
+    ContentType: contentType,
+    ACL: ObjectCannedACL.public_read,
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const presignedUrl = await getSignedUrl(client as any, putCommand, {
+    expiresIn,
+  });
+  const publicUrl = getPublicFileUrl(filename);
+
+  return { presignedUrl, publicUrl };
 }
 
 export async function downloadAndUploadToS3(
