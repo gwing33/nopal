@@ -831,7 +831,7 @@ export default function VaultPage() {
   })();
 
   const breadcrumb = (() => {
-    if (panel.kind === "my-root") return "My Files / Root";
+    if (panel.kind === "my-root") return "My Files";
     if (panel.kind === "my-folder") {
       const folder = myFolders.find((f) => f._id === panel.folderId);
       return `My Files / ${folder?.name ?? "Folder"}`;
@@ -1025,7 +1025,7 @@ export default function VaultPage() {
                 className={`vault-sidebar-item ${panel.kind === "my-root" ? "vault-sidebar-item--active" : ""}`}
                 onClick={() => setPanel({ kind: "my-root" })}
               >
-                📂 Root
+                /
               </button>
 
               {/* My folders (top-level only) */}
