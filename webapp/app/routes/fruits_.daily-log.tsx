@@ -310,19 +310,28 @@ function TodayLogEntry({
 
   const uploadFile = useCallback(async (file: File): Promise<string> => {
     // Step 1: ask the server for a presigned PUT URL.
+    // Passing source=daily_log so the server auto-provisions the vault folder
+    // tree (daily-logs / YYYY-MM-DD) and returns the s3Key + folderId.
     const presignRes = await fetch("/api/upload/presign", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ filename: file.name, contentType: file.type }),
+      body: JSON.stringify({
+        filename: file.name,
+        contentType: file.type,
+        source: "daily_log",
+      }),
     });
     if (!presignRes.ok) {
       const err = (await presignRes.json()) as { error?: string };
       throw new Error(err.error ?? `Presign failed: ${presignRes.status}`);
     }
-    const { presignedUrl, publicUrl } = (await presignRes.json()) as {
-      presignedUrl: string;
-      publicUrl: string;
-    };
+    const { presignedUrl, publicUrl, s3Key, folderId } =
+      (await presignRes.json()) as {
+        presignedUrl: string;
+        publicUrl: string;
+        s3Key: string;
+        folderId?: string;
+      };
 
     // Step 2: PUT the file directly to S3 — bytes never touch the server.
     const uploadRes = await fetch(presignedUrl, {
@@ -335,6 +344,21 @@ function TodayLogEntry({
         `S3 upload failed: ${uploadRes.status} ${uploadRes.statusText}`,
       );
     }
+
+    // Step 3: Register the file in the vault (best-effort — don't block the editor).
+    fetch("/api/vault", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: file.name,
+        s3_url: publicUrl,
+        s3_key: s3Key,
+        content_type: file.type || "application/octet-stream",
+        folder_id: folderId ?? null,
+        size: file.size,
+        source: "daily_log",
+      }),
+    }).catch((err) => console.warn("Vault registration failed:", err));
 
     return publicUrl;
   }, []);
@@ -481,7 +505,6 @@ export default function DailyLogPage() {
     [today, saveFetcher],
   );
 
-  // Debounce: wait 30 s of inactivity before hitting the server
   const scheduleSave = useCallback(
     (content: string) => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -504,12 +527,6 @@ export default function DailyLogPage() {
       scheduleSave(content);
     },
     [today, scheduleSave],
-  );
-
-  // Blur triggers an immediate save so switching tabs never loses work
-  const handleBlur = useCallback(
-    (content: string) => saveNow(content),
-    [saveNow],
   );
 
   // ── Scroll to bottom once today resolves (past entries are now rendered) ──

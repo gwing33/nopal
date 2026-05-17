@@ -2,39 +2,9 @@ import { RecordId } from "surrealdb";
 import { query, formatRecord, upsert, remove, merge } from "./generic.server";
 import { deleteFromS3 } from "./file.server";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export type MdVersion = {
-  content: string;
-  date: string; // YYYY-MM-DD
-};
-
-export type FileRef = {
-  id: { tb: string; id: string };
-  _id: string;
-  human_id: string;
-  name: string;
-  s3_url: string | null;
-  s3_key: string | null;
-  content: string | null;
-  md_versions: MdVersion[];
-  content_type: string;
-  folder_id: string | null;
-  size: number | null;
-  created_at: string;
-  updated_at: string;
-};
-
-export type VaultFolder = {
-  id: { tb: string; id: string };
-  _id: string;
-  human_id: string;
-  name: string;
-  parent_folder_id: string | null;
-  shared_with: string[] | "everyone";
-  created_at: string;
-  updated_at: string;
-};
+// ─── Types (defined in vault.types.ts; re-exported from here for convenience) ──
+export type { MdVersion, FileRef, VaultFolder } from "./vault.types";
+import type { MdVersion, FileRef, VaultFolder } from "./vault.types";
 
 // ─── FileRef CRUD ─────────────────────────────────────────────────────────────
 
@@ -47,6 +17,7 @@ export async function createFileRef(data: {
   content_type: string;
   folder_id?: string | null;
   size?: number | null;
+  source?: "daily_log";
 }): Promise<FileRef | undefined> {
   const now = new Date().toISOString();
   const result = await upsert("file_refs", {
@@ -59,6 +30,7 @@ export async function createFileRef(data: {
     content_type: data.content_type,
     folder_id: data.folder_id ?? null,
     size: data.size ?? null,
+    ...(data.source ? { source: data.source } : {}),
     created_at: now,
     updated_at: now,
   });
@@ -69,18 +41,18 @@ export async function createFileRef(data: {
 export async function getFileRefsByHuman(humanId: string): Promise<FileRef[]> {
   const result = await query<[FileRef[]]>(
     `SELECT * FROM file_refs WHERE human_id = $humanId ORDER BY created_at DESC`,
-    { humanId }
+    { humanId },
   );
   return (result?.[0] ?? []).map(formatRecord);
 }
 
 export async function getFileRefsByFolderIds(
-  folderIds: string[]
+  folderIds: string[],
 ): Promise<FileRef[]> {
   if (!folderIds.length) return [];
   const result = await query<[FileRef[]]>(
     `SELECT * FROM file_refs WHERE folder_id IN $folderIds ORDER BY created_at DESC`,
-    { folderIds }
+    { folderIds },
   );
   return (result?.[0] ?? []).map(formatRecord);
 }
@@ -88,7 +60,7 @@ export async function getFileRefsByFolderIds(
 export async function getFileRefById(id: string): Promise<FileRef | undefined> {
   const result = await query<[FileRef[]]>(
     `SELECT * FROM file_refs WHERE id = $rid`,
-    { rid: new RecordId("file_refs", id) }
+    { rid: new RecordId("file_refs", id) },
   );
   const record = result?.[0]?.[0];
   return record ? formatRecord(record) : undefined;
@@ -101,7 +73,7 @@ export async function updateFileRef(
     folder_id: string | null;
     content: string;
     md_versions: MdVersion[];
-  }>
+  }>,
 ): Promise<FileRef | undefined> {
   const result = await merge("file_refs", id, {
     ...(updates as Record<string, unknown>),
@@ -145,35 +117,35 @@ export async function createVaultFolder(data: {
 }
 
 export async function getFoldersByHuman(
-  humanId: string
+  humanId: string,
 ): Promise<VaultFolder[]> {
   const result = await query<[VaultFolder[]]>(
     `SELECT * FROM vault_folders WHERE human_id = $humanId ORDER BY name ASC`,
-    { humanId }
+    { humanId },
   );
   return (result?.[0] ?? []).map(formatRecord);
 }
 
 export async function getFolderById(
-  id: string
+  id: string,
 ): Promise<VaultFolder | undefined> {
   const result = await query<[VaultFolder[]]>(
     `SELECT * FROM vault_folders WHERE id = $rid`,
-    { rid: new RecordId("vault_folders", id) }
+    { rid: new RecordId("vault_folders", id) },
   );
   const record = result?.[0]?.[0];
   return record ? formatRecord(record) : undefined;
 }
 
 export async function getSharedFoldersForHuman(
-  humanId: string
+  humanId: string,
 ): Promise<VaultFolder[]> {
   const result = await query<[VaultFolder[]]>(
     `SELECT * FROM vault_folders
      WHERE human_id != $humanId
        AND (shared_with = 'everyone' OR $humanId IN shared_with)
      ORDER BY human_id, name ASC`,
-    { humanId }
+    { humanId },
   );
   return (result?.[0] ?? []).map(formatRecord);
 }
@@ -183,7 +155,7 @@ export async function updateVaultFolder(
   updates: Partial<{
     name: string;
     shared_with: string[] | "everyone";
-  }>
+  }>,
 ): Promise<VaultFolder | undefined> {
   const result = await merge("vault_folders", id, {
     ...(updates as Record<string, unknown>),
@@ -195,7 +167,7 @@ export async function updateVaultFolder(
 async function getAllNestedFolderIds(parentId: string): Promise<string[]> {
   const result = await query<[VaultFolder[]]>(
     `SELECT * FROM vault_folders WHERE parent_folder_id = $parentId`,
-    { parentId }
+    { parentId },
   );
   const children = (result?.[0] ?? []).map(formatRecord);
   const ids: string[] = [];
@@ -207,14 +179,45 @@ async function getAllNestedFolderIds(parentId: string): Promise<string[]> {
   return ids;
 }
 
-export async function deleteVaultFolderCascade(folderId: string): Promise<void> {
+/**
+ * Find an existing folder matching (humanId + name + parentFolderId) or create it.
+ * Useful for auto-provisioning the daily-logs folder tree.
+ */
+export async function getOrCreateVaultFolder(
+  humanId: string,
+  name: string,
+  parentFolderId: string | null = null,
+): Promise<VaultFolder> {
+  const result = await query<[VaultFolder[]]>(
+    `SELECT * FROM vault_folders
+     WHERE human_id = $humanId
+       AND name = $name
+       AND parent_folder_id = $parentFolderId
+     LIMIT 1`,
+    { humanId, name, parentFolderId },
+  );
+  const existing = result?.[0]?.[0];
+  if (existing) return formatRecord(existing);
+
+  const created = await createVaultFolder({
+    human_id: humanId,
+    name,
+    parent_folder_id: parentFolderId,
+  });
+  if (!created) throw new Error(`Failed to create vault folder: ${name}`);
+  return created;
+}
+
+export async function deleteVaultFolderCascade(
+  folderId: string,
+): Promise<void> {
   const allFolderIds = await getAllNestedFolderIds(folderId);
   allFolderIds.push(folderId);
 
   for (const fid of allFolderIds) {
     const filesResult = await query<[FileRef[]]>(
       `SELECT * FROM file_refs WHERE folder_id = $fid`,
-      { fid }
+      { fid },
     );
     const files = (filesResult?.[0] ?? []).map(formatRecord);
     for (const file of files) {
@@ -231,7 +234,7 @@ export async function deleteVaultFolderCascade(folderId: string): Promise<void> 
 
 export function computeMdUpdate(
   file: FileRef,
-  newContent: string
+  newContent: string,
 ): { content: string; md_versions: MdVersion[] } {
   const today = new Date().toISOString().slice(0, 10);
   const lastUpdatedDay = file.updated_at.slice(0, 10);

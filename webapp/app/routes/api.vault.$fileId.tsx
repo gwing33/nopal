@@ -5,6 +5,7 @@ import {
   updateFileRef,
   deleteFileRef,
   computeMdUpdate,
+  isFileRefLocked,
 } from "../data/vault.server";
 
 export async function action({ request, params }: ActionFunctionArgs) {
@@ -24,6 +25,19 @@ export async function action({ request, params }: ActionFunctionArgs) {
   }
   if (file.human_id !== user._id) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (
+    isFileRefLocked(file) &&
+    (request.method === "DELETE" || request.method === "PATCH")
+  ) {
+    return Response.json(
+      {
+        error:
+          "This file is locked — daily-log files can only be modified on the day they were uploaded.",
+      },
+      { status: 403 },
+    );
   }
 
   if (request.method === "DELETE") {

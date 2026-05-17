@@ -3,16 +3,25 @@ import type { LoaderFunctionArgs } from "react-router";
 import { redirect, useLoaderData, useRevalidator } from "react-router";
 import { useRef, useState, useCallback } from "react";
 import { getUser } from "../modules/auth/auth.server";
+// Types live in a server-free file — safe to import on the client.
+import type { FileRef, VaultFolder } from "../data/vault.types";
+// Server functions are only used inside `loader`; React Router strips them
+// from the client bundle automatically.
 import {
   getFileRefsByHuman,
   getFoldersByHuman,
   getSharedFoldersForHuman,
   getFileRefsByFolderIds,
-  type FileRef,
-  type VaultFolder,
 } from "../data/vault.server";
 import { getHumansById } from "../data/humans.server";
 import { AppLayout } from "../components/AppLayout";
+
+/** Client-safe lock check — no server imports needed. */
+function isFileRefLocked(file: FileRef): boolean {
+  if (file.source !== "daily_log") return false;
+  const today = new Date().toISOString().slice(0, 10);
+  return file.created_at.slice(0, 10) !== today;
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -339,7 +348,7 @@ function MoveModal({
 function FolderTreeItem({
   folder,
   allFolders,
-  active,
+  activeFolderId,
   depth,
   onSelect,
   onRename,
@@ -348,15 +357,17 @@ function FolderTreeItem({
 }: {
   folder: VaultFolder;
   allFolders: VaultFolder[];
-  active: boolean;
+  /** The _id of whichever folder is currently selected (or null). Passed down unchanged so children can highlight themselves. */
+  activeFolderId: string | null;
   depth: number;
-  onSelect: () => void;
+  onSelect: (f: VaultFolder) => void;
   onRename: (folder: VaultFolder) => void;
   onShare: (folder: VaultFolder) => void;
   onDelete: (folder: VaultFolder) => void;
 }) {
   const children = allFolders.filter((f) => f.parent_folder_id === folder._id);
   const hasChildren = children.length > 0;
+  const active = activeFolderId === folder._id;
   const [expanded, setExpanded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -395,7 +406,7 @@ function FolderTreeItem({
 
         {/* Folder name */}
         <button
-          onClick={onSelect}
+          onClick={() => onSelect(folder)}
           style={{
             background: "none",
             border: "none",
@@ -513,9 +524,9 @@ function FolderTreeItem({
             key={child._id}
             folder={child}
             allFolders={allFolders}
-            active={false}
+            activeFolderId={activeFolderId}
             depth={depth + 1}
-            onSelect={() => onSelect()}
+            onSelect={onSelect}
             onRename={onRename}
             onShare={onShare}
             onDelete={onDelete}
@@ -531,6 +542,7 @@ function FileCard({
   file,
   myFolders,
   isOwned,
+  isLocked,
   onRename,
   onDelete,
   onMove,
@@ -539,6 +551,7 @@ function FileCard({
   file: FileRef;
   myFolders: VaultFolder[];
   isOwned: boolean;
+  isLocked: boolean;
   onRename: (file: FileRef) => void;
   onDelete: (file: FileRef) => void;
   onMove: (file: FileRef) => void;
@@ -585,10 +598,23 @@ function FileCard({
       {/* Meta */}
       <div
         className="text-xs font-mono"
-        style={{ color: "var(--text-subtle)", display: "flex", gap: "10px" }}
+        style={{
+          color: "var(--text-subtle)",
+          display: "flex",
+          gap: "10px",
+          flexWrap: "wrap",
+        }}
       >
         {file.size && <span>{formatSize(file.size)}</span>}
         <span>{formatDate(file.created_at)}</span>
+        {isLocked && (
+          <span
+            title="Uploaded from Daily Log — read-only after today"
+            style={{ color: "var(--text-subtle)", opacity: 0.6 }}
+          >
+            🔒
+          </span>
+        )}
       </div>
 
       {/* s3 link for non-md */}
@@ -605,8 +631,8 @@ function FileCard({
         </a>
       )}
 
-      {/* Action buttons (hover) */}
-      {isOwned && (
+      {/* Action buttons (hover) — hidden for locked daily-log files */}
+      {isOwned && !isLocked && (
         <div
           className="file-actions"
           style={{
@@ -1196,13 +1222,12 @@ export default function VaultPage() {
                       key={folder._id}
                       folder={folder}
                       allFolders={myFolders}
-                      active={
-                        panel.kind === "my-folder" &&
-                        panel.folderId === folder._id
+                      activeFolderId={
+                        panel.kind === "my-folder" ? panel.folderId : null
                       }
                       depth={0}
-                      onSelect={() =>
-                        setPanel({ kind: "my-folder", folderId: folder._id })
+                      onSelect={(f) =>
+                        setPanel({ kind: "my-folder", folderId: f._id })
                       }
                       onRename={(f) => setRenamingFolderId(f._id)}
                       onShare={(f) => setShareFolder(f)}
@@ -1377,8 +1402,10 @@ export default function VaultPage() {
                 gap: "12px",
               }}
             >
-              {visibleFiles.map((file) =>
-                renamingFileId === file._id ? (
+              {visibleFiles.map((file) => {
+                const locked = isFileRefLocked(file);
+                // Don't allow the inline rename widget for locked files
+                return renamingFileId === file._id && !locked ? (
                   <div
                     key={file._id}
                     style={{
@@ -1402,13 +1429,14 @@ export default function VaultPage() {
                     file={file}
                     myFolders={myFolders}
                     isOwned={isMyPanel}
+                    isLocked={locked}
                     onRename={(f) => setRenamingFileId(f._id)}
                     onDelete={(f) => deleteFile(f._id)}
                     onMove={(f) => setMoveFile(f)}
                     onEditMd={(f) => setEditMdFile(f)}
                   />
-                ),
-              )}
+                );
+              })}
             </div>
           )}
         </div>

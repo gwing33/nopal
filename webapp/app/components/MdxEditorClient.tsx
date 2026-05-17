@@ -226,7 +226,10 @@ export default function MdxEditorClient({
   const editorBodyRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(false);
 
-  const [isDragging, setIsDragging] = useState(false);
+  // "file"  = dragging a tray item onto the editor   → full-width drop zone
+  // "chip"  = dragging a placed chip to reposition  → narrow right-edge strip
+  // "none"  = not dragging
+  const [dragType, setDragType] = useState<"none" | "file" | "chip">("none");
   const [dotY, setDotY] = useState(0);
 
   // ── Keep refs in sync ───────────────────────────────────────────────────
@@ -322,7 +325,7 @@ export default function MdxEditorClient({
 
   // ── Global dragover tracking — snaps dot to paragraph-gap positions ────
   useEffect(() => {
-    if (!isDragging) return;
+    if (dragType === "none") return;
     const onMove = (e: DragEvent) => {
       const containerRect = editorContainerRef.current?.getBoundingClientRect();
       if (!containerRect) return;
@@ -374,7 +377,7 @@ export default function MdxEditorClient({
     };
     document.addEventListener("dragover", onMove);
     return () => document.removeEventListener("dragover", onMove);
-  }, [isDragging]);
+  }, [dragType]);
 
   // ── Chip position computation ───────────────────────────────────────────
   useLayoutEffect(() => {
@@ -475,12 +478,12 @@ export default function MdxEditorClient({
     (e: React.DragEvent, index: number) => {
       e.dataTransfer.setData("application/x-nopal-file-index", String(index));
       e.dataTransfer.effectAllowed = "copy";
-      setIsDragging(true);
+      setDragType("file");
     },
     [],
   );
 
-  const handleTrayDragEnd = useCallback(() => setIsDragging(false), []);
+  const handleTrayDragEnd = useCallback(() => setDragType("none"), []);
 
   const handleDropLineDragOver = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
@@ -509,7 +512,7 @@ export default function MdxEditorClient({
 
       const fileIndex = parseInt(chipIndexStr || fileIndexStr);
       const isReposition = !!chipIndexStr;
-      setIsDragging(false);
+      setDragType("none");
 
       // Use the snap-point index accumulated during dragover — it already
       // corresponds to the gap between paragraphs.
@@ -554,12 +557,12 @@ export default function MdxEditorClient({
       );
       e.dataTransfer.effectAllowed = "move";
       setExpandedGroupKey(null);
-      setIsDragging(true);
+      setDragType("chip");
     },
     [],
   );
 
-  const handleChipDragEnd = useCallback(() => setIsDragging(false), []);
+  const handleChipDragEnd = useCallback(() => setDragType("none"), []);
 
   const handleTrayChipDragOver = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
@@ -709,10 +712,70 @@ export default function MdxEditorClient({
           });
         })}
 
-      {/* Drop-line: side strip + snapping dot + horizontal dashed guide */}
-      {!isPreview && isDragging && (
+      {/* ── Drop zones ─────────────────────────────────────────────────────
+           "file" drag  → full-width overlay so the user can drop anywhere
+                          in the editor area (covers tray too, which is fine
+                          since the user is dragging FROM the tray).
+           "chip" drag  → narrow right-edge strip, leaving the tray exposed
+                          so chips can still be dragged back to remove them.
+      ────────────────────────────────────────────────────────────────────── */}
+
+      {/* FILE DRAG: full-width overlay */}
+      {!isPreview && dragType === "file" && (
+        <div
+          onDragOver={handleDropLineDragOver}
+          onDrop={handleDropLineDrop}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 40,
+            cursor: "copy",
+            background: "rgba(167, 139, 250, 0.06)",
+            borderRadius: "4px",
+            outline: "2px dashed rgba(167, 139, 250, 0.35)",
+            outlineOffset: "-2px",
+          }}
+        >
+          {/* Horizontal snap line */}
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: dotY,
+              height: 0,
+              borderTop: "2px solid rgba(167, 139, 250, 0.75)",
+              transform: "translateY(-50%)",
+              pointerEvents: "none",
+              transition: "top 0.06s ease",
+            }}
+          />
+          {/* Dot on the snap line */}
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: dotY,
+              width: "16px",
+              height: "16px",
+              borderRadius: "50%",
+              background: "var(--purple-light, #a78bfa)",
+              transform: "translate(-50%, -50%)",
+              boxShadow: "0 2px 8px rgba(63,43,70,0.4)",
+              pointerEvents: "none",
+              transition: "top 0.06s ease",
+            }}
+          />
+        </div>
+      )}
+
+      {/* CHIP DRAG: original narrow strip (preserves chip→tray removal) */}
+      {!isPreview && dragType === "chip" && (
         <>
-          {/* Dashed horizontal guide — stretches from the left edge to the strip */}
+          {/* Dashed guide from left edge to strip */}
           <div
             style={{
               position: "absolute",
@@ -726,8 +789,6 @@ export default function MdxEditorClient({
               zIndex: 39,
             }}
           />
-
-          {/* Drop strip */}
           <div
             onDragOver={handleDropLineDragOver}
             onDrop={handleDropLineDrop}
@@ -738,10 +799,9 @@ export default function MdxEditorClient({
               bottom: 0,
               width: "48px",
               zIndex: 40,
-              cursor: "copy",
+              cursor: "move",
             }}
           >
-            {/* Vertical line */}
             <div
               style={{
                 position: "absolute",
@@ -755,7 +815,6 @@ export default function MdxEditorClient({
                 pointerEvents: "none",
               }}
             />
-            {/* Snapping dot */}
             <div
               style={{
                 position: "absolute",
@@ -816,12 +875,14 @@ export default function MdxEditorClient({
                   width={28}
                   height={28}
                   alt="uploading"
+                  draggable={false}
                   style={{ display: "block" }}
                 />
               ) : file.isImage && file.url ? (
                 <img
                   src={file.url}
                   alt={file.name}
+                  draggable={false}
                   className="nopal-tray-item-thumb"
                 />
               ) : (
@@ -830,6 +891,7 @@ export default function MdxEditorClient({
                   width={28}
                   height={28}
                   alt={file.name}
+                  draggable={false}
                   style={{ display: "block" }}
                 />
               )}
