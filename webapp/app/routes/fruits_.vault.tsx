@@ -429,23 +429,51 @@ function FolderTreeItem({
       <div
         className={`vault-folder-row ${active ? "vault-folder-row--active" : ""}`}
       >
-        {/* Expand toggle */}
-        <button
-          onClick={() => setExpanded((x) => !x)}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: hasChildren ? "pointer" : "default",
-            color: hasChildren ? "var(--purple-light)" : "transparent",
-            padding: "0 2px",
-            fontSize: "10px",
-            lineHeight: 1,
-            flexShrink: 0,
-          }}
-          tabIndex={-1}
-        >
-          {hasChildren ? (expanded ? "▼" : "▶") : "·"}
-        </button>
+        {/* Expand toggle — 28×28px touch target so it’s easy to tap on mobile */}
+        {hasChildren ? (
+          <button
+            className="vault-folder-expand-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded((x) => !x);
+            }}
+            tabIndex={-1}
+            aria-label={expanded ? "Collapse folder" : "Expand folder"}
+          >
+            {expanded ? (
+              // chevron-down
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M6 9l6 6l6 -6" />
+              </svg>
+            ) : (
+              // chevron-right
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M9 6l6 6l-6 6" />
+              </svg>
+            )}
+          </button>
+        ) : (
+          // Spacer keeps folder names aligned with expandable siblings
+          <div className="vault-folder-expand-spacer" />
+        )}
 
         {/* Folder name */}
         <button
@@ -1257,10 +1285,9 @@ export default function VaultPage() {
     [revalidate, runMultipartUpload, setPendingUploads],
   );
 
-  const uploadFile = useCallback(
-    (file: File) => startUpload(file, currentFolderId),
-    [startUpload, currentFolderId],
-  );
+  // Not memoized — always reads the live currentFolderId from the render scope
+  // so the file lands in whichever folder the user currently has open.
+  const uploadFile = (file: File) => startUpload(file, currentFolderId);
 
   // ─── Owner groupings for shared section ───────────────────────────────────
   const sharedByOwner = sharedFolders.reduce<
@@ -1287,6 +1314,34 @@ export default function VaultPage() {
         <div
           className={`vault-sidebar${sidebarOpen ? " vault-sidebar--open" : ""}`}
         >
+          {/* Close button — sits at the top of the drawer on mobile.
+               The CSS class hides it on desktop where the sidebar is always open. */}
+          <div className="vault-sidebar-close-row">
+            <button
+              className="vault-sidebar-toggle"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Close folder tree"
+            >
+              {/* layout-sidebar-right-expand — “collapse” */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12" />
+                <path d="M15 4v16" />
+                <path d="M10 10l-2 2l2 2" />
+              </svg>
+            </button>
+          </div>
+
           {/* ── My Files ──────────────────────────────────────────────────────────── */}
           <button
             className="vault-section-btn"
@@ -1426,32 +1481,15 @@ export default function VaultPage() {
         <div className="vault-main">
           {/* Header row */}
           <div className="vault-panel-header">
-            {/* Sidebar toggle — only visible on mobile via CSS */}
-            <button
-              className="vault-sidebar-toggle"
-              onClick={() => setSidebarOpen((o) => !o)}
-              aria-label={sidebarOpen ? "Close folders" : "Open folders"}
-            >
-              {sidebarOpen ? (
-                // layout-sidebar-right-expand — signals "collapse the open sidebar"
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12" />
-                  <path d="M15 4v16" />
-                  <path d="M10 10l-2 2l2 2" />
-                </svg>
-              ) : (
-                // layout-sidebar-left-expand — signals "open the hidden sidebar"
+            {/* Open button — only rendered on mobile when the sidebar drawer is closed.
+                 Once open, the close button lives inside the sidebar itself. */}
+            {!sidebarOpen && (
+              <button
+                className="vault-sidebar-toggle"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open folder tree"
+              >
+                {/* layout-sidebar-left-expand — “open” */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="20"
@@ -1468,8 +1506,8 @@ export default function VaultPage() {
                   <path d="M9 4v16" />
                   <path d="M14 10l2 2l-2 2" />
                 </svg>
-              )}
-            </button>
+              </button>
+            )}
 
             {/* Breadcrumb */}
             <h2
