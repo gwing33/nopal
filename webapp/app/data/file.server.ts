@@ -48,7 +48,15 @@ function createS3Client(): S3Client {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
     },
-  } as S3ClientConfig);
+    // AWS SDK v3 >=3.721 adds CRC32 checksums to every PutObject by default.
+    // For presigned URLs the checksum value gets baked into the signed query
+    // string, but the browser fetch() won't send the matching header — causing
+    // a SignatureDoesNotMatch error whose error response lacks CORS headers,
+    // which the browser then (misleadingly) surfaces as a CORS error.
+    // Setting both options to "when_required" restores the pre-3.721 behaviour.
+    requestChecksumCalculation: "when_required",
+    responseChecksumValidation: "when_required",
+  } as unknown as S3ClientConfig);
 }
 
 /**
