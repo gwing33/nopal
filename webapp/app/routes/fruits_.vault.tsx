@@ -30,6 +30,18 @@ type PanelTarget =
   | { kind: "my-folder"; folderId: string }
   | { kind: "shared-folder"; folderId: string; ownerName: string };
 
+type PendingUpload = {
+  id: string;
+  file: File; // kept for retry
+  name: string;
+  size: number;
+  contentType: string;
+  progress: number; // 0–100
+  status: "uploading" | "error";
+  error?: string;
+  targetFolderId: string | null; // folder captured at upload-start time
+};
+
 // ─── Loader ───────────────────────────────────────────────────────────────────
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -786,6 +798,88 @@ function RenameInput({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+// ─── Upload placeholder card ─────────────────────────────────────────────────────────────
+
+function UploadPlaceholderCard({
+  upload,
+  onRetry,
+  onDismiss,
+}: {
+  upload: PendingUpload;
+  onRetry: () => void;
+  onDismiss: () => void;
+}) {
+  const isError = upload.status === "error";
+
+  return (
+    <div className="vault-file-card vault-upload-placeholder">
+      {/* Icon + name */}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <span style={{ fontSize: "20px", flexShrink: 0 }}>
+          {isError ? "⚠️" : fileIcon(upload.contentType)}
+        </span>
+        <span
+          className="text-sm font-mono"
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            flex: 1,
+            opacity: 0.7,
+          }}
+          title={upload.name}
+        >
+          {upload.name}
+        </span>
+      </div>
+
+      {/* File size */}
+      <div className="text-xs font-mono subtle-text">
+        {formatSize(upload.size)}
+      </div>
+
+      {isError ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <div
+            className="text-xs font-mono red-text"
+            style={{ wordBreak: "break-word", lineHeight: 1.4 }}
+          >
+            {upload.error}
+          </div>
+          <div style={{ display: "flex", gap: "6px" }}>
+            <button
+              className="btn-purple"
+              style={{ padding: "3px 10px", fontSize: "11px" }}
+              onClick={onRetry}
+            >
+              ↺ Retry
+            </button>
+            <button
+              className="btn-outline"
+              style={{ padding: "3px 10px", fontSize: "11px" }}
+              onClick={onDismiss}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          <div className="vault-upload-progress">
+            <div
+              className="vault-upload-progress-fill"
+              style={{ width: `${upload.progress}%` }}
+            />
+          </div>
+          <div className="text-xs font-mono subtle-text">
+            {upload.progress > 0 ? `${upload.progress}%` : "Starting…"}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function VaultPage() {
   const { myFiles, myFolders, sharedFolders, sharedFiles, allOtherHumans } =
     useLoaderData<typeof loader>();
@@ -807,13 +901,18 @@ export default function VaultPage() {
   const [sharedOpen, setSharedOpen] = useState(true);
   const [expandedOwners, setExpandedOwners] = useState<Set<string>>(new Set());
 
-  // ── File upload ref ───────────────────────────────────────────────────────
+  // ── File uploads ─────────────────────────────────────────────────────────────────
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([]);
 
   // ─── Derived data ──────────────────────────────────────────────────────────
 
   const currentFolderId = panel.kind === "my-folder" ? panel.folderId : null;
+
+  // Pending uploads visible in the current panel
+  const pendingForCurrentFolder = pendingUploads.filter(
+    (p) => p.targetFolderId === currentFolderId,
+  );
 
   const visibleFiles: FileRef[] = (() => {
     if (panel.kind === "my-root") return myFiles.filter((f) => !f.folder_id);
@@ -941,36 +1040,101 @@ export default function VaultPage() {
     revalidate();
   };
 
-  const uploadFile = async (file: File) => {
-    setUploading(true);
-    try {
-      // Send the file directly to our server — it handles the S3 upload
-      // server-side, so there are no browser→S3 CORS restrictions.
+  // Start an XHR upload so we can track per-byte progress.
+  // Captures the target folder at the moment the upload begins.
+  const startUpload = useCallback(
+    (file: File, folderId: string | null) => {
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const contentType = file.type || "application/octet-stream";
+
+      setPendingUploads((prev) => [
+        ...prev,
+        {
+          id,
+          file,
+          name: file.name,
+          size: file.size,
+          contentType,
+          progress: 0,
+          status: "uploading",
+          targetFolderId: folderId,
+        },
+      ]);
+
       const formData = new FormData();
       formData.append("file", file);
-      if (currentFolderId) formData.append("folderId", currentFolderId);
+      if (folderId) formData.append("folderId", folderId);
 
-      const res = await fetch("/api/vault/upload", {
-        method: "POST",
-        body: formData,
-      });
+      const xhr = new XMLHttpRequest();
 
-      if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
-        throw new Error(data.error ?? `Upload failed: ${res.status}`);
-      }
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          setPendingUploads((prev) =>
+            prev.map((p) => (p.id === id ? { ...p, progress: pct } : p)),
+          );
+        }
+      };
 
-      revalidate();
-    } catch (err) {
-      console.error("Upload failed:", err);
-      window.alert(
-        err instanceof Error ? err.message : "Upload failed. Please try again.",
-      );
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          setPendingUploads((prev) => prev.filter((p) => p.id !== id));
+          revalidate();
+        } else {
+          let error = `Server error (HTTP ${xhr.status})`;
+          try {
+            const data = JSON.parse(xhr.responseText) as { error?: string };
+            if (data.error) error = data.error;
+          } catch {
+            /* non-JSON body */
+          }
+          setPendingUploads((prev) =>
+            prev.map((p) =>
+              p.id === id ? { ...p, status: "error", error } : p,
+            ),
+          );
+        }
+      };
+
+      xhr.onerror = () => {
+        setPendingUploads((prev) =>
+          prev.map((p) =>
+            p.id === id
+              ? {
+                  ...p,
+                  status: "error",
+                  error: "Network error — check your connection and retry.",
+                }
+              : p,
+          ),
+        );
+      };
+
+      xhr.ontimeout = () => {
+        setPendingUploads((prev) =>
+          prev.map((p) =>
+            p.id === id
+              ? {
+                  ...p,
+                  status: "error",
+                  error:
+                    "Upload timed out. The file may be too large or your connection too slow. Try again or use a smaller file.",
+                }
+              : p,
+          ),
+        );
+      };
+
+      xhr.open("POST", "/api/vault/upload");
+      xhr.send(formData);
+    },
+    [revalidate],
+  );
+
+  const uploadFile = useCallback(
+    (file: File) => startUpload(file, currentFolderId),
+    [startUpload, currentFolderId],
+  );
 
   // ─── Owner groupings for shared section ───────────────────────────────────
   const sharedByOwner = sharedFolders.reduce<
@@ -1147,11 +1311,9 @@ export default function VaultPage() {
                 </button>
                 <button
                   className="vault-toolbar-btn"
-                  style={{ opacity: uploading ? 0.6 : 1 }}
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
                 >
-                  {uploading ? "Uploading…" : "↑ Upload File"}
+                  ↑ Upload File
                 </button>
                 <input
                   ref={fileInputRef}
@@ -1159,7 +1321,10 @@ export default function VaultPage() {
                   style={{ display: "none" }}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) uploadFile(file);
+                    if (file) {
+                      uploadFile(file);
+                      e.target.value = ""; // allow re-selecting the same file
+                    }
                   }}
                 />
               </div>
@@ -1167,7 +1332,7 @@ export default function VaultPage() {
           </div>
 
           {/* File grid */}
-          {visibleFiles.length === 0 ? (
+          {visibleFiles.length === 0 && pendingForCurrentFolder.length === 0 ? (
             <div
               className="text-sm font-mono subtle-text"
               style={{ padding: "40px 0", textAlign: "center" }}
@@ -1184,6 +1349,26 @@ export default function VaultPage() {
                 gap: "12px",
               }}
             >
+              {/* In-progress and errored upload placeholders */}
+              {pendingForCurrentFolder.map((upload) => (
+                <UploadPlaceholderCard
+                  key={upload.id}
+                  upload={upload}
+                  onRetry={() => {
+                    setPendingUploads((prev) =>
+                      prev.filter((p) => p.id !== upload.id),
+                    );
+                    startUpload(upload.file, upload.targetFolderId);
+                  }}
+                  onDismiss={() =>
+                    setPendingUploads((prev) =>
+                      prev.filter((p) => p.id !== upload.id),
+                    )
+                  }
+                />
+              ))}
+
+              {/* Completed files */}
               {visibleFiles.map((file) => {
                 const locked = isFileRefLocked(file);
                 // Don't allow the inline rename widget for locked files

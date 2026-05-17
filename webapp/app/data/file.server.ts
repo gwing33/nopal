@@ -1,3 +1,4 @@
+import { Readable } from "node:stream";
 import {
   S3Client,
   PutObjectCommand,
@@ -104,6 +105,39 @@ export async function downloadAndUploadToS3(
     return await uploadPublicFileToS3(buffer, filename);
   } catch (err) {
     console.error("Error downloading and uploading file:", err);
+    throw err;
+  }
+}
+
+/**
+ * Stream a Web API File directly to S3 without ever buffering it fully in Node
+ * heap memory. Pass ContentLength so S3/the SDK knows when the stream ends.
+ * Use this for large-file uploads where loading the whole file into a Buffer
+ * would exhaust available memory.
+ */
+export async function uploadFileToS3(
+  file: File,
+  filename: string,
+): Promise<string> {
+  const client = createS3Client();
+  // Convert the Web ReadableStream to a Node.js Readable so AWS SDK v3
+  // can pipe it without needing to buffer the entire payload.
+  const nodeStream = Readable.fromWeb(
+    file.stream() as import("stream/web").ReadableStream<Uint8Array>,
+  );
+  const putCommand = new PutObjectCommand({
+    Bucket: process.env.BUCKET_NAME,
+    Key: filename,
+    Body: nodeStream,
+    ContentType: file.type || getFileContentType(filename),
+    ContentLength: file.size,
+    ACL: ObjectCannedACL.public_read,
+  });
+  try {
+    await client.send(putCommand);
+    return getPublicFileUrl(filename);
+  } catch (err) {
+    console.error("Error streaming file to S3:", err);
     throw err;
   }
 }

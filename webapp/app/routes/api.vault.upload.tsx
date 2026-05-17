@@ -1,6 +1,6 @@
 import type { ActionFunctionArgs } from "react-router";
 import { getUser } from "../modules/auth/auth.server";
-import { uploadPublicFileToS3 } from "../data/file.server";
+import { uploadFileToS3 } from "../data/file.server";
 import { createFileRef } from "../data/vault.server";
 
 /**
@@ -31,13 +31,12 @@ export async function action({ request }: ActionFunctionArgs) {
     return Response.json({ error: "No file provided" }, { status: 400 });
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const folderSegment = folderId ?? "root";
   const s3Key = `vault/${user._id}/${folderSegment}/${Date.now()}-${safeName}`;
 
   try {
-    const url = await uploadPublicFileToS3(buffer, s3Key);
+    const url = await uploadFileToS3(file, s3Key);
 
     const fileRef = await createFileRef({
       human_id: user._id,
