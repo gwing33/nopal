@@ -164,6 +164,36 @@ export async function updateVaultFolder(
   return result ? formatRecord(result as unknown as VaultFolder) : undefined;
 }
 
+/**
+ * Updates `shared_with` on a folder AND every descendant folder.
+ *
+ * Use this instead of `updateVaultFolder` whenever the sharing setting
+ * changes so sub-folders (and the files inside them) are always visible to
+ * exactly the same audience as their parent.
+ */
+export async function cascadeShareVaultFolder(
+  folderId: string,
+  shared_with: string[] | "everyone",
+): Promise<VaultFolder | undefined> {
+  const now = new Date().toISOString();
+
+  // Update the target folder itself
+  const rootResult = await merge("vault_folders", folderId, {
+    shared_with,
+    updated_at: now,
+  });
+
+  // Propagate to every descendant (depth-first via the existing helper)
+  const descendantIds = await getAllNestedFolderIds(folderId);
+  for (const id of descendantIds) {
+    await merge("vault_folders", id, { shared_with, updated_at: now });
+  }
+
+  return rootResult
+    ? formatRecord(rootResult as unknown as VaultFolder)
+    : undefined;
+}
+
 async function getAllNestedFolderIds(parentId: string): Promise<string[]> {
   const result = await query<[VaultFolder[]]>(
     `SELECT * FROM vault_folders WHERE parent_folder_id = $parentId`,

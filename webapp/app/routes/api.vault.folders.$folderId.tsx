@@ -3,6 +3,7 @@ import { getUser } from "../modules/auth/auth.server";
 import {
   getFolderById,
   updateVaultFolder,
+  cascadeShareVaultFolder,
   deleteVaultFolderCascade,
 } from "../data/vault.server";
 
@@ -36,11 +37,22 @@ export async function action({ request, params }: ActionFunctionArgs) {
       shared_with?: string[] | "everyone";
     };
 
-    const updates: Parameters<typeof updateVaultFolder>[1] = {};
-    if (body.name !== undefined) updates.name = body.name;
-    if (body.shared_with !== undefined) updates.shared_with = body.shared_with;
+    let updated;
 
-    const updated = await updateVaultFolder(folderId, updates);
+    if (body.shared_with !== undefined) {
+      // Apply any non-sharing changes (e.g. rename) first, then cascade the
+      // new sharing setting to this folder AND all of its descendants.
+      if (body.name !== undefined) {
+        await updateVaultFolder(folderId, { name: body.name });
+      }
+      updated = await cascadeShareVaultFolder(folderId, body.shared_with);
+    } else {
+      // Name-only (or other non-sharing) update — no cascade needed.
+      const updates: Parameters<typeof updateVaultFolder>[1] = {};
+      if (body.name !== undefined) updates.name = body.name;
+      updated = await updateVaultFolder(folderId, updates);
+    }
+
     return Response.json({ folder: updated });
   }
 
