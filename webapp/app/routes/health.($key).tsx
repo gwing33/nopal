@@ -1,7 +1,7 @@
 import type { Collection } from "../data/generic.server";
 import type { MaterialRecord } from "../data/notion/types";
-import { useLoaderData, useLocation, useNavigate } from "@remix-run/react";
-import type { LoaderFunctionArgs } from "@remix-run/node";
+import { useLoaderData, useLocation, useNavigate } from "react-router";
+import type { LoaderFunctionArgs } from "react-router";
 import { GbScore } from "../components/GbScore";
 import { NotionText } from "../components/NotionText";
 import { GoodArrow } from "../components/GoodAssets";

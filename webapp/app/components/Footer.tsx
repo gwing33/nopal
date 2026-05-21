@@ -1,4 +1,4 @@
-import { Link, NavLink } from "@remix-run/react";
+import { Link, NavLink } from "react-router";
 import { ReactNode } from "react";
 
 function ContactUsLinks() {
@@ -51,6 +51,13 @@ export function FooterBase({ children }: { children?: ReactNode }) {
             to="/tools"
           >
             Tools
+          </NavLink>
+          <NavLink
+            prefetch="render"
+            className="ml-4 hover:underline text-nowrap"
+            to="/login"
+          >
+            Login
           </NavLink>
           <NavLink
             prefetch="render"

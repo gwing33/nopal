@@ -1,6 +1,6 @@
 import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
-import type { LinksFunction, MetaFunction } from "@remix-run/node";
+import type { LinksFunction, MetaFunction } from "react-router";
 import sunnyHomeStyles from "../styles/sunnyHome.css?url";
 import { ZoomImg } from "../components/ZoomImg";
 

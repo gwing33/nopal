@@ -1,0 +1,551 @@
+/* ── Vault layout ────────────────────────────────────────────────────────── */
+
+.vault-layout {
+  display: flex;
+  height: 100%;
+  min-height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+.vault-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--foreground);
+  overflow-y: auto;
+  padding: 16px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--farground);
+  @media (prefers-color-scheme: dark) {
+    background: var(--dark-farground);
+    border-color: var(--dark-foreground);
+  }
+}
+
+.vault-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Sidebar toggle button (hidden on desktop) ──────────────────────────── */
+
+.vault-sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--foreground);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 5px 9px;
+  line-height: 1;
+  flex-shrink: 0;
+  color: var(--text-subtle);
+  @media (prefers-color-scheme: dark) {
+    border-color: var(--dark-foreground);
+    color: var(--text-subtle-dark);
+  }
+}
+
+/* ── Backdrop (hidden on desktop) ────────────────────────────────────────── */
+
+.vault-sidebar-backdrop {
+  display: none;
+}
+
+/* ── Mobile: sidebar becomes a fixed slide-in drawer ────────────────────── */
+
+@media (max-width: 859px) {
+  .vault-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 200;
+    width: 280px;
+    transform: translateX(-100%);
+    transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .vault-sidebar--open {
+    transform: translateX(0);
+  }
+
+  .vault-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 199;
+  }
+
+  /* Show backdrop only when open */
+  .vault-sidebar-backdrop--visible {
+    display: block;
+  }
+
+  .vault-sidebar-toggle {
+    display: flex;
+  }
+}
+
+/* ── Sidebar close row (mobile only — sits at top of the drawer) ────────── */
+
+.vault-sidebar-close-row {
+  display: none; /* hidden on desktop — sidebar is always open there */
+  justify-content: flex-end;
+  align-items: center;
+  padding: 10px 8px 8px;
+  border-bottom: 1px solid var(--foreground);
+  margin-bottom: 6px;
+  flex-shrink: 0;
+  @media (prefers-color-scheme: dark) {
+    border-color: var(--dark-foreground);
+  }
+}
+
+@media (max-width: 859px) {
+  .vault-sidebar-close-row {
+    display: flex;
+  }
+}
+
+/* ── Sidebar items ───────────────────────────────────────────────────────── */
+
+/* Collapsible section header (My Files, Shared with me) */
+.vault-section-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--purple-light);
+  @media (prefers-color-scheme: dark) {
+    color: var(--moon);
+  }
+}
+
+/* Root / generic sidebar row button */
+.vault-sidebar-item {
+  display: flex;
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  padding: 4px 8px;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  color: var(--text-subtle);
+  font-weight: normal;
+  transition: background 100ms;
+  @media (prefers-color-scheme: dark) {
+    color: var(--text-subtle-dark);
+  }
+}
+.vault-sidebar-item:hover {
+  background: var(--midground);
+  @media (prefers-color-scheme: dark) {
+    background: var(--dark-midground);
+  }
+}
+.vault-sidebar-item--active {
+  color: var(--purple);
+  background: var(--midground);
+  font-weight: bold;
+  @media (prefers-color-scheme: dark) {
+    color: white;
+    background: var(--dark-midground);
+  }
+}
+
+/* ── Folder tree item ────────────────────────────────────────────────────── */
+
+.vault-folder-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-radius: 5px;
+  padding: 1px 4px 1px 2px;
+  position: relative;
+}
+
+/* Expand / collapse chevron — large enough for reliable finger taps */
+.vault-folder-expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  min-height: 28px;
+  padding: 0;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--purple-light);
+  border-radius: 4px;
+  transition:
+    background 100ms,
+    color 100ms;
+  @media (prefers-color-scheme: dark) {
+    color: var(--moon);
+  }
+}
+.vault-folder-expand-btn:hover {
+  background: var(--midground);
+  @media (prefers-color-scheme: dark) {
+    background: var(--dark-midground);
+  }
+}
+
+/* Invisible spacer so folder names stay aligned when there’s no expand btn */
+.vault-folder-expand-spacer {
+  width: 28px;
+  flex-shrink: 0;
+}
+.vault-folder-row:hover .vault-folder-menu-trigger {
+  opacity: 1;
+}
+.vault-folder-row--active {
+  background: var(--midground);
+  @media (prefers-color-scheme: dark) {
+    background: var(--dark-midground);
+  }
+}
+
+.vault-folder-name-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  flex: 1;
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  color: var(--text-subtle);
+  font-weight: normal;
+  padding: 3px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  @media (prefers-color-scheme: dark) {
+    color: var(--text-subtle-dark);
+  }
+}
+.vault-folder-name-btn--active {
+  color: var(--purple);
+  font-weight: bold;
+  @media (prefers-color-scheme: dark) {
+    color: white;
+  }
+}
+
+.vault-folder-menu-trigger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+  opacity: 0;
+  transition: opacity 150ms;
+  color: var(--text-subtle);
+  @media (prefers-color-scheme: dark) {
+    color: var(--text-subtle-dark);
+  }
+}
+
+.vault-folder-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: white;
+  border: 1px solid var(--foreground);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 50;
+  min-width: 120px;
+  overflow: hidden;
+  @media (prefers-color-scheme: dark) {
+    background: var(--dark-farground);
+    border-color: var(--dark-foreground);
+  }
+}
+
+.vault-folder-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  color: inherit;
+}
+.vault-folder-menu-item:hover {
+  background: var(--farground);
+  @media (prefers-color-scheme: dark) {
+    background: var(--dark-midground);
+  }
+}
+.vault-folder-menu-item--danger {
+  color: var(--red);
+  @media (prefers-color-scheme: dark) {
+    color: var(--red-light);
+  }
+}
+
+/* ── File cards ──────────────────────────────────────────────────────────── */
+
+.vault-file-card {
+  border: 1px solid var(--foreground);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--farground);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  @media (prefers-color-scheme: dark) {
+    border-color: var(--dark-foreground);
+    background: var(--dark-farground);
+  }
+}
+.vault-file-card:hover .vault-file-actions {
+  opacity: 1;
+}
+.vault-file-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 150ms;
+}
+
+/* Small icon-button used inside file cards */
+.vault-action-btn {
+  background: white;
+  border: 1px solid var(--foreground);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 5px;
+  line-height: 1.4;
+  @media (prefers-color-scheme: dark) {
+    background: var(--dark-farground);
+    border-color: var(--dark-foreground);
+  }
+}
+.vault-action-btn--danger {
+  color: var(--red);
+  @media (prefers-color-scheme: dark) {
+    color: var(--red-light);
+  }
+}
+
+/* ── Inline inputs (rename / new folder) ────────────────────────────────── */
+
+.vault-inline-input {
+  border: 1px solid var(--purple-light);
+  border-radius: 4px;
+  padding: 3px 6px;
+  background: white;
+  color: var(--purple);
+  outline: none;
+  font-family: var(--font-mono, monospace);
+  font-size: 13px;
+  @media (prefers-color-scheme: dark) {
+    background: var(--dark-midground);
+    color: white;
+    border-color: var(--moon);
+  }
+}
+
+/* ── Modals ──────────────────────────────────────────────────────────────── */
+
+.vault-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.vault-modal {
+  background: white;
+  border: 1px solid var(--foreground);
+  border-radius: 10px;
+  padding: 24px;
+  width: 100%;
+  max-width: 400px;
+  @media (prefers-color-scheme: dark) {
+    background: var(--dark-farground);
+    border-color: var(--dark-foreground);
+    color: white;
+  }
+}
+
+.vault-modal-title {
+  font-weight: bold;
+  font-size: 0.875rem;
+  font-family: var(--font-mono, monospace);
+  color: var(--purple-light);
+  margin-bottom: 16px;
+  @media (prefers-color-scheme: dark) {
+    color: var(--moon);
+  }
+}
+
+/* Human list inside share modal */
+.vault-human-list {
+  border: 1px solid var(--foreground);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  max-height: 220px;
+  overflow-y: auto;
+  @media (prefers-color-scheme: dark) {
+    border-color: var(--dark-foreground);
+  }
+}
+
+.vault-human-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--midground);
+  background: transparent;
+  @media (prefers-color-scheme: dark) {
+    border-color: var(--dark-midground);
+  }
+}
+.vault-human-row--checked {
+  background: var(--farground);
+  @media (prefers-color-scheme: dark) {
+    background: var(--dark-midground);
+  }
+}
+.vault-human-row:last-child {
+  border-bottom: none;
+}
+
+/* MD editor modal textarea */
+.vault-md-textarea {
+  flex: 1;
+  resize: none;
+  border: none;
+  outline: none;
+  padding: 12px;
+  font-family: var(--font-mono, monospace);
+  font-size: 14px;
+  line-height: 1.6;
+  background: white;
+  color: var(--purple);
+  @media (prefers-color-scheme: dark) {
+    background: var(--dark-farground);
+    color: white;
+  }
+}
+
+/* Move modal option row */
+.vault-move-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.vault-move-option:hover {
+  background: var(--farground);
+  @media (prefers-color-scheme: dark) {
+    background: var(--dark-midground);
+  }
+}
+
+/* Breadcrumb / header row in right panel */
+.vault-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--foreground);
+  @media (prefers-color-scheme: dark) {
+    border-color: var(--dark-foreground);
+  }
+}
+
+/* Small toolbar button (+ New Folder, Upload, etc.) */
+.vault-toolbar-btn {
+  background: none;
+  border: 1px solid var(--foreground);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  color: var(--text-subtle);
+  @media (prefers-color-scheme: dark) {
+    border-color: var(--dark-foreground);
+    color: var(--text-subtle-dark);
+  }
+}
+.vault-toolbar-btn:hover {
+  border-color: var(--purple-light);
+  color: var(--purple-light);
+  @media (prefers-color-scheme: dark) {
+    border-color: var(--moon);
+    color: var(--moon);
+  }
+}
+
+/* ── Upload progress ─────────────────────────────────────────────────────── */
+
+.vault-upload-progress {
+  width: 100%;
+  height: 4px;
+  background: var(--foreground);
+  border-radius: 2px;
+  overflow: hidden;
+  @media (prefers-color-scheme: dark) {
+    background: var(--dark-foreground);
+  }
+}
+
+.vault-upload-progress-fill {
+  height: 100%;
+  background: var(--purple-light);
+  border-radius: 2px;
+  transition: width 0.15s ease;
+  @media (prefers-color-scheme: dark) {
+    background: var(--moon);
+  }
+}
+
+/* Placeholder card shown while a file is uploading or in an error state */
+.vault-upload-placeholder {
+  /* Inherits .vault-file-card styles */
+  opacity: 0.9;
+}

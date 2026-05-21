@@ -7,13 +7,12 @@ import {
   useRouteError,
   isRouteErrorResponse,
   useNavigation,
-} from "@remix-run/react";
+} from "react-router";
 import {
   MetaFunction,
   LinksFunction,
-  json,
   type LoaderFunctionArgs,
-} from "@remix-run/node";
+} from "react-router";
 import styles from "./styles/root.css?url";
 import faviconAppleTouch from "./images/favicon/apple-touch-icon.png";
 import favicon32 from "./images/favicon/favicon-32x32.png";
@@ -178,9 +177,9 @@ export type RootLoaderData = {
 };
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  return json({
+  return {
     requestInfo: {
       clientHints: getClientHints(request),
     },
-  });
+  };
 }

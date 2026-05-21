@@ -1,4 +1,4 @@
-import { Link } from "@remix-run/react";
+import { Link } from "react-router";
 import { SyntheticEvent } from "react";
 
 type Props = {

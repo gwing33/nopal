@@ -7,15 +7,17 @@ type InputProps = {
   value?: string;
   defaultValue?: string;
   onChange?: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => void;
   required?: boolean;
   onFocus?: FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
   onBlur?: FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
+  className?: string;
+  placeholder?: string;
 };
 
 export function Input(props: InputProps) {
-  const { type = "text", name, defaultValue, value } = props;
+  const { type = "text", name, defaultValue, value, placeholder } = props;
 
   const commonProps = {
     defaultValue,
@@ -26,11 +28,13 @@ export function Input(props: InputProps) {
     onBlur: props.onBlur,
     autoComplete: "off",
     required: props.required,
+    className: props.className,
+    placeholder,
   };
 
   return (
-    <div className="flex flex-col">
-      <label className="text-sm" htmlFor={name}>
+    <div className="flex flex-col input-component">
+      <label className="purple-text font-bold" htmlFor={name}>
         {props.label}
       </label>
       {type == "textarea" ? (

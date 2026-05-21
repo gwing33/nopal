@@ -1,8 +1,8 @@
-import { Link } from "@remix-run/react";
+import { Link } from "react-router";
 import { GoodContact, GoodButtonArchitecture } from "../components/GoodAssets";
 import { Layout } from "../components/Layout";
 import goodsStyles from "../styles/goods.css?url";
-import { LinksFunction } from "@remix-run/node";
+import { LinksFunction } from "react-router";
 import { FooterDiscovery } from "../components/Footer";
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: goodsStyles },

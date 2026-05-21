@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
-import type { MetaFunction } from "@remix-run/node";
+import type { MetaFunction } from "react-router";
 
 export const meta: MetaFunction = () => [
   { title: "Building Envelope | Nopal" },

@@ -1,4 +1,6 @@
-import { ReactNode } from "react";
+import { render } from "@react-email/render";
+import { ReactNode, ReactElement } from "react";
+import { createTransport } from "nodemailer";
 import { Resend } from "resend";
 
 export type SendEmailBody = {
@@ -7,20 +9,70 @@ export type SendEmailBody = {
   react: ReactNode;
 };
 
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
+const isDev = process.env.NODE_ENV === "development";
+
+const resend =
+  !isDev && process.env.RESEND_API_KEY
+    ? new Resend(process.env.RESEND_API_KEY)
+    : undefined;
+
+const smtpTransport = isDev
+  ? createTransport({
+      host: process.env.SMTP_HOST ?? "localhost",
+      port: Number(process.env.SMTP_PORT ?? 1025),
+      secure: false,
+      auth: undefined,
+    })
   : undefined;
 
 export async function sendEmail({ to, subject, react }: SendEmailBody) {
-  if (!resend) {
-    console.log("No RESEND_API_KEY, email not sent.", { to, subject });
-    return;
+  if (smtpTransport) {
+    console.log("[email] Sending via SMTP (Mailpit)...", {
+      host: process.env.SMTP_HOST ?? "localhost",
+      port: process.env.SMTP_PORT ?? 1025,
+      to,
+      subject,
+    });
+    const html = await render(react as ReactElement);
+    const result = await smtpTransport.sendMail({
+      from: "Nopal Rowbot <rowbot@nopal.build>",
+      to: to.join(", "),
+      subject,
+      html,
+    });
+    console.log("[email] Sent via SMTP (Mailpit).", {
+      messageId: result.messageId,
+      accepted: result.accepted,
+      rejected: result.rejected,
+      to,
+      subject,
+    });
+    return result;
   }
-  return resend.emails.send({
-    from: "Nopal Rowbot <rowbot@nopal.build>",
+
+  if (resend) {
+    console.log("[email] Sending via Resend...", { to, subject });
+    const result = await resend.emails.send({
+      from: "Nopal Rowbot <rowbot@nopal.build>",
+      to,
+      subject,
+      react,
+    });
+    if (result.error) {
+      console.error("[email] Resend error:", result.error);
+    } else {
+      console.log("[email] Sent via Resend.", {
+        id: result.data?.id,
+        to,
+        subject,
+      });
+    }
+    return result;
+  }
+
+  console.log("[email] No RESEND_API_KEY or SMTP config, email not sent.", {
     to,
     subject,
-    react,
   });
 }
 
@@ -44,7 +96,5 @@ export async function subscribeToNewsletter({
     return;
   }
 
-  if (resend) {
-    await resend.contacts.create({ email, firstName, lastName });
-  }
+  await resend.contacts.create({ email, firstName, lastName });
 }

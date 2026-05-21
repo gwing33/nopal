@@ -1,7 +1,7 @@
 import { Layout } from "../components/Layout";
 import projectStyles from "../styles/project.css?url";
 import goodsStyles from "../styles/goods.css?url";
-import { LinksFunction } from "@remix-run/node";
+import { LinksFunction } from "react-router";
 import { FooterDiscovery } from "../components/Footer";
 import { GoodContact, GoodButtonGuiding } from "../components/GoodAssets";
 

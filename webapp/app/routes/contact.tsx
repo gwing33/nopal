@@ -1,8 +1,8 @@
 import { Layout } from "../components/Layout";
 import { FooterDiscovery } from "../components/Footer";
-import { Form, useActionData } from "@remix-run/react";
+import { Form, useActionData } from "react-router";
 import { useEffect, useState } from "react";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { subscribeToNewsletter } from "../util/email.server";
 import { useUserPrefs } from "../hooks/useUserPrefs";
 
