@@ -469,6 +469,8 @@ export function getFileContentType(filename: string): string {
       return "application/pdf";
     case "h264":
       return "video/h264";
+    case "zip":
+      return "application/zip";
     default:
       return "application/octet-stream";
   }

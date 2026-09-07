@@ -1,43 +1,35 @@
-import type { LoaderFunctionArgs } from "react-router";
-import archiver from "archiver";
+import type { ActionFunctionArgs } from "react-router";
 import {
-  getFileRefById,
   getFolderById,
   listFolderChildren,
   resolvePublicRootFolder,
 } from "robustness-core/data/vault.server";
-import { downloadFileBytes } from "robustness-core/data/file.server";
+import {
+  computeFolderZipFingerprint,
+  ensurePublicZipJob,
+} from "robustness-core/data/publicZip.server";
 
 /**
- * GET /api/vault/public-folders/:folderId/zip
+ * POST /api/vault/public-folders/:folderId/zip
  *
- * "Download all" for a published folder, as ONE .zip — the client just
- * navigates an `<a href>` here (see `public.folder.$folderId.tsx`), same
- * as the plain single-file `/api/vault/public-download/:fileId` link that
- * already worked reliably. This replaces an earlier approach that fetched
- * each file individually client-side and Blob-downloaded them one at a
- * time: besides being N round trips instead of one, browsers (Chrome in
- * particular) throttle/gate automatic multi-file downloads triggered by a
- * page after just a handful, silently stalling the rest with no error to
- * catch. A single zip is a single download, so that gate never engages.
+ * Enqueues (or reuses — see `publicZip.server.ts`) a background job that
+ * zips every direct child file of a published folder. Returns immediately
+ * with a job id; the client polls `GET /api/vault/public-zips/:jobId` for
+ * progress and the eventual download link — same enqueue-then-poll shape
+ * GraphLog's own `api.graphlog.*` routes use.
  *
- * DIRECT child files only — same boundary the on-page listing and the
- * old download-manifest route used, and for the same reason: a nested
- * sub-folder isn't included (visit that sub-folder's own public page to
- * download it separately). Zip entries COULD preserve a nested path, but
- * that's more than what's needed here today.
+ * Doing this as a real background job (rather than zipping inline here
+ * and streaming the result back) fixes two real problems the inline
+ * version had: a big folder of photos could take long enough to make the
+ * request feel hung with zero feedback, and there was no way to reuse the
+ * same zip across repeat clicks — every "Download all" re-zipped from
+ * scratch even when nothing had changed.
  *
- * Buffers every file fully in memory (both each original, one at a time
- * via `downloadFileBytes`, and the assembled zip itself) rather than
- * streaming — same tradeoff already made by `public-share`/`public-thumb`
- * for this feature, simpler to get right than wiring a Node stream through
- * this app's Response/Express layers. Fine for a folder of photos; a
- * folder of many huge files would be a reason to revisit this.
- *
- * 404 (not 403) whenever the folder isn't public, so this can't be used to
- * probe which folder ids exist.
+ * No auth required, gated purely by the folder being published (or
+ * sitting inside a published ancestor) — same 404-not-403 rule
+ * `/public/folder/:folderId` itself uses.
  */
-export async function loader({ params }: LoaderFunctionArgs) {
+export async function action({ params }: ActionFunctionArgs) {
   const { folderId } = params;
   if (!folderId) {
     return Response.json({ error: "folderId required" }, { status: 400 });
@@ -58,73 +50,15 @@ export async function loader({ params }: LoaderFunctionArgs) {
     return Response.json({ error: "This folder has no files to download" }, { status: 400 });
   }
 
-  // Zip entry names must be unique — collide-avoid rather than clobber a
-  // same-named file, however unlikely that is to occur in practice.
-  const usedNames = new Set<string>();
-  const dedupeName = (name: string): string => {
-    if (!usedNames.has(name)) {
-      usedNames.add(name);
-      return name;
-    }
-    const dot = name.lastIndexOf(".");
-    const base = dot > 0 ? name.slice(0, dot) : name;
-    const ext = dot > 0 ? name.slice(dot) : "";
-    let candidate = name;
-    for (let i = 2; usedNames.has(candidate); i++) {
-      candidate = `${base} (${i})${ext}`;
-    }
-    usedNames.add(candidate);
-    return candidate;
-  };
-
-  const entries: Array<{ name: string; bytes: Buffer }> = [];
-  for (const listing of files) {
-    try {
-      const file = await getFileRefById(listing._id);
-      if (!file) continue;
-
-      let bytes: Buffer;
-      if (file.s3_key) {
-        bytes = await downloadFileBytes(file.s3_key);
-      } else if (file.content != null) {
-        bytes = Buffer.from(file.content, "utf-8");
-      } else {
-        continue;
-      }
-      entries.push({ name: dedupeName(file.name), bytes });
-    } catch (err) {
-      // Skip this one file; the rest of the zip still gets built.
-      console.error(`Skipping ${listing.name} in public zip:`, err);
-    }
+  try {
+    const fingerprint = computeFolderZipFingerprint(files);
+    const jobId = await ensurePublicZipJob(folderId, fingerprint);
+    return Response.json({ jobId }, { status: 202 });
+  } catch (err) {
+    console.error("Failed to enqueue public zip job:", err);
+    return Response.json(
+      { error: err instanceof Error ? err.message : "Failed to start zip" },
+      { status: 500 },
+    );
   }
-
-  if (!entries.length) {
-    return Response.json({ error: "Couldn't load any files to zip" }, { status: 500 });
-  }
-
-  const zipBuffer = await new Promise<Buffer>((resolve, reject) => {
-    const archive = archiver("zip", { zlib: { level: 6 } });
-    const chunks: Buffer[] = [];
-    archive.on("data", (chunk: Buffer) => chunks.push(chunk));
-    archive.on("end", () => resolve(Buffer.concat(chunks)));
-    archive.on("error", reject);
-    archive.on("warning", (err) => {
-      if (err.code !== "ENOENT") reject(err);
-    });
-
-    for (const entry of entries) {
-      archive.append(entry.bytes, { name: entry.name });
-    }
-    archive.finalize();
-  });
-
-  const safeFolderName = (folder.name || "download").replace(/[^a-zA-Z0-9._-]/g, "_");
-
-  return new Response(new Uint8Array(zipBuffer), {
-    headers: {
-      "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="${safeFolderName}.zip"`,
-      "Content-Length": String(zipBuffer.length),
-    },
-  });
 }

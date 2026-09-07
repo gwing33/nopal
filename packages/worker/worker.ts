@@ -44,6 +44,13 @@ import {
   startAdminScriptRun,
   finishAdminScriptRun,
 } from "robustness-core/data/adminScriptRuns.server";
+import {
+  PUBLIC_ZIP_QUEUE_NAME,
+  runPublicFolderZip,
+  type PublicZipJobData,
+  type PublicZipJobResult,
+  type PublicZipProgress,
+} from "robustness-core/data/publicZip.server";
 
 const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
 // Sequential per worker process on purpose — this worker's own
@@ -305,6 +312,44 @@ console.log(
   `[worker] Admin scripts worker listening on queue "${ADMIN_SCRIPTS_QUEUE_NAME}" (concurrency ${ADMIN_SCRIPTS_CONCURRENCY}).`,
 );
 
+// ─── Public folder zip ("Download all" on /public/folder/:folderId) ──────────────────
+// See `publicZip.server.ts`'s own module doc for the caching/dedup shape.
+// No per-folder lock needed like GraphLog's -- two concurrent jobs for the
+// SAME (folder, fingerprint) can't happen at all (`ensurePublicZipJob`
+// only ever enqueues one), and two DIFFERENT folders zipping at once is
+// perfectly fine to run in parallel.
+const PUBLIC_ZIP_CONCURRENCY = 2;
+
+async function processPublicZipJob(
+  job: Job<PublicZipJobData, PublicZipJobResult, string>,
+): Promise<PublicZipJobResult> {
+  return runPublicFolderZip(job.data.folderId, (progress: PublicZipProgress) => {
+    job.updateProgress(progress).catch((err) => console.error("Failed to update zip job progress:", err));
+  });
+}
+
+const publicZipWorker = new Worker<PublicZipJobData, PublicZipJobResult, string>(
+  PUBLIC_ZIP_QUEUE_NAME,
+  processPublicZipJob,
+  {
+    connection: { url: REDIS_URL, maxRetriesPerRequest: null },
+    concurrency: PUBLIC_ZIP_CONCURRENCY,
+  },
+);
+
+publicZipWorker.on("completed", (job) => {
+  console.log(
+    `[worker] public zip ${job.id} completed (${job.returnvalue.fileCount} files, ${job.returnvalue.size} bytes).`,
+  );
+});
+publicZipWorker.on("failed", (job, err) => {
+  console.error(`[worker] public zip ${job?.id} failed:`, err);
+});
+
+console.log(
+  `[worker] Public folder zip worker listening on queue "${PUBLIC_ZIP_QUEUE_NAME}" (concurrency ${PUBLIC_ZIP_CONCURRENCY}).`,
+);
+
 // Graceful shutdown — let an in-flight job finish (or fail cleanly) rather
 // than abandon it mid-run: GraphLog's own idempotency makes a clean
 // re-run of an ABANDONED job safe, but an UNGRACEFULLY killed one can
@@ -314,7 +359,7 @@ async function shutdown(signal: string) {
   if (shuttingDown) return;
   shuttingDown = true;
   console.log(`[worker] received ${signal}, finishing in-flight jobs before exit…`);
-  await Promise.all([graphLogWorker.close(), adminScriptsWorker.close()]);
+  await Promise.all([graphLogWorker.close(), adminScriptsWorker.close(), publicZipWorker.close()]);
   process.exit(0);
 }
 process.on("SIGTERM", () => shutdown("SIGTERM"));
