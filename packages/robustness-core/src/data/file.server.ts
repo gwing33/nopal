@@ -209,23 +209,84 @@ export async function downloadFileBytes(s3Key: string): Promise<Buffer> {
   return Buffer.from(bytes);
 }
 
+const RANGE_CHUNK_SIZE = 8 * 1024 * 1024;
+
 /**
- * Streaming counterpart to `downloadFileBytes` — returns the object's body
- * as a Node.js `Readable` instead of buffering the whole thing into memory
- * first. Used by `publicZip.server.ts` to feed each file straight into a
- * zip archive's own stream without ever holding a whole file's bytes
- * (some vault files are large photos) in memory at once. Node runtime
- * only — the SDK's response body is a real Node `Readable` here, not a
- * Web `ReadableStream`.
+ * Reads an S3 object via small, fixed-size HTTP Range requests (8MB each)
+ * rather than one open-ended GetObjectCommand covering the whole object.
+ *
+ * This exists because the plain "whole-object" streaming response Body
+ * from the AWS SDK was measured, while diagnosing a real production OOM,
+ * to NOT reliably bound memory the way a genuine incremental stream
+ * should -- a synthetic, well-behaved pull-based Readable kept archiver's
+ * own memory flat regardless of total size, but the SDK's own open-ended
+ * GetObjectCommand response stream did not behave the same way. Explicitly
+ * bounding every individual REQUEST's own response size via Range sidesteps
+ * that uncertainty entirely, regardless of the SDK/runtime/network's
+ * internal streaming behavior for an open-ended request -- each chunk is
+ * a brand new, small, self-contained HTTP response.
+ */
+class S3RangeReadStream extends Readable {
+  private position = 0;
+  private totalSize: number | null = null;
+  private reading = false;
+
+  constructor(
+    private client: S3Client,
+    private bucket: string | undefined,
+    private key: string,
+  ) {
+    super();
+  }
+
+  async _read(): Promise<void> {
+    if (this.reading) return;
+    this.reading = true;
+    try {
+      if (this.totalSize !== null && this.position >= this.totalSize) {
+        this.push(null);
+        return;
+      }
+      const end = this.position + RANGE_CHUNK_SIZE - 1;
+      const res = await this.client.send(
+        new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: this.key,
+          Range: `bytes=${this.position}-${end}`,
+        }),
+      );
+      if (this.totalSize === null) {
+        const match = res.ContentRange?.match(/\/(\d+)$/);
+        this.totalSize = match ? parseInt(match[1], 10) : null;
+      }
+      const bytes = await res.Body!.transformToByteArray();
+      this.position += bytes.length;
+      if (bytes.length === 0) {
+        this.push(null);
+        return;
+      }
+      this.push(Buffer.from(bytes));
+    } catch (err) {
+      this.destroy(err as Error);
+    } finally {
+      this.reading = false;
+    }
+  }
+}
+
+/**
+ * Streaming counterpart to downloadFileBytes -- returns the object as a
+ * Node.js Readable that internally fetches it in small Range-bounded
+ * chunks (see S3RangeReadStream above), instead of buffering the whole
+ * thing into memory first. Used by publicZip.server.ts and the public
+ * single-file share route to feed a file's bytes onward (into a zip
+ * archive, or straight through as an HTTP response body) without ever
+ * holding a whole large file (some vault files are large photos) in
+ * memory at once.
  */
 export async function downloadFileStream(s3Key: string): Promise<Readable> {
   const client = createS3Client();
-  const cmd = new GetObjectCommand({
-    Bucket: process.env.BUCKET_NAME,
-    Key: s3Key,
-  });
-  const response = await client.send(cmd);
-  return response.Body as Readable;
+  return new S3RangeReadStream(client, process.env.BUCKET_NAME, s3Key);
 }
 
 /**
