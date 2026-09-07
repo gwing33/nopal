@@ -1,0 +1,81 @@
+name: Deploy
+
+# main always: runs tests, then deploys to staging automatically.
+# Production only follows if a required reviewer approves the
+# `production` GitHub Environment (configured in repo Settings ->
+# Environments -- see db/README.md's "Staging environment" section and
+# the root README's "Deploy pipeline" section for the full picture).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: nopal-deploy-production
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter remix run test --run
+
+  deploy-staging:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+        with:
+          version: '0.4.99'
+
+      # webapp only -- staging has no worker/DB of its own, see
+      # webapp/fly.staging.toml.
+      - run: flyctl deploy . --config webapp/fly.staging.toml --dockerfile webapp/Dockerfile --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  deploy-production:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    # This is the actual approval gate -- the `production` Environment
+    # has required reviewers configured (gwing33, a-trautman), so this
+    # job pauses here until one of them approves it in the Actions UI.
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+        with:
+          version: '0.4.99'
+
+      # Same order make deploy uses: db (runs migrations via its own
+      # release_command) first, then webapp, then worker.
+      #
+      # db deploys with `working-directory: db`, NOT `--config db/fly.toml`
+      # from the repo root -- db/fly.toml has no explicit [build] context/
+      # dockerfile override, so it resolves both relative to the CURRENT
+      # directory. `make deploy`'s own `cd db && fly deploy` relies on
+      # exactly this; running it from the repo root instead would build
+      # with the wrong context.
+      - run: flyctl deploy --remote-only
+        working-directory: db
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - run: flyctl deploy . --config webapp/fly.toml --dockerfile webapp/Dockerfile --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - run: flyctl deploy . --config packages/worker/fly.toml --dockerfile packages/worker/Dockerfile --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
