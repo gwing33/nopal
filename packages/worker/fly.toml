@@ -1,25 +1,21 @@
-# fly.toml for PhyLog's queue worker — its own Fly app (see the `phylog`
-# skill's "Scaling & Process Isolation" section for why this isn't a
-# process group under the webapp app: it now has a genuinely different,
+# fly.toml for GraphLog's queue worker (app name predates the PhyLog ->
+# GraphLog rename — see the `graphlog` skill) — its own Fly app, not a
+# process group under the webapp app, since it has a genuinely different,
 # much smaller dependency graph, and scaling/deploying it independently
-# is the whole point).
-#
-# TODO before first deploy: this app doesn't exist yet. Create it first
-# (from the repo root):
-#
-#   fly apps create <a-unique-name> --org <your-org>
-#
-# then update `app` below to match, and set its secrets (same DATABASE_*/
-# S3_*/ANTHROPIC_API_KEY values as the webapp app, plus REDIS_URL once a
-# Redis instance exists — see the `phylog` skill):
-#
-#   fly secrets set -a <a-unique-name> DATABASE_URL=... REDIS_URL=... ...
+# is the whole point.
 #
 # Build context is the REPO ROOT — deploy from the repo root:
 #
 #   fly deploy . --config packages/worker/fly.toml --dockerfile packages/worker/Dockerfile
 #
-# (`make deploy` does this for you once the app exists.)
+# (`make deploy` does this for you.)
+#
+# Safe to run more than one machine: `worker.ts`'s own concurrency-safety
+# is enforced via a Redis lock per PROJECT (see worker.ts's own
+# `CONCURRENCY` comment), not by there only ever being one process —
+# BullMQ's own job-claiming means two machines pulling from the same
+# queue never double-process the same job. `fly scale count 2` for
+# redundancy is safe here without any code change.
 
 app = 'nopal-phylog-worker'
 primary_region = 'lax'
@@ -27,7 +23,12 @@ primary_region = 'lax'
 [build]
 
 # No [http_service] — this app never serves HTTP, so it gets no public
-# listener at all. It just needs to stay running to drain the queue.
+# listener at all. It just needs to stay running to drain the queue. No
+# `[deploy] strategy = 'bluegreen'` either — that requires a health check,
+# and there's no user-facing traffic to cut over for a background worker;
+# the default rolling strategy (stop old, start new) is fine, since an
+# in-flight job either finishes before its machine is replaced or gets
+# retried by BullMQ.
 [[vm]]
 memory = '1gb'
 cpu_kind = 'shared'

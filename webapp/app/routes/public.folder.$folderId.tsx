@@ -2,6 +2,7 @@
 // Public, unauthenticated folder browser — reachable once a folder (or an
 // ancestor of it) has been Published from the Vault. Read-only: no upload,
 // rename, move, delete, or share affordances exist here.
+import { useEffect, useState } from "react";
 import type { LoaderFunctionArgs, MetaFunction } from "react-router";
 import { Link, useLoaderData } from "react-router";
 import {
@@ -16,7 +17,14 @@ import { VAULT_ROOTS, isVaultRootKey } from "robustness-core/data/vaultRoots";
 import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
 import OxRenderer from "../components/OxRenderer";
-import { fileIcon, formatDate, formatSize } from "../util/publicVaultDisplay";
+import {
+  canShareImageFiles,
+  fileIcon,
+  formatDate,
+  formatSize,
+  isImageFile,
+  triggerFileDownload,
+} from "../util/publicVaultDisplay";
 import "../styles/vault.css";
 
 type Crumb = { id: string; label: string };
@@ -106,8 +114,105 @@ export default function PublicFolderPage() {
   const { crumbs, children, readme } = useLoaderData<typeof loader>();
   // Every link deeper from here carries the SAME visible boundary forward.
   const rootForLinks = crumbs[0]?.id;
+  const folderId = crumbs[crumbs.length - 1]?.id;
   const withRoot = (path: string) =>
     rootForLinks ? `${path}?root=${rootForLinks}` : path;
+
+  // "Download all" — DIRECT child files only, same non-zip, staggered-
+  // download approach as the authenticated vault (`fruits_.vault.tsx`'s
+  // `handleDownloadAll`) — see that route's download-manifest doc for why.
+  const [downloadAllProgress, setDownloadAllProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
+
+  const handleDownloadAll = async () => {
+    if (!folderId) return;
+    const res = await fetch(
+      `/api/vault/public-folders/${folderId}/download-manifest`,
+    );
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      window.alert(data?.error ?? `Request failed (${res.status})`);
+      return;
+    }
+    const files: Array<{
+      name: string;
+      url?: string;
+      content?: string;
+      contentType?: string;
+    }> = data?.files ?? [];
+    if (!files.length) return;
+
+    setDownloadAllProgress({ done: 0, total: files.length });
+    for (let i = 0; i < files.length; i++) {
+      triggerFileDownload(files[i]);
+      setDownloadAllProgress({ done: i + 1, total: files.length });
+      if (i < files.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+      }
+    }
+    setDownloadAllProgress(null);
+  };
+
+  // A folder holding only images (no sub-folders, no other file types)
+  // displays as a photo gallery grid instead of the plain listing table.
+  const isAllImageGallery =
+    children.folders.length === 0 &&
+    children.files.length > 0 &&
+    children.files.every(isImageFile);
+
+  // "Save to Photos" — mobile-only enhancement, shown alongside "Download
+  // all" rather than instead of it (desktop browsers / older mobile ones
+  // don't support this, and fall straight back to Download all). Checked
+  // client-side only (after mount) since `navigator` isn't available
+  // during SSR — defaults to hidden so there's no hydration mismatch.
+  const [canSharePhotos, setCanSharePhotos] = useState(false);
+  useEffect(() => {
+    setCanSharePhotos(canShareImageFiles());
+  }, []);
+
+  const [savePhotosProgress, setSavePhotosProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
+
+  const handleSaveToPhotos = async () => {
+    if (!children.files.length) return;
+    setSavePhotosProgress({ done: 0, total: children.files.length });
+    try {
+      const files: File[] = [];
+      for (let i = 0; i < children.files.length; i++) {
+        const listing = children.files[i];
+        try {
+          const res = await fetch(`/api/vault/public-share/${listing._id}`);
+          if (res.ok) {
+            const blob = await res.blob();
+            files.push(
+              new File([blob], listing.name, {
+                type: listing.content_type || blob.type,
+              }),
+            );
+          }
+        } catch {
+          // Skip this one file; the rest of the batch still proceeds.
+        }
+        setSavePhotosProgress({ done: i + 1, total: children.files.length });
+      }
+      if (!files.length) {
+        window.alert("Couldn't load these photos to share.");
+        return;
+      }
+      await navigator.share({ files });
+    } catch (err) {
+      // AbortError = the user dismissed the share sheet — not a real error.
+      if ((err as Error)?.name !== "AbortError") {
+        window.alert("Couldn't share these photos.");
+      }
+    } finally {
+      setSavePhotosProgress(null);
+    }
+  };
 
   return (
     <Layout>
@@ -133,15 +238,68 @@ export default function PublicFolderPage() {
               </span>
             ))}
           </h1>
-          <p
-            className="text-xs font-mono"
-            style={{ color: "var(--text-subtle)", margin: "0 0 24px" }}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "16px",
+              margin: "0 0 24px",
+            }}
           >
-            Published from Nopal
-          </p>
+            <p
+              className="text-xs font-mono"
+              style={{ color: "var(--text-subtle)", margin: 0 }}
+            >
+              Published from Nopal
+            </p>
+            {children.files.length > 0 && (
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                {isAllImageGallery && canSharePhotos && (
+                  <button
+                    className="vault-toolbar-btn"
+                    disabled={!!savePhotosProgress}
+                    onClick={handleSaveToPhotos}
+                    title="Opens your share sheet, where 'Save Image(s)' adds them straight to Photos"
+                  >
+                    {savePhotosProgress
+                      ? `Preparing ${savePhotosProgress.done}/${savePhotosProgress.total}…`
+                      : "📷 Save to Photos"}
+                  </button>
+                )}
+                <button
+                  className="vault-toolbar-btn"
+                  disabled={!!downloadAllProgress}
+                  onClick={handleDownloadAll}
+                  title="Downloads each file in this folder individually (not a zip) — sub-folders aren't included"
+                >
+                  {downloadAllProgress
+                    ? `↓ Downloading ${downloadAllProgress.done}/${downloadAllProgress.total}…`
+                    : "↓ Download all"}
+                </button>
+              </div>
+            )}
+          </div>
 
           {children.folders.length === 0 && children.files.length === 0 ? (
             <div className="vault-v2-empty">This folder is empty.</div>
+          ) : isAllImageGallery ? (
+            <div className="vault-gallery-grid">
+              {children.files.map((file) => (
+                <Link
+                  key={file._id}
+                  to={withRoot(`/public/file/${file._id}`)}
+                  className="vault-gallery-item"
+                >
+                  <img
+                    src={`/api/vault/public-view/${file._id}`}
+                    alt={file.name}
+                    loading="lazy"
+                  />
+                  <span className="vault-gallery-item-name">{file.name}</span>
+                </Link>
+              ))}
+            </div>
           ) : (
             <div className="vault-v2-listing">
               <div className="vault-v2-listing-header">

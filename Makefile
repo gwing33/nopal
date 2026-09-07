@@ -1,4 +1,4 @@
-.PHONY: dev start seed migrate migrate-prod compact-db down stop reset clean deploy restart restart-worker restart-all cli release-cli update-cli-version
+.PHONY: dev start seed migrate migrate-prod compact-db clone-staging-db down stop reset clean deploy deploy-staging restart restart-worker restart-all cli release-cli update-cli-version
 
 SURREAL_USER ?= root
 SURREAL_PASS ?= root
@@ -19,6 +19,13 @@ deploy:
 	cd db && fly deploy
 	fly deploy . --config webapp/fly.toml --dockerfile webapp/Dockerfile
 	fly deploy . --config packages/worker/fly.toml --dockerfile packages/worker/Dockerfile
+
+## Deploy the webapp ONLY, to the staging Fly app (see webapp/fly.staging.toml).
+## Staging has no worker/DB of its own — it shares prod's SurrealDB instance,
+## scoped to an isolated `staging` database (make clone-staging-db populates it).
+deploy-staging:
+	pnpm --filter remix run test --run
+	fly deploy . --config webapp/fly.staging.toml --dockerfile webapp/Dockerfile
 
 ## Start the database and webapp together, then seed the database.
 ## --build keeps the webapp/worker dev image (Dockerfile.dev) in sync
@@ -97,6 +104,14 @@ migrate-prod:
 compact-db:
 	@test -n "$(SURREAL_PASS)" || { echo "Usage: make compact-db SURREAL_PASS=<prod-pass>"; exit 1; }
 	SURREAL_PASS=$(SURREAL_PASS) DB_APP=$(DB_APP) PROXY_PORT=$(PROXY_PORT) sh db/compact.sh
+
+## Refresh the staging DB (NS nopal / DB staging) from a fresh export of
+## prod. Safe to run any time — only ever touches the isolated `staging`
+## database, never prod (`opuntia`). See db/clone-to-staging.sh.
+##   make clone-staging-db SURREAL_PASS=yourprodpassword
+clone-staging-db:
+	@test -n "$(SURREAL_PASS)" || { echo "Usage: make clone-staging-db SURREAL_PASS=<prod-pass>"; exit 1; }
+	SURREAL_PASS=$(SURREAL_PASS) DB_APP=$(DB_APP) PROXY_PORT=8082 sh db/clone-to-staging.sh
 
 ## Restart the webapp container, clearing the Vite dep cache first.
 ## Use this after package changes or whenever the dev server needs a clean

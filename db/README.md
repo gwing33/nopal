@@ -120,6 +120,29 @@ analysis and the runbook for reclaiming that space.
 
 ---
 
+## Staging environment
+
+`nopal-webapp-staging` (see `webapp/fly.staging.toml`) is a separate Fly
+app running the same webapp image as prod, pointed at an isolated
+`staging` database on this SAME SurrealDB instance/namespace — no second
+database machine to pay for or keep patched.
+
+Refresh staging from a live copy of prod whenever it's gone stale enough
+to matter (no fixed schedule needed — unlike `COMPACTION.md`'s runbook,
+this only ever touches the isolated `staging` database, never prod, so
+it's safe to run any time):
+
+```sh
+make clone-staging-db SURREAL_PASS=<prod-pass>
+```
+
+See `clone-to-staging.sh` for what it does (export prod's `opuntia` → wipe
+`staging` → reimport) and its one real limitation: it carries prod's
+schema as of that export, but not any migration that lands in `opuntia`
+*after* the export and hasn't also been applied to `staging` directly.
+
+---
+
 ## Pagination
 
 One of the first concepts I need to tackle is pagination.
