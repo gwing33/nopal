@@ -11,7 +11,7 @@
  * concurrency (they're two separate `Worker` instances in one process).
  *
  * CACHING is folded directly into the queue rather than a separate DB
- * table: a job's id IS the cache key (`<folderId>:<fingerprint>`, see
+ * table: a job's id IS the cache key (`<folderId>-<fingerprint>`, see
  * `computeFolderZipFingerprint`), and BullMQ already keeps a
  * completed/failed job's data around for a while afterward
  * (`removeOnComplete`/`removeOnFail` below). Two "Download all" clicks
@@ -90,7 +90,10 @@ export function computeFolderZipFingerprint(
 }
 
 function publicZipJobId(folderId: string, fingerprint: string): string {
-  return `${folderId}:${fingerprint}`;
+  // NOT a `:` separator -- BullMQ rejects a custom job id containing one
+  // ("Custom Id cannot contain :"), since it uses `:` internally as its
+  // own Redis key delimiter.
+  return `${folderId}-${fingerprint}`;
 }
 
 /**
