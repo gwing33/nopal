@@ -9,7 +9,7 @@ inputs:
     description: Human label for what was deployed, e.g. "staging" or "production".
     required: true
   status:
-    description: The calling job's status context (${{ job.status }}) — "success", "failure", or "cancelled".
+    description: 'The calling job''s status: pass the job context''s status field from the calling workflow (job.status) -- "success", "failure", or "cancelled". Not evaluated here: composite actions have no `job` context of their own, only the caller does.'
     required: true
 
 runs:
