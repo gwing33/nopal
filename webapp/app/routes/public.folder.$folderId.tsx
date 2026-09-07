@@ -114,41 +114,37 @@ export default function PublicFolderPage() {
   const { crumbs, children, readme } = useLoaderData<typeof loader>();
   // Every link deeper from here carries the SAME visible boundary forward.
   const rootForLinks = crumbs[0]?.id;
-  const folderId = crumbs[crumbs.length - 1]?.id;
   const withRoot = (path: string) =>
     rootForLinks ? `${path}?root=${rootForLinks}` : path;
 
-  // "Download all" — DIRECT child files only, same non-zip, staggered-
-  // download approach as the authenticated vault (`fruits_.vault.tsx`'s
-  // `handleDownloadAll`) — see that route's download-manifest doc for why.
+  // "Download all" — DIRECT child files only, fetched one at a time and
+  // Blob-downloaded via the same-origin `/api/vault/public-share/:fileId`
+  // proxy (see that route's doc). Previously this pointed an <a> straight
+  // at a presigned S3 URL, which on desktop would sometimes navigate the
+  // whole tab to the raw file instead of downloading it — a same-origin
+  // `blob:` URL's `download` attribute is always honored, so this can't
+  // happen anymore.
   const [downloadAllProgress, setDownloadAllProgress] = useState<{
     done: number;
     total: number;
   } | null>(null);
 
   const handleDownloadAll = async () => {
-    if (!folderId) return;
-    const res = await fetch(
-      `/api/vault/public-folders/${folderId}/download-manifest`,
-    );
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-      window.alert(data?.error ?? `Request failed (${res.status})`);
-      return;
-    }
-    const files: Array<{
-      name: string;
-      url?: string;
-      content?: string;
-      contentType?: string;
-    }> = data?.files ?? [];
-    if (!files.length) return;
-
-    setDownloadAllProgress({ done: 0, total: files.length });
-    for (let i = 0; i < files.length; i++) {
-      triggerFileDownload(files[i]);
-      setDownloadAllProgress({ done: i + 1, total: files.length });
-      if (i < files.length - 1) {
+    if (!children.files.length) return;
+    setDownloadAllProgress({ done: 0, total: children.files.length });
+    for (let i = 0; i < children.files.length; i++) {
+      const file = children.files[i];
+      try {
+        const res = await fetch(`/api/vault/public-share/${file._id}`);
+        if (res.ok) {
+          const blob = await res.blob();
+          triggerFileDownload({ name: file.name, blob });
+        }
+      } catch {
+        // Skip this one file; the rest of the batch still proceeds.
+      }
+      setDownloadAllProgress({ done: i + 1, total: children.files.length });
+      if (i < children.files.length - 1) {
         await new Promise((resolve) => setTimeout(resolve, 400));
       }
     }
@@ -292,7 +288,7 @@ export default function PublicFolderPage() {
                   className="vault-gallery-item"
                 >
                   <img
-                    src={`/api/vault/public-view/${file._id}`}
+                    src={`/api/vault/public-thumb/${file._id}?v=${encodeURIComponent(file.updated_at)}`}
                     alt={file.name}
                     loading="lazy"
                   />

@@ -61,6 +61,7 @@
     "bullmq": "^5.60.0",
     "ioredis": "^5.9.0",
     "oxmarkdown-core": "workspace:*",
+    "sharp": "^0.35.3",
     "surrealdb": "^1.3.2",
     "yaml": "^2.9.0"
   },

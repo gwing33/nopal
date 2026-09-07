@@ -67,15 +67,24 @@ export function canShareImageFiles(): boolean {
 }
 
 /**
- * Triggers a real browser "Save As" download from whatever a download-
- * manifest endpoint (`/api/vault/public-folders/:folderId/download-
- * manifest` or its authenticated counterpart in `fruits_.vault.tsx`)
- * handed back — an S3-backed file's presigned `url` (browser navigates
- * straight to it), or a content-only file's inline `content` (Blob-
- * download client-side, since there's no S3 object to point a URL at).
+ * Triggers a real browser "Save As" download. Accepts whichever shape the
+ * caller already has on hand:
+ *   - `blob` — an already-fetched `Blob` (e.g. from `/api/vault/public-
+ *     share/:fileId`), wrapped in a fresh object URL. THE PREFERRED path
+ *     for anything fetched same-origin: a `blob:` URL's `download`
+ *     attribute is always honored by the browser, unlike a cross-origin
+ *     `url` (see below).
+ *   - `url` — the browser navigates straight to it. Only reliable for a
+ *     SAME-ORIGIN url; a cross-origin one (e.g. a presigned S3 URL) isn't
+ *     guaranteed to have its `download` attribute honored — some browsers
+ *     will instead navigate the whole tab to it. Prefer fetching the bytes
+ *     first and passing `blob` instead wherever that's an option.
+ *   - `content` — a content-only file's inline text (no S3 object to
+ *     point a URL at), Blob-downloaded the same way `blob` is.
  */
 export function triggerFileDownload(entry: {
   name: string;
+  blob?: Blob;
   url?: string;
   content?: string;
   contentType?: string;
@@ -83,7 +92,10 @@ export function triggerFileDownload(entry: {
   const a = document.createElement("a");
   a.download = entry.name;
   let objectUrl: string | null = null;
-  if (entry.url) {
+  if (entry.blob) {
+    objectUrl = URL.createObjectURL(entry.blob);
+    a.href = objectUrl;
+  } else if (entry.url) {
     a.href = entry.url;
   } else if (entry.content !== undefined) {
     const blob = new Blob([entry.content], {
