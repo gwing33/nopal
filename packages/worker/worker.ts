@@ -334,6 +334,16 @@ const publicZipWorker = new Worker<PublicZipJobData, PublicZipJobResult, string>
   {
     connection: { url: REDIS_URL, maxRetriesPerRequest: null },
     concurrency: PUBLIC_ZIP_CONCURRENCY,
+    // BullMQ's default lock (30s, auto-renewed every ~15s) is tuned for
+    // fast jobs -- a real production incident showed a big-photo folder's
+    // zip job missing its renewal window ("could not renew lock for job
+    // ...") under memory pressure from the OLD buffer-everything
+    // implementation (see `publicZip.server.ts`'s own doc for the fix).
+    // Streaming now keeps memory far more bounded, but this is kept as a
+    // deliberate safety margin: a real GC pause or a slow file (large
+    // upload over a slow connection) has much more room before the lock
+    // renewal timer could ever miss its window again.
+    lockDuration: 10 * 60 * 1000,
   },
 );
 

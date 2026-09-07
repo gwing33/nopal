@@ -12,6 +12,7 @@ import {
 } from "@aws-sdk/client-s3";
 import type { S3ClientConfig } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Upload } from "@aws-sdk/lib-storage";
 import sharp from "sharp";
 
 // S3_ENDPOINT        – full endpoint URL for the S3 client
@@ -209,6 +210,25 @@ export async function downloadFileBytes(s3Key: string): Promise<Buffer> {
 }
 
 /**
+ * Streaming counterpart to `downloadFileBytes` — returns the object's body
+ * as a Node.js `Readable` instead of buffering the whole thing into memory
+ * first. Used by `publicZip.server.ts` to feed each file straight into a
+ * zip archive's own stream without ever holding a whole file's bytes
+ * (some vault files are large photos) in memory at once. Node runtime
+ * only — the SDK's response body is a real Node `Readable` here, not a
+ * Web `ReadableStream`.
+ */
+export async function downloadFileStream(s3Key: string): Promise<Readable> {
+  const client = createS3Client();
+  const cmd = new GetObjectCommand({
+    Bucket: process.env.BUCKET_NAME,
+    Key: s3Key,
+  });
+  const response = await client.send(cmd);
+  return response.Body as Readable;
+}
+
+/**
  * Resizes an image DOWN to fit within `maxDimension` on its longer side
  * (never upscales — `withoutEnlargement`) and re-encodes as WebP, for use
  * as a lightweight gallery thumbnail. The original bytes/format are always
@@ -362,6 +382,38 @@ export async function uploadPrivateFileToS3(
     return getPublicFileUrl(filename);
   } catch (err) {
     console.error("Error uploading file:", err);
+    throw err;
+  }
+}
+
+/**
+ * Streams an arbitrary Readable to S3 via a real multipart upload
+ * (`@aws-sdk/lib-storage`'s `Upload`, which buffers only a handful of
+ * in-flight PARTS — a few MB each — not the whole payload) rather than
+ * requiring the caller to hand over one big Buffer up front. The
+ * streaming counterpart to `uploadPrivateFileToS3`, for a caller (like
+ * `publicZip.server.ts`) that doesn't know the final byte size ahead of
+ * time — a zip's compressed size isn't known until it's fully built.
+ * Private by default (no ACL), same rule every other upload here follows.
+ */
+export async function uploadPrivateStreamToS3(
+  stream: Readable,
+  filename: string,
+): Promise<void> {
+  const client = createS3Client();
+  const upload = new Upload({
+    client,
+    params: {
+      Bucket: process.env.BUCKET_NAME,
+      Key: filename,
+      Body: stream,
+      ContentType: getFileContentType(filename),
+    },
+  });
+  try {
+    await upload.done();
+  } catch (err) {
+    console.error("Error streaming file to S3:", err);
     throw err;
   }
 }
