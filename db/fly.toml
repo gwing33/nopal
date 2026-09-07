@@ -27,3 +27,9 @@ cpus = 1
 [mounts]
 source = "data"
 destination = "/data"
+# Safety net: automatically grow the volume before it fills up, instead of
+# failing writes. Triggers at 80% used, adds 2GB at a time, caps at 20GB.
+# See https://fly.io/docs/reference/configuration/#auto-extend-volume-size-configuration
+auto_extend_size_threshold = 80
+auto_extend_size_increment = "2GB"
+auto_extend_size_limit = "20GB"

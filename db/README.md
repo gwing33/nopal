@@ -107,6 +107,19 @@ A unique index on `name` ensures each migration is recorded only once. Before ap
 
 ---
 
+## Disk space & compaction
+
+The Fly volume backing this database auto-extends when it crosses 80% usage
+(see `[mounts]` in `fly.toml`), and `start.sh` runs a background watchdog that
+logs (and can alert via `DISK_ALERT_WEBHOOK_URL`) at 75%/90% usage.
+
+SurrealDB's `surrealkv` storage engine doesn't currently compact its value
+log automatically, so disk usage can grow well beyond the size of the live
+dataset over time. See [`COMPACTION.md`](./COMPACTION.md) for the root-cause
+analysis and the runbook for reclaiming that space.
+
+---
+
 ## Pagination
 
 One of the first concepts I need to tackle is pagination.
