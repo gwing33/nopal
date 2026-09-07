@@ -254,6 +254,9 @@ importers:
       robustness-core:
         specifier: workspace:*
         version: link:../packages/robustness-core
+      sharp:
+        specifier: ^0.35.3
+        version: 0.35.4(@types/node@26.2.0)
       showdown:
         specifier: ^2.1.0
         version: 2.1.0

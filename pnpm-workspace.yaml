@@ -7,6 +7,29 @@ allowBuilds:
   esbuild: true
   msgpackr-extract: true
 
+# Without this, `pnpm install` only resolves optional, platform-specific
+# packages (sharp's own `@img/sharp-*`/`@img/sharp-libvips-*` binaries,
+# one per OS/CPU/libc combo) for whatever machine happens to run the
+# install that regenerates the lockfile — e.g. a developer's macOS laptop.
+# `webapp`/`packages/worker`'s Dockerfiles run `pnpm install --frozen-
+# lockfile` (never re-resolving anything) on `node:22-slim` (Debian/glibc,
+# linux-x64), so without the linux-x64 variant already present in the
+# lockfile, that install silently ends up short a native binary sharp
+# needs at runtime — exactly the "Could not load the sharp module using
+# the linux-x64 runtime" production error this fixes. `current` keeps
+# whatever platform a developer is actually running `pnpm install` on
+# (e.g. macOS/arm64) also resolved, so local dev is unaffected.
+supportedArchitectures:
+  os:
+    - current
+    - linux
+  cpu:
+    - current
+    - x64
+  libc:
+    - current
+    - glibc
+
 # Makes `pnpm deploy` (used to build a genuinely standalone, pruned
 # node_modules for `packages/worker` — see the phylog skill's "Scaling &
 # Process Isolation" section) copy workspace dependencies (robustness-core,
