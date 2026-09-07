@@ -18,7 +18,6 @@ import { Layout } from "../components/Layout";
 import { Footer } from "../components/Footer";
 import OxRenderer from "../components/OxRenderer";
 import {
-  canShareImageFiles,
   fileIcon,
   formatDate,
   formatSize,
@@ -123,58 +122,6 @@ export default function PublicFolderPage() {
     children.folders.length === 0 &&
     children.files.length > 0 &&
     children.files.every(isImageFile);
-
-  // "Save to Photos" — mobile-only enhancement, shown alongside "Download
-  // all" rather than instead of it (desktop browsers / older mobile ones
-  // don't support this, and fall straight back to Download all). Checked
-  // client-side only (after mount) since `navigator` isn't available
-  // during SSR — defaults to hidden so there's no hydration mismatch.
-  const [canSharePhotos, setCanSharePhotos] = useState(false);
-  useEffect(() => {
-    setCanSharePhotos(canShareImageFiles());
-  }, []);
-
-  const [savePhotosProgress, setSavePhotosProgress] = useState<{
-    done: number;
-    total: number;
-  } | null>(null);
-
-  const handleSaveToPhotos = async () => {
-    if (!children.files.length) return;
-    setSavePhotosProgress({ done: 0, total: children.files.length });
-    try {
-      const files: File[] = [];
-      for (let i = 0; i < children.files.length; i++) {
-        const listing = children.files[i];
-        try {
-          const res = await fetch(`/api/vault/public-share/${listing._id}`);
-          if (res.ok) {
-            const blob = await res.blob();
-            files.push(
-              new File([blob], listing.name, {
-                type: listing.content_type || blob.type,
-              }),
-            );
-          }
-        } catch {
-          // Skip this one file; the rest of the batch still proceeds.
-        }
-        setSavePhotosProgress({ done: i + 1, total: children.files.length });
-      }
-      if (!files.length) {
-        window.alert("Couldn't load these photos to share.");
-        return;
-      }
-      await navigator.share({ files });
-    } catch (err) {
-      // AbortError = the user dismissed the share sheet — not a real error.
-      if ((err as Error)?.name !== "AbortError") {
-        window.alert("Couldn't share these photos.");
-      }
-    } finally {
-      setSavePhotosProgress(null);
-    }
-  };
 
   // "Download all" — a background job builds a single .zip of every direct
   // child file (see `publicZip.server.ts`), so a big folder of photos
@@ -307,28 +254,14 @@ export default function PublicFolderPage() {
               Published from Nopal
             </p>
             {children.files.length > 0 && (
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                {isAllImageGallery && canSharePhotos && (
-                  <button
-                    className="vault-toolbar-btn"
-                    disabled={!!savePhotosProgress}
-                    onClick={handleSaveToPhotos}
-                    title="Opens your share sheet, where 'Save Image(s)' adds them straight to Photos"
-                  >
-                    {savePhotosProgress
-                      ? `Preparing ${savePhotosProgress.done}/${savePhotosProgress.total}…`
-                      : "📷 Save to Photos"}
-                  </button>
-                )}
-                <button
-                  className="vault-toolbar-btn"
-                  disabled={zipBusy}
-                  onClick={handleDownloadAll}
-                  title="Downloads every file in this folder as one .zip — sub-folders aren't included"
-                >
-                  {zipButtonLabel}
-                </button>
-              </div>
+              <button
+                className="vault-toolbar-btn"
+                disabled={zipBusy}
+                onClick={handleDownloadAll}
+                title="Downloads every file in this folder as one .zip — sub-folders aren't included"
+              >
+                {zipButtonLabel}
+              </button>
             )}
           </div>
           {zipState.phase === "error" && (

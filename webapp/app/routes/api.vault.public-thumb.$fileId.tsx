@@ -10,9 +10,9 @@ import { downloadFileBytes, getImageThumbnail } from "robustness-core/data/file.
  * instead of the full-resolution original, so a folder of multi-megabyte
  * photos doesn't ship megabytes of data just to render a few hundred
  * pixels of thumbnail. The full original is still what backs the single-
- * file view (`/api/vault/public-view/:fileId`) and every download path
- * (`/api/vault/public-download/:fileId`, `/api/vault/public-share/:fileId`)
- * — this route is thumbnails ONLY, never a substitute for those.
+ * file view (`/api/vault/public-view/:fileId`) and the download path
+ * (`/api/vault/public-download/:fileId`) — this route is thumbnails ONLY,
+ * never a substitute for those.
  *
  * Generated on demand (`getImageThumbnail`, `file.server.ts`) rather than
  * persisted anywhere — cheap enough per-request for image sizes, and far
