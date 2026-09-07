@@ -1,4 +1,4 @@
-.PHONY: dev start seed migrate migrate-prod down stop reset clean deploy restart restart-worker restart-all cli release-cli update-cli-version
+.PHONY: dev start seed migrate migrate-prod compact-db down stop reset clean deploy restart restart-worker restart-all cli release-cli update-cli-version
 
 SURREAL_USER ?= root
 SURREAL_PASS ?= root
@@ -89,6 +89,14 @@ migrate-prod:
 	cd webapp && DATABASE_URL=http://localhost:$(PROXY_PORT)/rpc \
 		DATABASE_USERNAME=$(SURREAL_USER) DATABASE_PASSWORD=$(SURREAL_PASS) \
 		npx vite-node scripts/$(SCRIPT) $(ARGS)
+
+## Export prod DB data to a local, timestamped backup file — step 1 of the
+## compaction runbook in db/COMPACTION.md (reclaiming disk space wasted by
+## SurrealDB's surrealkv value log). Does not touch the remote volume.
+##   make compact-db SURREAL_PASS=yourprodpassword
+compact-db:
+	@test -n "$(SURREAL_PASS)" || { echo "Usage: make compact-db SURREAL_PASS=<prod-pass>"; exit 1; }
+	SURREAL_PASS=$(SURREAL_PASS) DB_APP=$(DB_APP) PROXY_PORT=$(PROXY_PORT) sh db/compact.sh
 
 ## Restart the webapp container, clearing the Vite dep cache first.
 ## Use this after package changes or whenever the dev server needs a clean

@@ -46,44 +46,79 @@ to dump all data out, wipe the on-disk store, and reload it — this
 rebuilds the sstables/vlog from scratch with no dead data.
 
 **This requires a short maintenance window** (the database is unavailable
-between wipe and successful reimport). Do not run this unattended — verify
-each step before proceeding to the next.
+from step 3 until step 7 completes — usually well under a minute given the
+current dataset size). Do not run this unattended — confirm each step
+before proceeding to the next. `db/compact.sh` automates the safe half
+(step 1); everything from step 3 onward touches the live volume and stays
+a manual, attended procedure.
 
-1. **Back up first.** Fly already takes daily volume snapshots (5-day
-   retention), but take an explicit export too:
+1. **Back up.** Fly already takes daily volume snapshots (5-day
+   retention), but take an explicit export too — this pulls data through
+   `fly proxy` onto your own machine, never touching the remote volume:
 
    ```sh
-   fly ssh console --app db-thrumming-water-5938 -C \
-     "/surreal export --endpoint http://localhost:8080 --username root --password <pass> --namespace nopal --database opuntia /data/backup-$(date +%Y%m%d).surql"
+   make compact-db SURREAL_PASS=<prod-pass>
    ```
 
-   Copy that file off the machine (`fly ssh sftp get` or similar) before
+   This writes `db/backups/pre-compact-<timestamp>.surql` and sanity-checks
+   its size. Confirm the reported size/record count looks right before
    continuing.
 
-2. **Verify the export** — check the file is non-trivial in size and
-   spot-check a few records.
+2. **Spot-check the export** — `less` the file, confirm it contains
+   `DEFINE TABLE` statements and `INSERT`/`CREATE` data for the tables you
+   expect.
 
-3. **Stop the app** (`fly scale count 0 --app db-thrumming-water-5938`, or
-   `fly machine stop <id>`) so nothing writes while you wipe the store.
-
-4. **Wipe the data directory** via `fly ssh console`:
+3. **Stop the live machine** so nothing writes while you wipe the store:
 
    ```sh
+   fly machine list --app db-thrumming-water-5938        # note the machine id
+   fly machine stop <machine-id> --app db-thrumming-water-5938
+   ```
+
+4. **Attach a temporary machine to the same volume** to get raw filesystem
+   access without SurrealDB running (and without touching `start.sh`,
+   which would otherwise auto-boot SurrealDB against the still-full
+   store). This reuses the already-deployed image, just with a shell
+   instead of the normal entrypoint, and destroys itself on exit:
+
+   ```sh
+   fly machine run registry.fly.io/db-thrumming-water-5938:<current-tag> \
+     --app db-thrumming-water-5938 \
+     --volume data:/data \
+     --shell --command /bin/sh
+   ```
+
+   (Get `<current-tag>` from `fly status --app db-thrumming-water-5938` —
+   the `Image` field.) Once in the shell:
+
+   ```sh
+   du -sh /data/srdb.db   # sanity check — should match the size you saw before
    rm -rf /data/srdb.db
+   exit                   # destroys this temporary machine, freeing the volume
    ```
 
-5. **Restart the machine** (`fly scale count 1` / `fly machine start`).
-   `start.sh` will boot a fresh, empty `surrealkv` store and run
-   migrations, recreating the schema.
-
-6. **Re-import the backup:**
+5. **Restart the original machine:**
 
    ```sh
-   fly ssh console --app db-thrumming-water-5938 -C \
-     "/surreal import --endpoint http://localhost:8080 --username root --password <pass> --namespace nopal --database opuntia /data/backup-YYYYMMDD.surql"
+   fly machine start <machine-id> --app db-thrumming-water-5938
    ```
 
-7. **Verify** row counts / spot-check data, then confirm disk usage:
+   `start.sh` boots against the now-empty volume, creates a fresh,
+   compact `surrealkv` store, and re-runs migrations to recreate the
+   schema. Wait for it to report healthy (`fly status`).
+
+6. **Re-import the backup**, tunneling the same way `compact-db` does:
+
+   ```sh
+   fly proxy 8081:8080 --app db-thrumming-water-5938 &
+   surreal import \
+     --endpoint http://localhost:8081 \
+     --username root --password <prod-pass> \
+     --namespace nopal --database opuntia \
+     db/backups/pre-compact-<timestamp>.surql
+   ```
+
+7. **Verify**, then confirm disk usage:
 
    ```sh
    fly ssh console --app db-thrumming-water-5938 -C "df -h /data"
@@ -93,17 +128,39 @@ each step before proceeding to the next.
    drop close to the live-data size (a few MB, based on the current
    dataset).
 
+## When to run this (scheduling)
+
+Don't run this on a blind calendar cron, and don't automate the destructive
+half (steps 3–6) unattended yet — a bug in an unattended wipe/reimport
+script is a permanent-data-loss bug. Instead, treat it as **alert-triggered
+maintenance**:
+
+- The `start.sh` watchdog (added alongside this doc) pings
+  `DISK_ALERT_WEBHOOK_URL` at 75%/90% `/data` usage. Treat the first
+  WARNING as the signal to schedule a compaction in the next few days, not
+  an emergency — the volume's `auto_extend_size_*` config in `fly.toml`
+  is the actual emergency backstop.
+- Practically, that means compaction cadence tracks write volume, not the
+  calendar: a quiet month might need none; a month with a bulk
+  import/backfill might need one right after.
+- Run `make compact-db` (step 1, the safe export) any time, cheaply, just
+  to see current record counts/export size — it doesn't touch the volume,
+  so there's no harm in running it proactively to check.
+- Once the full export→wipe→import cycle has been run by hand a few times
+  and feels routine, it's reasonable to promote steps 3–6 to a
+  `workflow_dispatch`-triggered (manually clicked, not scheduled) GitHub
+  Actions job for convenience — but keep a human clicking "run" until then.
+
 ## Going forward
 
-- Repeat this compaction periodically (e.g. monthly, or after any bulk
-  import/backfill) until SurrealDB ships automatic vlog GC for
-  `surrealkv`. Track upstream progress at
+- Repeat this compaction as needed (see above) until SurrealDB ships
+  automatic vlog GC for `surrealkv`. Track upstream progress at
   [surrealdb/surrealkv](https://github.com/surrealdb/surrealkv).
 - The disk-usage watchdog in `start.sh` and the volume's auto-extend
   setting mean a forgotten compaction cycle will no longer cause an
   outage — it'll just mean paying for more disk than necessary until the
   next compaction.
-- If vlog growth becomes fast enough that monthly compaction isn't enough,
-  consider switching the backend to `rocksdb://` (which has more mature,
-  automatic compaction) — this would also require an export/import
+- If vlog growth becomes fast enough that trigger-based compaction isn't
+  enough, consider switching the backend to `rocksdb://` (which has more
+  mature, automatic compaction) — this would also require an export/import
   migration.
