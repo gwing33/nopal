@@ -10,9 +10,19 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Two INDEPENDENT concurrency scopes, not one shared across the whole
+# workflow -- a single shared group would mean a new push's `test`/
+# `deploy-staging` can't even START while an OLDER run's production job
+# sits waiting on a required-reviewer approval that may never come. This
+# (workflow-level) scope covers `test`/`deploy-staging` only, since
+# neither has its own `concurrency:` block below.
+#
+# cancel-in-progress: true here is low-risk -- staging isn't customer-
+# facing, and there's nothing "in flight" worth protecting if a newer
+# commit supersedes an older one's test/staging run.
 concurrency:
-  group: nopal-deploy-production
-  cancel-in-progress: false
+  group: nopal-deploy-staging-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -56,6 +66,33 @@ jobs:
   deploy-production:
     needs: deploy-staging
     runs-on: ubuntu-latest
+    # Own concurrency scope, independent of the workflow-level one above
+    # -- so an OLDER run stuck waiting on approval gets cancelled the
+    # instant a newer push's production job wants to start, without that
+    # newer push having had to wait behind it for test/staging first.
+    #
+    # cancel-in-progress: true does carry one real, accepted risk: GitHub
+    # doesn't distinguish "a job merely WAITING on approval" from "a job
+    # ACTIVELY running flyctl deploy" for concurrency purposes -- both
+    # occupy this group, and both get cancelled the same way when a newer
+    # push wants the group. So if an older run's approval comes through
+    # and it's mid-deploy at the exact moment a newer push shows up,
+    # that in-flight deploy gets killed rather than left to finish -- a
+    # genuinely bad time to lose db/webapp/worker mid-rollout. That
+    # window is narrow (roughly the time between an approval click and
+    # three `flyctl deploy` calls finishing) but not zero.
+    #
+    # If that risk ever matters more than the convenience, flip this to
+    # `false` instead -- but that removes auto-cancellation ENTIRELY for
+    # this job, including the waiting-on-approval case: an old run stuck
+    # waiting for a reviewer would then block every newer push's
+    # production job in a growing queue until a human manually cancels
+    # it (Actions tab) or approves/rejects it. There's no built-in
+    # "cancel only if waiting, never if running" option -- it's an
+    # all-or-nothing switch.
+    concurrency:
+      group: nopal-deploy-production-${{ github.ref }}
+      cancel-in-progress: true
     # This is the actual approval gate -- the `production` Environment
     # has required reviewers configured (gwing33, a-trautman), so this
     # job pauses here until one of them approves it in the Actions UI.
