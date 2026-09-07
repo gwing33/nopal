@@ -45,6 +45,14 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
+      - name: Notify Discord
+        if: always()
+        uses: ./.github/actions/notify-discord
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          environment-name: staging
+          status: ${{ job.status }}
+
   deploy-production:
     needs: deploy-staging
     runs-on: ubuntu-latest
@@ -79,3 +87,11 @@ jobs:
       - run: flyctl deploy . --config packages/worker/fly.toml --dockerfile packages/worker/Dockerfile --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Notify Discord
+        if: always()
+        uses: ./.github/actions/notify-discord
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          environment-name: production
+          status: ${{ job.status }}

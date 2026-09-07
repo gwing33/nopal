@@ -54,6 +54,18 @@ touches more than one app. Rotate it the same way (`fly tokens create
 org -o personal`, then `gh secret set FLY_API_TOKEN`) if it's ever leaked
 or simply due for renewal (created with a 1-year expiry).
 
+### Discord notifications
+
+Both `deploy-staging` and `deploy-production` post a result (success or
+failure, with commit/actor/run link) to Discord via
+`.github/actions/notify-discord`, a small composite action that posts to
+an incoming webhook — deliberately NOT the app's own `DISCORD_BOT_TOKEN`/
+`DISCORD_CHANNEL_ID` (those are unused today and a bot token is broader-
+scoped than this needs). Requires a `DISCORD_WEBHOOK_URL` repo secret
+(Discord: Server Settings -> Integrations -> Webhooks -> New Webhook,
+then `gh secret set DISCORD_WEBHOOK_URL`); silently skipped (a log line,
+not a failure) if that secret isn't set.
+
 ## Manual deploys
 
 Still available if you need to deploy outside the pipeline (a hotfix, or
