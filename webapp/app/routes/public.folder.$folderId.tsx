@@ -23,7 +23,6 @@ import {
   formatDate,
   formatSize,
   isImageFile,
-  triggerFileDownload,
 } from "../util/publicVaultDisplay";
 import "../styles/vault.css";
 
@@ -114,42 +113,9 @@ export default function PublicFolderPage() {
   const { crumbs, children, readme } = useLoaderData<typeof loader>();
   // Every link deeper from here carries the SAME visible boundary forward.
   const rootForLinks = crumbs[0]?.id;
+  const folderId = crumbs[crumbs.length - 1]?.id;
   const withRoot = (path: string) =>
     rootForLinks ? `${path}?root=${rootForLinks}` : path;
-
-  // "Download all" — DIRECT child files only, fetched one at a time and
-  // Blob-downloaded via the same-origin `/api/vault/public-share/:fileId`
-  // proxy (see that route's doc). Previously this pointed an <a> straight
-  // at a presigned S3 URL, which on desktop would sometimes navigate the
-  // whole tab to the raw file instead of downloading it — a same-origin
-  // `blob:` URL's `download` attribute is always honored, so this can't
-  // happen anymore.
-  const [downloadAllProgress, setDownloadAllProgress] = useState<{
-    done: number;
-    total: number;
-  } | null>(null);
-
-  const handleDownloadAll = async () => {
-    if (!children.files.length) return;
-    setDownloadAllProgress({ done: 0, total: children.files.length });
-    for (let i = 0; i < children.files.length; i++) {
-      const file = children.files[i];
-      try {
-        const res = await fetch(`/api/vault/public-share/${file._id}`);
-        if (res.ok) {
-          const blob = await res.blob();
-          triggerFileDownload({ name: file.name, blob });
-        }
-      } catch {
-        // Skip this one file; the rest of the batch still proceeds.
-      }
-      setDownloadAllProgress({ done: i + 1, total: children.files.length });
-      if (i < children.files.length - 1) {
-        await new Promise((resolve) => setTimeout(resolve, 400));
-      }
-    }
-    setDownloadAllProgress(null);
-  };
 
   // A folder holding only images (no sub-folders, no other file types)
   // displays as a photo gallery grid instead of the plain listing table.
@@ -263,16 +229,14 @@ export default function PublicFolderPage() {
                       : "📷 Save to Photos"}
                   </button>
                 )}
-                <button
+                <a
+                  href={`/api/vault/public-folders/${folderId}/zip`}
                   className="vault-toolbar-btn"
-                  disabled={!!downloadAllProgress}
-                  onClick={handleDownloadAll}
-                  title="Downloads each file in this folder individually (not a zip) — sub-folders aren't included"
+                  style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+                  title="Downloads every file in this folder as one .zip — sub-folders aren't included"
                 >
-                  {downloadAllProgress
-                    ? `↓ Downloading ${downloadAllProgress.done}/${downloadAllProgress.total}…`
-                    : "↓ Download all"}
-                </button>
+                  ↓ Download all (.zip)
+                </a>
               </div>
             )}
           </div>
