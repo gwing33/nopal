@@ -83,6 +83,7 @@ import {
   type ReadmeSection,
 } from "./project.types";
 import {
+  classifyStageSkill,
   findProjectGraphFolder,
   getProjectStageSkill,
   isSkipInstruction,
@@ -803,7 +804,22 @@ export async function runGraphProjectView(
 
   const skill = await getProjectStageSkill(projectFolder, "PROJECT_VIEW.md");
   if (isSkipInstruction(skill)) {
-    return { ok: true, skipped: true, changed: false, summary: [], coverage: null, incomplete: [] };
+    // The quietest way this stage can produce nothing: no log line, no
+    // `incomplete` entry, and a run that renders as clean. Fine when a
+    // human wrote `skip` and meant it; not fine when the file was never
+    // seeded, which is indistinguishable to `isSkipInstruction` and was
+    // the whole reason `classifyStageSkill` exists.
+    const reason = "skills/PROJECT_VIEW.md is missing or empty, so this stage had no instructions and wrote nothing";
+    const missing = classifyStageSkill(skill) === "missing";
+    if (missing) log(`graph-project-view: ${reason}.`);
+    return {
+      ok: true,
+      skipped: true,
+      changed: false,
+      summary: [],
+      coverage: null,
+      incomplete: missing ? [reason] : [],
+    };
   }
   if (!isGraphLogAgentConfigured()) {
     return { ok: false, error: "GraphLog isn't configured (missing ANTHROPIC_API_KEY)" };
@@ -818,19 +834,27 @@ export async function runGraphProjectView(
   const { files } = await listFolderChildren(projectFolder.human_id, graphFolder._id);
   const structureListing = files.find((f) => f.name === GRAPH_STRUCTURE_FILE_NAME);
   if (!structureListing) {
-    log("graph-project-view: no graph-structure.md yet — nothing to do.");
-    return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [] };
+    // Reported, unlike the no-`Graph/`-folder case above: the folder
+    // existing means something built it, so the index being absent from
+    // it is a missing artifact rather than a project that has never run.
+    const reason = "Graph/ exists but holds no graph-structure.md, so there was no index to build a README from";
+    log(`graph-project-view: ${reason}.`);
+    return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [reason] };
   }
   const structureFile = await getFileRefById(structureListing._id);
   if (!structureFile?.content) {
-    log("graph-project-view: graph-structure.md is empty — nothing to do.");
-    return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [] };
+    const reason = "graph-structure.md is empty, so there was no index to build a README from";
+    log(`graph-project-view: ${reason}.`);
+    return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [reason] };
   }
 
   const meta = parseGraphStructureFrontmatter(structureFile.content);
   if (!meta.asOfGraphHash) {
-    log("graph-project-view: graph-structure.md is malformed (no asOfGraphHash) — skipping.");
-    return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [] };
+    const reason =
+      "graph-structure.md has no asOfGraphHash, which means graph-structure never reached a clean finish; " +
+      "the README is not rebuilt from a half-organized index";
+    log(`graph-project-view: ${reason}.`);
+    return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [reason] };
   }
   if (meta.appliedByProjectView === meta.asOfGraphHash) {
     log("graph-project-view: up to date, nothing changed since last run.");
