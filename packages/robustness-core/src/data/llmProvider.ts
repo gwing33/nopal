@@ -93,6 +93,31 @@ export function planTurnToolCalls<T extends { name: string }>(
   });
 }
 
+/**
+ * The tool calls from a response that are safe to execute, given how it
+ * stopped.
+ *
+ * A `max_tokens` response is not empty, it is CUT OFF. The provider still
+ * returns every content block generated before the limit, and only the
+ * LAST one can be half-finished — a `tool_use` whose JSON input stopped
+ * mid-string, which arrives here as a plausible-looking object with a
+ * field missing rather than as a parse error. Executing that writes
+ * half a section. Discarding the whole response instead (what the loops
+ * used to do) throws away the complete calls in front of it, which on a
+ * freshly-reset README is the difference between partial content and no
+ * content at all.
+ *
+ * So: drop the last call, keep the rest. A complete final call that
+ * happened to land exactly on the limit is lost too, which is the
+ * conservative direction — it is retried on the next run, and the
+ * alternative is guessing whether a truncated object is complete.
+ *
+ * Every other stop reason returns the calls untouched.
+ */
+export function completedToolCalls<T>(calls: T[], stopReason: StopReason): T[] {
+  return stopReason === "max_tokens" ? calls.slice(0, -1) : calls;
+}
+
 export type LlmResponse = {
   /** Any plain text the model produced alongside (or instead of) a tool
    * call — e.g. its reasoning for NOT calling a tool this turn. */

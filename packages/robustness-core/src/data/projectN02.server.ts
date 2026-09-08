@@ -306,6 +306,30 @@ export function isSkipInstruction(content: string | null | undefined): boolean {
   return (firstLine?.trim().toLowerCase() ?? "") === SKIP_MARKER;
 }
 
+/** What a stage's skill file actually SAYS, as opposed to whether the
+ * stage runs. `isSkipInstruction` above folds "missing" and "skip"
+ * together on purpose — both mean don't run — and that folding is
+ * correct for control flow but wrong for reporting: a project whose
+ * `PROJECT_VIEW.md` was never seeded looks identical, in the run record,
+ * to one whose owner deliberately wrote `skip`. The first is a broken
+ * project silently producing an empty README; the second is a working
+ * one. Callers use `isSkipInstruction` to decide whether to run and this
+ * to decide whether to say anything about it. */
+export type StageSkillDisposition = "missing" | "skip" | "instructions";
+
+export function classifyStageSkill(content: string | null | undefined): StageSkillDisposition {
+  // Deliberately the SAME first branch as `isSkipInstruction` above, not
+  // a tidier `content.trim().length === 0`. A whitespace-only file is
+  // already treated as instructions there (the blank-line scan finds no
+  // first line, and "" is not "skip"), so trimming here would make the
+  // two disagree about a case one of them decides the stage runs on.
+  // This split is about what gets REPORTED; it must never change what
+  // runs. Guarded by the lockstep assertion in loadBearingBehaviors.
+  if (!content) return "missing";
+  const firstLine = content.split("\n").find((line) => line.trim().length > 0);
+  return (firstLine?.trim().toLowerCase() ?? "") === SKIP_MARKER ? "skip" : "instructions";
+}
+
 /** Reads a project-n02's `skills/<name>` file content, or null if it (or
  * the skills folder itself) doesn't exist — malformed/missing is always
  * treated as "no instructions", never a hard failure. Shared by every

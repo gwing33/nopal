@@ -123,6 +123,7 @@ import {
 } from "./vault.server";
 import {
   findProjectGraphFolder,
+  classifyStageSkill,
   getProjectStageSkill,
   isSkipInstruction,
   listExtraSkillFiles,
@@ -795,6 +796,8 @@ async function runStructureAgentLoop(
 function buildSystemPrompt(skillContent: string): string {
   return `You are GraphLog's graph-structure step, keeping Graph/graph-structure.md an accurate, organized, weighted index of the whole graph. You're handed the CURRENT graph-structure.md (already organized from every earlier run) plus only the node(s) that are genuinely new since last time -- place each new node into whichever existing cluster it belongs to, or start a new one via update_cluster if it doesn't fit anywhere yet. Only touch clusters that actually need a change, one update_cluster/remove_cluster call per cluster -- never try to redescribe the whole file in one call. If real restructuring is warranted (renaming, merging, or splitting threads), do it, but only through update_cluster/remove_cluster calls on the specific clusters involved. Call get_node if you need an older node's exact original wording before deciding to merge or split. Stop making tool calls once every new node has a home and any warranted restructuring is done -- if nothing needs to change at all, make no tool calls. Every node must end up with a home somewhere; never drop one because it seems minor.
 
+Make at most ONE update_cluster or remove_cluster call per response. Every tool call in one response is generated into that response's single output budget, and a cluster's whole node list travels in the call, so several writes at once is several clusters' worth of text against one limit -- the response gets cut off and the work in it is lost. Write one cluster, wait for the result, then write the next. Reads (get_node) are free to batch: call as many as you need in one go.
+
 Do not write any planning, reasoning, or summary text outside of a tool call -- go straight to calling update_cluster/remove_cluster/get_node with no preamble and no narration in between calls either. Your own output budget per turn is limited, and explanatory text spends it on nothing that ends up in the file.
 
 ${skillContent}`;
@@ -957,7 +960,20 @@ export async function runGraphStructure(
 
   const skill = await getProjectStageSkill(projectFolder, "GRAPH_STRUCTURE.md");
   if (isSkipInstruction(skill)) {
-    return { ok: true, skipped: true, changed: false, graphNodeCount: null, threadCount: null, incomplete: [] };
+    // Same split as `graphProjectView.server.ts`'s own: an explicit
+    // `skip` is a decision and stays quiet, a never-seeded file is a
+    // broken project and says so.
+    const reason = "skills/GRAPH_STRUCTURE.md is missing or empty, so this stage had no instructions and wrote nothing";
+    const missing = classifyStageSkill(skill) === "missing";
+    if (missing) log(`graph-structure: ${reason}.`);
+    return {
+      ok: true,
+      skipped: true,
+      changed: false,
+      graphNodeCount: null,
+      threadCount: null,
+      incomplete: missing ? [reason] : [],
+    };
   }
   if (!isGraphLogAgentConfigured()) {
     return { ok: false, error: "GraphLog isn't configured (missing ANTHROPIC_API_KEY)" };
@@ -1001,8 +1017,21 @@ export async function runGraphStructure(
   }
 
   if (allNodes.length === 0) {
-    log("graph-structure: no parsed nodes found in any graph-log file — nothing to organize.");
-    return { ok: true, skipped: false, changed: false, graphNodeCount: null, threadCount: null, incomplete: [] };
+    // Distinct from "no graph-log files yet" above, which is a project
+    // that has never synced. Files exist here and parsed to nothing,
+    // which means sync-graph wrote something this parser can't read —
+    // and it silently starves every downstream stage of the graph.
+    const reason =
+      `${graphLogListings.length} graph-log file(s) exist but parsed to zero nodes, so there was nothing to organize`;
+    log(`graph-structure: ${reason}.`);
+    return {
+      ok: true,
+      skipped: false,
+      changed: false,
+      graphNodeCount: null,
+      threadCount: null,
+      incomplete: [reason],
+    };
   }
 
   const backlinks = computeBacklinkIndex(allNodes);

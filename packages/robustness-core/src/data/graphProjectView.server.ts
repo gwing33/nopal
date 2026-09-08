@@ -83,6 +83,7 @@ import {
   type ReadmeSection,
 } from "./project.types";
 import {
+  classifyStageSkill,
   findProjectGraphFolder,
   getProjectStageSkill,
   isSkipInstruction,
@@ -106,7 +107,7 @@ import { AnthropicProvider, isGraphLogAgentConfigured } from "./anthropicProvide
 import { classifyGraphLogError, recordGraphLogUsage } from "./graphLogMetrics.server";
 import { noopGraphLogRunRecorder, type GraphLogPerfRecorder } from "./graphLogPerf.server";
 import { throwIfGraphLogCancelled } from "./graphLogQueue.server";
-import { planTurnToolCalls } from "./llmProvider";
+import { completedToolCalls, planTurnToolCalls } from "./llmProvider";
 import type { LlmMessage, LlmProvider, LlmUsage, ToolCall, ToolDefinition } from "./llmProvider";
 
 const GRAPH_STRUCTURE_FILE_NAME = "graph-structure.md";
@@ -323,8 +324,23 @@ function createReadmeExecutors(input: {
 
   const executors: Record<string, (toolInput: Record<string, unknown>) => Promise<string>> = {
     update_section: async (toolInput) => {
-      const heading = normalizeIntroHeading(String(toolInput.heading ?? "").trim());
-      const content = String(toolInput.content ?? "");
+      // Both fields are `required` in this tool's schema, so an ABSENT
+      // one never means "the model chose to omit it" -- it means the
+      // call was cut off mid-JSON and arrived as a plausible-looking
+      // object with a hole in it. `String(x ?? "")` would quietly turn
+      // that hole into "write an empty section", and the erase guard
+      // below cannot catch it on a freshly-reset README where no section
+      // has content worth protecting yet. An explicitly empty string is
+      // a different thing and still goes through: `heading: ""` is how
+      // the intro is addressed, and `content: ""` is a real instruction
+      // the erase guard handles on its own terms.
+      if (typeof toolInput.heading !== "string" || typeof toolInput.content !== "string") {
+        hadRefusal = true;
+        log("graph-project-view -- refused a malformed update_section (heading/content missing; likely a cut-off call).");
+        return 'Error: update_section needs both "heading" and "content" as strings. Nothing was written.';
+      }
+      const heading = normalizeIntroHeading(toolInput.heading.trim());
+      const content = toolInput.content;
       const key = heading.toLowerCase();
 
       if (key === PROTECTED_HEADING) {
@@ -355,7 +371,15 @@ function createReadmeExecutors(input: {
       return `${existing ? "Updated" : "Added"} section "${label}".`;
     },
     remove_section: async (toolInput) => {
-      const heading = normalizeIntroHeading(String(toolInput.heading ?? "").trim());
+      // Same reasoning as `update_section` above: a missing `heading` is
+      // a cut-off call, and defaulting it to "" would aim a DELETE at
+      // the intro.
+      if (typeof toolInput.heading !== "string") {
+        hadRefusal = true;
+        log("graph-project-view -- refused a malformed remove_section (heading missing; likely a cut-off call).");
+        return 'Error: remove_section needs "heading" as a string. Nothing was removed.';
+      }
+      const heading = normalizeIntroHeading(toolInput.heading.trim());
       const key = heading.toLowerCase();
 
       if (key === PROTECTED_HEADING) {
@@ -462,10 +486,30 @@ async function runReadmeAgentLoop(
     });
 
     if (response.stopReason === "max_tokens") {
-      // See this file's own "Deliberately deferred" note — no retry
-      // escalation yet, just stop; whatever earlier turns already
-      // committed stands, and this is retried on a future run.
+      // Still no retry escalation (see this file's own "Deliberately
+      // deferred" note): the loop ends here and the rest is picked up by
+      // a future run. What changed is that it no longer ends EMPTY-
+      // HANDED. This response was cut off, not blank, and every tool
+      // call before the last one was fully generated -- see
+      // `completedToolCalls`. Discarding those was survivable on a
+      // README that already had content and silently fatal on one the
+      // reset had just emptied: turn one truncates, nothing commits, and
+      // the project's README stays blank while the run reports a stage
+      // issue nobody reads as "your README is gone".
+      //
+      // Each executor persists its own section as it goes, so there is
+      // nothing to flush here; the stage's return carries both what was
+      // written and the fact that it was cut off, and it deliberately
+      // does NOT mark graph-structure applied, so the next run resumes.
       truncated = true;
+      for (const { call, execute } of planTurnToolCalls(
+        completedToolCalls(response.toolCalls, response.stopReason),
+        isViewWrite,
+      )) {
+        if (!execute) continue;
+        toolCallsMade.push(call);
+        await executors[call.name]?.(call.input);
+      }
       break;
     }
 
@@ -595,6 +639,8 @@ export interface RunGraphProjectViewOptions {
 
 function buildSystemPrompt(skillContent: string): string {
   return `You are GraphLog's graph-project-view step, keeping a project's README.md an accurate, organized synthesis of the whole graph (given to you as graph-structure.md's own clustered, weighted index, PLUS the actual verbatim text of the nodes behind its top threads). Never invent progress, dates, or facts that aren't grounded in a real node's own words or the README's own existing content -- graph-structure.md's glosses are a table of contents, never something to write prose from directly. Call get_node for any node you need that wasn't already handed to you in full. A node's own text may carry an attached file: a PHOTO or VIDEO (an ordinary markdown image or a link marked ?type=video) belongs in a :::gallery{}...::: block wherever that node's words are featured -- group several photos/videos from the same thread into ONE gallery rather than several. Anything else (a PDF, a doc, ...) is a plain [name](url) link, never put inside a gallery. Either way, that exact image/link line must appear in the same section as the words it came with -- a file is never optional and never gets its own separate section. Only touch sections that actually need to change -- call update_section/remove_section as needed, then stop (no more tool calls) once you're done. Never target "Notes on this view" with either tool -- it's off-limits, handled outside this loop entirely. If nothing needs to change, simply make no tool calls at all.
+
+Make at most ONE update_section or remove_section call per response. Every tool call in one response is generated into that response's single output budget, and a section's whole prose travels in the call, so several writes at once is several sections' worth of text against one limit -- the response gets cut off and the work in it is lost. Write one section, wait for the result, then write the next. Reads (get_node) are free to batch: call as many as you need in one go.
 
 Do not write any planning, reasoning, or summary text outside of a tool call -- go straight to calling update_section/remove_section/get_node with no preamble and no narration in between calls either. Your own output budget per turn is limited, and explanatory text spends it on nothing that ends up in the README.
 
@@ -803,7 +849,22 @@ export async function runGraphProjectView(
 
   const skill = await getProjectStageSkill(projectFolder, "PROJECT_VIEW.md");
   if (isSkipInstruction(skill)) {
-    return { ok: true, skipped: true, changed: false, summary: [], coverage: null, incomplete: [] };
+    // The quietest way this stage can produce nothing: no log line, no
+    // `incomplete` entry, and a run that renders as clean. Fine when a
+    // human wrote `skip` and meant it; not fine when the file was never
+    // seeded, which is indistinguishable to `isSkipInstruction` and was
+    // the whole reason `classifyStageSkill` exists.
+    const reason = "skills/PROJECT_VIEW.md is missing or empty, so this stage had no instructions and wrote nothing";
+    const missing = classifyStageSkill(skill) === "missing";
+    if (missing) log(`graph-project-view: ${reason}.`);
+    return {
+      ok: true,
+      skipped: true,
+      changed: false,
+      summary: [],
+      coverage: null,
+      incomplete: missing ? [reason] : [],
+    };
   }
   if (!isGraphLogAgentConfigured()) {
     return { ok: false, error: "GraphLog isn't configured (missing ANTHROPIC_API_KEY)" };
@@ -818,19 +879,27 @@ export async function runGraphProjectView(
   const { files } = await listFolderChildren(projectFolder.human_id, graphFolder._id);
   const structureListing = files.find((f) => f.name === GRAPH_STRUCTURE_FILE_NAME);
   if (!structureListing) {
-    log("graph-project-view: no graph-structure.md yet — nothing to do.");
-    return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [] };
+    // Reported, unlike the no-`Graph/`-folder case above: the folder
+    // existing means something built it, so the index being absent from
+    // it is a missing artifact rather than a project that has never run.
+    const reason = "Graph/ exists but holds no graph-structure.md, so there was no index to build a README from";
+    log(`graph-project-view: ${reason}.`);
+    return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [reason] };
   }
   const structureFile = await getFileRefById(structureListing._id);
   if (!structureFile?.content) {
-    log("graph-project-view: graph-structure.md is empty — nothing to do.");
-    return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [] };
+    const reason = "graph-structure.md is empty, so there was no index to build a README from";
+    log(`graph-project-view: ${reason}.`);
+    return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [reason] };
   }
 
   const meta = parseGraphStructureFrontmatter(structureFile.content);
   if (!meta.asOfGraphHash) {
-    log("graph-project-view: graph-structure.md is malformed (no asOfGraphHash) — skipping.");
-    return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [] };
+    const reason =
+      "graph-structure.md has no asOfGraphHash, which means graph-structure never reached a clean finish; " +
+      "the README is not rebuilt from a half-organized index";
+    log(`graph-project-view: ${reason}.`);
+    return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [reason] };
   }
   if (meta.appliedByProjectView === meta.asOfGraphHash) {
     log("graph-project-view: up to date, nothing changed since last run.");
@@ -952,21 +1021,29 @@ export async function runGraphProjectView(
       outcome: truncated ? "error" : "ok",
     });
 
-    if (truncated) {
-      const reason = "update was cut off by the model's own output limit";
+    // These three used to hardcode `changed: false, summary: []`, which
+    // was wrong in the direction that matters least noisily: a run that
+    // committed four sections and then hit a limit reported that it had
+    // changed nothing, so the one signal saying "go look at this README"
+    // was an empty diff. `incomplete` is what marks the run unfinished;
+    // the summary is what it actually did. Both are true at once and
+    // both get reported -- an unfinished run is never allowed to read as
+    // a clean one, and a partial one is never allowed to read as a no-op.
+    const partial = (reason: string): GraphProjectViewResult => {
       log(`graph-project-view: ${reason} — will retry next run.`);
-      return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [reason] };
-    }
-    if (hitMaxTurns) {
-      const reason = "hit its turn limit before finishing";
-      log(`graph-project-view: ${reason} — will retry next run.`);
-      return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [reason] };
-    }
-    if (hadRefusal()) {
-      const reason = "had at least one refused edit";
-      log(`graph-project-view: ${reason} — will retry next run.`);
-      return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [reason] };
-    }
+      if (summaries.length > 0) log(`graph-project-view: kept this run's committed work — ${summaries.join(", ")}.`);
+      return {
+        ok: true,
+        skipped: false,
+        changed: summaries.length > 0,
+        summary: summaries,
+        coverage: null,
+        incomplete: [reason],
+      };
+    };
+    if (truncated) return partial("update was cut off by the model's own output limit");
+    if (hitMaxTurns) return partial("hit its turn limit before finishing");
+    if (hadRefusal()) return partial("had at least one refused edit");
 
     // Clean finish: one final deterministic reconcile pass, always run
     // regardless of what (if anything) the model touched --
