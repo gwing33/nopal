@@ -28,8 +28,9 @@ import {
   refreshClusterWeight,
 } from "robustness-core/data/graphStructure.server";
 import { computeCoverageReport } from "robustness-core/data/graphProjectView.server";
+import { classifyStageSkill, isSkipInstruction } from "robustness-core/data/projectN02.server";
 import type { ReadmeSection } from "robustness-core/data/project.types";
-import { planTurnToolCalls } from "robustness-core/data/llmProvider";
+import { completedToolCalls, planTurnToolCalls } from "robustness-core/data/llmProvider";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -556,5 +557,108 @@ describe("ADR-011: a partial day is written, and comes back", () => {
     const content = buildGraphLogContent({ date: "2026-08-19", hash: null, incompleteReason: "stuck", body });
     expect(content).toContain("### Node 1");
     expect(content).toContain("something someone wrote");
+  });
+});
+
+// ── A stage that produces no human-facing output says why ───────────────
+//
+// Every "nothing to do" return in graph-project-view and graph-structure
+// used to hand back `incomplete: []`, so a run that left the README
+// blank because a skill file was never seeded, or because
+// graph-structure.md carried no `asOfGraphHash`, was recorded as OK with
+// nothing outstanding and rendered in the admin UI as a clean run. The
+// durable telemetry said fine while the visible output was empty, which
+// is the exact shape docs/adr/README.md exists to catch: nothing errors,
+// the system just stops doing its job.
+//
+// `isSkipInstruction` folds "missing" and "skip" together, which is
+// correct for CONTROL FLOW (neither runs) and wrong for REPORTING (one is
+// a decision, the other is a broken project). The trap for a future edit
+// is that `classifyStageSkill` looks like a redundant copy of
+// `isSkipInstruction` and deleting it "works" -- it only takes the
+// distinction back out of the run record.
+
+describe("a stage's skill file: missing is not the same as skip", () => {
+  it("treats both as do-not-run, so control flow is unchanged", () => {
+    expect(isSkipInstruction(null)).toBe(true);
+    expect(isSkipInstruction("")).toBe(true);
+    expect(isSkipInstruction("skip")).toBe(true);
+    expect(isSkipInstruction("Write the README.")).toBe(false);
+  });
+
+  it("separates them for reporting", () => {
+    expect(classifyStageSkill(null)).toBe("missing");
+    expect(classifyStageSkill(undefined)).toBe("missing");
+    expect(classifyStageSkill("")).toBe("missing");
+    expect(classifyStageSkill("skip")).toBe("skip");
+    expect(classifyStageSkill("SKIP")).toBe("skip");
+    expect(classifyStageSkill("\n\n  Skip  \n\nrest ignored")).toBe("skip");
+  });
+
+  it("reads a real skill file as instructions, not as either silence", () => {
+    expect(classifyStageSkill("# PROJECT_VIEW\n\nWrite one section per thread.")).toBe("instructions");
+    expect(classifyStageSkill("skipping the boring parts is fine")).toBe("instructions");
+  });
+
+  // The lockstep property, and the reason `classifyStageSkill` copies
+  // `isSkipInstruction`'s odd first branch instead of tidying it: a
+  // whitespace-only file is treated as instructions by BOTH, so this
+  // split can never change which stages run. Fix that oddity in one
+  // function without the other and this fails.
+  it("agrees with isSkipInstruction on every input, whitespace included", () => {
+    const inputs = [null, undefined, "", "  ", "   \n  ", "skip", " SKIP ", "do the thing", "skip the thing"];
+    for (const input of inputs) {
+      expect(isSkipInstruction(input)).toBe(classifyStageSkill(input) !== "instructions");
+    }
+  });
+});
+
+// ── ADR-013 — a cut-off turn is not an empty turn ───────────────────────
+//
+// A `max_tokens` response still carries every content block generated
+// before the limit; only the LAST one can be half-finished. The loops
+// used to discard the whole response, which was survivable on a README
+// that already had content and silently fatal on one a reset had just
+// emptied: turn one truncates, nothing commits, and the project's README
+// stays blank while the run reports a stage issue that reads like a
+// retry note rather than "your README is empty".
+//
+// The trap for a future edit is that keeping the last call looks like
+// strictly more salvage. It is the one call that can be missing a field,
+// and a truncated `update_section` whose `content` never arrived is
+// exactly how you write an empty section over a real one.
+
+describe("ADR-013: a truncated response keeps the calls it finished", () => {
+  const calls = [{ name: "update_section" }, { name: "update_section" }, { name: "get_node" }];
+
+  it("drops only the last call when the model hit its output limit", () => {
+    expect(completedToolCalls(calls, "max_tokens")).toEqual([
+      { name: "update_section" },
+      { name: "update_section" },
+    ]);
+  });
+
+  it("keeps every call on a normal stop", () => {
+    expect(completedToolCalls(calls, "tool_use")).toEqual(calls);
+    expect(completedToolCalls(calls, "end_turn")).toEqual(calls);
+    expect(completedToolCalls(calls, "other")).toEqual(calls);
+  });
+
+  it("salvages nothing from a lone truncated call, rather than guessing", () => {
+    expect(completedToolCalls([{ name: "update_section" }], "max_tokens")).toEqual([]);
+    expect(completedToolCalls([], "max_tokens")).toEqual([]);
+  });
+
+  it("still bounds the salvaged calls to one write, same as any other turn", () => {
+    // The two rules compose: truncation decides which calls are INTACT,
+    // the write throttle decides how many may RUN. A truncated turn that
+    // finished three sections still commits one and leaves the rest for
+    // the next run.
+    const salvaged = completedToolCalls(
+      [{ name: "update_section" }, { name: "update_section" }, { name: "get_node" }, { name: "update_section" }],
+      "max_tokens",
+    );
+    const planned = planTurnToolCalls(salvaged, (n) => n === "update_section" || n === "remove_section");
+    expect(planned.filter((p) => p.execute).map((p) => p.call.name)).toEqual(["update_section", "get_node"]);
   });
 });
