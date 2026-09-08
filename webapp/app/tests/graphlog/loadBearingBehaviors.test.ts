@@ -29,7 +29,13 @@ import {
 } from "robustness-core/data/graphStructure.server";
 import { computeCoverageReport } from "robustness-core/data/graphProjectView.server";
 import { classifyStageSkill, isSkipInstruction } from "robustness-core/data/projectN02.server";
-import type { ReadmeSection } from "robustness-core/data/project.types";
+import {
+  README_INCOMPLETE_BANNER_PREFIX,
+  splitReadmeSections,
+  stripIncompleteBanner,
+  withIncompleteBanner,
+  type ReadmeSection,
+} from "robustness-core/data/project.types";
 import { completedToolCalls, planTurnToolCalls } from "robustness-core/data/llmProvider";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -660,5 +666,82 @@ describe("ADR-013: a truncated response keeps the calls it finished", () => {
     );
     const planned = planTurnToolCalls(salvaged, (n) => n === "update_section" || n === "remove_section");
     expect(planned.filter((p) => p.execute).map((p) => p.call.name)).toEqual(["update_section", "get_node"]);
+  });
+});
+
+// ── An incomplete README says so itself, in bold, on line one ───────────
+//
+// The failure got QUIETER as it got better handled. A stage that ran out
+// of output budget used to leave a blank README, which nobody could miss.
+// Now it commits the sections it finished, so the same failure produces a
+// page that reads perfectly well and is missing whole threads. The run
+// report says so on an admin page nobody opens while the README looks
+// fine, and the person reading the project is the one who needs to know.
+//
+// The trap for a future edit is that this looks like presentation and
+// belongs to the model, which writes everything else in the file. It does
+// not. A warning the model can reword, forget, or helpfully delete is not
+// a warning, which is why the banner is stripped before the model is ever
+// shown the README and reapplied by code afterward.
+
+describe("an incomplete README carries its own warning", () => {
+  const body = "# Casita\n\nWhere this stands.\n\n## Settled\n\nThe slab, poured 2026-08-01.\n";
+
+  it("puts the notice first, in bold, and leaves the rest alone", () => {
+    const out = withIncompleteBanner(body, ["graph-project-view: cut off by the output limit"]);
+    expect(out.startsWith(README_INCOMPLETE_BANNER_PREFIX)).toBe(true);
+    expect(out.split("\n")[0]).toContain("cut off by the output limit");
+    expect(out).toContain("# Casita");
+    expect(out).toContain("The slab, poured 2026-08-01.");
+  });
+
+  it("strips back to exactly what it started with", () => {
+    const out = withIncompleteBanner(body, ["sync-knowledge: nothing described"]);
+    expect(stripIncompleteBanner(out)).toBe(body);
+  });
+
+  it("replaces rather than stacks, however many runs warn", () => {
+    let out = withIncompleteBanner(body, ["first"]);
+    out = withIncompleteBanner(out, ["second"]);
+    out = withIncompleteBanner(out, ["third"]);
+    const banners = out.split("\n").filter((l) => l.startsWith(README_INCOMPLETE_BANNER_PREFIX));
+    expect(banners).toHaveLength(1);
+    expect(banners[0]).toContain("third");
+    expect(banners[0]).not.toContain("first");
+    expect(stripIncompleteBanner(out)).toBe(body);
+  });
+
+  // The half that matters most: the same call that raises the warning is
+  // the one that takes it down, so a README that got fixed cannot keep
+  // wearing a stale one.
+  it("a clean run clears it", () => {
+    const warned = withIncompleteBanner(body, ["something went wrong"]);
+    expect(withIncompleteBanner(warned, [])).toBe(body);
+  });
+
+  it("leaves a body that never had one untouched", () => {
+    expect(stripIncompleteBanner(body)).toBe(body);
+    expect(withIncompleteBanner(body, [])).toBe(body);
+    expect(stripIncompleteBanner("")).toBe("");
+  });
+
+  it("names a few reasons and counts the rest, rather than printing all of them", () => {
+    const out = withIncompleteBanner(body, ["one", "two", "three", "four", "five"]);
+    const line = out.split("\n")[0];
+    expect(line).toContain("one");
+    expect(line).toContain("three");
+    expect(line).not.toContain("four");
+    expect(line).toContain("2 more");
+  });
+
+  // The banner is prose at the top of the intro, not a section of its
+  // own. If it ever parsed as one it would sort, get quarantined, or be
+  // handed to the model as something to edit.
+  it("does not become a section", () => {
+    const warned = withIncompleteBanner(body, ["a reason"]);
+    const sections = splitReadmeSections(warned);
+    expect(sections[0].heading).toBe("");
+    expect(sections[0].content).toContain(README_INCOMPLETE_BANNER_PREFIX);
+    expect(sections.map((s) => s.heading)).toEqual(["", "Settled"]);
   });
 });

@@ -56,7 +56,12 @@ import {
   type VaultFolder,
 } from "./vault.server";
 import { downloadFileBytes } from "./file.server";
-import { getProjectStageSkill, isSkipInstruction, listExtraSkillFiles } from "./projectN02.server";
+import {
+  classifyStageSkill,
+  getProjectStageSkill,
+  isSkipInstruction,
+  listExtraSkillFiles,
+} from "./projectN02.server";
 import { AnthropicProvider, isGraphLogAgentConfigured } from "./anthropicProvider.server";
 import { classifyGraphLogError, recordGraphLogUsage } from "./graphLogMetrics.server";
 import { noopGraphLogRunRecorder, type GraphLogPerfRecorder } from "./graphLogPerf.server";
@@ -91,6 +96,17 @@ export type SyncKnowledgeResult =
        * image) — reported so a human can see what's being silently left
        * behind, not just "nothing happened". */
       unsupported: { fileId: string; name: string }[];
+      /** Reasons this stage finished without doing everything it set out
+       * to, in the same shape every other stage uses, so the pipeline can
+       * aggregate them and the run says so.
+       *
+       * This stage had no way to report ANYTHING until now, and it is the
+       * one that describes photos. A project whose `KNOWLEDGE.md` was
+       * never seeded skipped it in 201ms and the run said OK, so an
+       * uncaptioned photo had neither a caption nor a description, never
+       * earned a node, and never reached the README. Nothing about that
+       * was visible anywhere. */
+      incomplete: string[];
     }
   | { ok: false; error: string };
 
@@ -185,7 +201,13 @@ export async function runSyncKnowledge(
 
   const skill = await getProjectStageSkill(projectFolder, "KNOWLEDGE.md");
   if (isSkipInstruction(skill)) {
-    return { ok: true, skipped: true, entries: [], unsupported: [] };
+    // An explicit `skip` is a decision and stays quiet. A never-seeded
+    // file is a broken project that silently loses every uncaptioned
+    // photo, and says so. Same split as the other stages.
+    const missing = classifyStageSkill(skill) === "missing";
+    const reason = "skills/KNOWLEDGE.md is missing or empty, so no file was read and no photo was described";
+    if (missing) log(`sync-knowledge: ${reason}.`);
+    return { ok: true, skipped: true, entries: [], unsupported: [], incomplete: missing ? [reason] : [] };
   }
   if (!isGraphLogAgentConfigured()) {
     return { ok: false, error: "GraphLog isn't configured (missing ANTHROPIC_API_KEY)" };
@@ -195,7 +217,7 @@ export async function runSyncKnowledge(
   const syncsFolder = folders.find((f) => f.is_folder_type_root && f.folder_type === "syncs");
   if (!syncsFolder) {
     log("sync-knowledge: no syncs/ folder yet — nothing to do.");
-    return { ok: true, skipped: false, entries: [], unsupported: [] };
+    return { ok: true, skipped: false, entries: [], unsupported: [], incomplete: [] };
   }
 
   const candidates = await collectSyncCandidates(projectFolder.human_id, syncsFolder._id);
@@ -400,5 +422,18 @@ export async function runSyncKnowledge(
     entries.push({ fileId: source._id, name: source.name, knowledgeFileId, generated: true });
   }
 
-  return { ok: true, skipped: false, entries, unsupported };
+  // `unsupported` has always been collected "so a human can see what's
+  // being silently left behind" (see its own doc above) and has never had
+  // a reader. A file that reached this stage and produced nothing is a
+  // file that cannot reach the graph or the README, so it is exactly a
+  // reason the run did not do everything it set out to.
+  const incomplete: string[] =
+    unsupported.length > 0
+      ? [
+          `${unsupported.length} file(s) could not be read or described, so nothing about them can reach the graph: ` +
+            unsupported.slice(0, 5).map((u) => u.name).join(", ") +
+            (unsupported.length > 5 ? `, and ${unsupported.length - 5} more` : ""),
+        ]
+      : [];
+  return { ok: true, skipped: false, entries, unsupported, incomplete };
 }

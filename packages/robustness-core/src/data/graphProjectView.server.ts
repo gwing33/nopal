@@ -79,6 +79,8 @@ import {
   joinReadmeSections,
   splitFrontmatter,
   splitReadmeSections,
+  stripIncompleteBanner,
+  withIncompleteBanner,
   withReadmeBody,
   type ReadmeSection,
 } from "./project.types";
@@ -835,6 +837,41 @@ export function computeCoverageReport(
 }
 
 /**
+ * Raises or clears the README's own "this is incomplete" banner from the
+ * outcome of a WHOLE run, and is the only thing that writes it.
+ *
+ * Called by the pipeline (`graphLogAgent.server.ts`) after it has
+ * aggregated every stage, because no single stage knows enough to make
+ * this call: a README can be perfectly written by this stage and still be
+ * missing half a project because `sync-knowledge` skipped and the photos
+ * never became nodes. The stage that writes the README is not the stage
+ * that knows whether the README can be trusted.
+ *
+ * An empty `reasons` clears the banner, so the same call that raises the
+ * warning is the one that takes it down and a fixed README cannot keep
+ * wearing a stale one.
+ *
+ * Known gap, stated rather than discovered: a single-stage job run
+ * straight off the CLI or the API (`nopal graphlog graph-project-view`)
+ * does not go through the pipeline and so neither raises nor clears this.
+ * A stale banner is the safe direction (it over-warns rather than
+ * under-warns), but it is a gap.
+ */
+export async function syncReadmeIncompleteBanner(
+  projectFolder: VaultFolder,
+  reasons: string[],
+): Promise<boolean> {
+  const readme = await getReadmeFileForFolder(projectFolder.human_id, projectFolder._id);
+  if (!readme) return false;
+  const current = readme.content ?? "";
+  const { body } = splitFrontmatter(current);
+  const next = withReadmeBody(current, withIncompleteBanner(body, reasons));
+  if (next === current) return false;
+  await updateFileRef(readme._id, { content: next });
+  return true;
+}
+
+/**
  * Runs graph-project-view for one project: reconciles README.md against
  * `Graph/graph-structure.md`'s current content, once, if the graph has
  * changed since this stage last applied it.
@@ -936,7 +973,18 @@ export async function runGraphProjectView(
   const system = buildSystemPrompt(skillContent);
 
   const readmeFile = await getReadmeFileForFolder(projectFolder.human_id, projectFolder._id);
-  const initialContent = readmeFile?.content ?? "";
+  // The incomplete banner comes off BEFORE anything else touches the
+  // README, and the pipeline puts it back on afterward from the whole
+  // run's outcome (`syncReadmeIncompleteBanner` below). The model must
+  // never see it: handed a warning inside a document it has been asked to
+  // improve, the helpful thing to do is delete it, and then the one signal
+  // that this README is untrustworthy is gone. Same treatment "Notes on
+  // this view" gets, and for the same reason -- code owns it end to end.
+  const rawReadmeContent = readmeFile?.content ?? "";
+  const initialContent = withReadmeBody(
+    rawReadmeContent,
+    stripIncompleteBanner(splitFrontmatter(rawReadmeContent).body),
+  );
 
   // Ensure "Notes on this view" exists and pull out anything unstamped —
   // BEFORE the model ever sees the README, so its own prompt already
@@ -988,6 +1036,34 @@ export async function runGraphProjectView(
     unstampedComments: unstamped,
   });
 
+  // Every way this stage can stop short of a clean finish, reported the
+  // same way. These used to hardcode `changed: false, summary: []`, which
+  // was wrong in the direction that matters least noisily: a run that
+  // committed four sections and then hit a limit reported that it had
+  // changed nothing, so the one signal saying "go look at this README"
+  // was an empty diff. `incomplete` is what marks the run unfinished; the
+  // summary is what it actually did. Both are true at once and both get
+  // reported -- an unfinished run is never allowed to read as a clean
+  // one, and a partial one is never allowed to read as a no-op.
+  //
+  // Declared out here, not inside the `try`, so the catch below reports
+  // identically. That path is NOT only for bugs: `throwIfGraphLogCancelled`
+  // throws on the Stop button, an ordinary thing for a person to press,
+  // and it used to report "changed nothing" about a README this run had
+  // already rewritten.
+  const partial = (reason: string): GraphProjectViewResult => {
+    log(`graph-project-view: ${reason} — will retry next run.`);
+    if (summaries.length > 0) log(`graph-project-view: kept this run's committed work — ${summaries.join(", ")}.`);
+    return {
+      ok: true,
+      skipped: false,
+      changed: summaries.length > 0,
+      summary: summaries,
+      coverage: null,
+      incomplete: [reason],
+    };
+  };
+
   const callStart = Date.now();
   try {
     const llm = opts.provider ?? new AnthropicProvider();
@@ -1021,26 +1097,6 @@ export async function runGraphProjectView(
       outcome: truncated ? "error" : "ok",
     });
 
-    // These three used to hardcode `changed: false, summary: []`, which
-    // was wrong in the direction that matters least noisily: a run that
-    // committed four sections and then hit a limit reported that it had
-    // changed nothing, so the one signal saying "go look at this README"
-    // was an empty diff. `incomplete` is what marks the run unfinished;
-    // the summary is what it actually did. Both are true at once and
-    // both get reported -- an unfinished run is never allowed to read as
-    // a clean one, and a partial one is never allowed to read as a no-op.
-    const partial = (reason: string): GraphProjectViewResult => {
-      log(`graph-project-view: ${reason} — will retry next run.`);
-      if (summaries.length > 0) log(`graph-project-view: kept this run's committed work — ${summaries.join(", ")}.`);
-      return {
-        ok: true,
-        skipped: false,
-        changed: summaries.length > 0,
-        summary: summaries,
-        coverage: null,
-        incomplete: [reason],
-      };
-    };
     if (truncated) return partial("update was cut off by the model's own output limit");
     if (hitMaxTurns) return partial("hit its turn limit before finishing");
     if (hadRefusal()) return partial("had at least one refused edit");
@@ -1112,13 +1168,6 @@ export async function runGraphProjectView(
       durationMs,
       outcome: "error",
     });
-    return {
-      ok: true,
-      skipped: false,
-      changed: false,
-      summary: [],
-      coverage: null,
-      incomplete: [`stopped on an error: ${err instanceof Error ? err.message : String(err)}`],
-    };
+    return partial(`stopped on an error: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
