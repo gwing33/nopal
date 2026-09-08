@@ -988,6 +988,34 @@ export async function runGraphProjectView(
     unstampedComments: unstamped,
   });
 
+  // Every way this stage can stop short of a clean finish, reported the
+  // same way. These used to hardcode `changed: false, summary: []`, which
+  // was wrong in the direction that matters least noisily: a run that
+  // committed four sections and then hit a limit reported that it had
+  // changed nothing, so the one signal saying "go look at this README"
+  // was an empty diff. `incomplete` is what marks the run unfinished; the
+  // summary is what it actually did. Both are true at once and both get
+  // reported -- an unfinished run is never allowed to read as a clean
+  // one, and a partial one is never allowed to read as a no-op.
+  //
+  // Declared out here, not inside the `try`, so the catch below reports
+  // identically. That path is NOT only for bugs: `throwIfGraphLogCancelled`
+  // throws on the Stop button, an ordinary thing for a person to press,
+  // and it used to report "changed nothing" about a README this run had
+  // already rewritten.
+  const partial = (reason: string): GraphProjectViewResult => {
+    log(`graph-project-view: ${reason} — will retry next run.`);
+    if (summaries.length > 0) log(`graph-project-view: kept this run's committed work — ${summaries.join(", ")}.`);
+    return {
+      ok: true,
+      skipped: false,
+      changed: summaries.length > 0,
+      summary: summaries,
+      coverage: null,
+      incomplete: [reason],
+    };
+  };
+
   const callStart = Date.now();
   try {
     const llm = opts.provider ?? new AnthropicProvider();
@@ -1021,26 +1049,6 @@ export async function runGraphProjectView(
       outcome: truncated ? "error" : "ok",
     });
 
-    // These three used to hardcode `changed: false, summary: []`, which
-    // was wrong in the direction that matters least noisily: a run that
-    // committed four sections and then hit a limit reported that it had
-    // changed nothing, so the one signal saying "go look at this README"
-    // was an empty diff. `incomplete` is what marks the run unfinished;
-    // the summary is what it actually did. Both are true at once and
-    // both get reported -- an unfinished run is never allowed to read as
-    // a clean one, and a partial one is never allowed to read as a no-op.
-    const partial = (reason: string): GraphProjectViewResult => {
-      log(`graph-project-view: ${reason} — will retry next run.`);
-      if (summaries.length > 0) log(`graph-project-view: kept this run's committed work — ${summaries.join(", ")}.`);
-      return {
-        ok: true,
-        skipped: false,
-        changed: summaries.length > 0,
-        summary: summaries,
-        coverage: null,
-        incomplete: [reason],
-      };
-    };
     if (truncated) return partial("update was cut off by the model's own output limit");
     if (hitMaxTurns) return partial("hit its turn limit before finishing");
     if (hadRefusal()) return partial("had at least one refused edit");
@@ -1112,13 +1120,6 @@ export async function runGraphProjectView(
       durationMs,
       outcome: "error",
     });
-    return {
-      ok: true,
-      skipped: false,
-      changed: false,
-      summary: [],
-      coverage: null,
-      incomplete: [`stopped on an error: ${err instanceof Error ? err.message : String(err)}`],
-    };
+    return partial(`stopped on an error: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
