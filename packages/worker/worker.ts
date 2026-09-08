@@ -35,6 +35,22 @@ import {
   finishGraphLogRun,
   type GraphLogPerfRecorder,
 } from "robustness-core/data/graphLogPerf.server";
+import {
+  ADMIN_SCRIPTS_QUEUE_NAME,
+  type AdminScriptJobData,
+} from "robustness-core/data/adminScriptsQueue.server";
+import { getAdminScript } from "robustness-core/data/adminScriptsRegistry.server";
+import {
+  startAdminScriptRun,
+  finishAdminScriptRun,
+} from "robustness-core/data/adminScriptRuns.server";
+import {
+  PUBLIC_ZIP_QUEUE_NAME,
+  runPublicFolderZip,
+  type PublicZipJobData,
+  type PublicZipJobResult,
+  type PublicZipProgress,
+} from "robustness-core/data/publicZip.server";
 
 const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
 // Sequential per worker process on purpose — this worker's own
@@ -232,6 +248,118 @@ graphLogWorker.on("failed", (job, err) => {
 
 console.log(`[worker] GraphLog worker listening on queue "${GRAPHLOG_QUEUE_NAME}" (concurrency ${CONCURRENCY}).`);
 
+// ─── Admin Scripts ─────────────────────────────────────────────────────────────
+// One-off/repair scripts registered in `adminScriptsRegistry.server.ts`,
+// triggered from /fruits/maker/scripts -- see that registry's own module
+// doc for why this exists instead of running scripts locally against a
+// `fly proxy` tunnel.
+
+// Serialized (queue concurrency 1, see `adminScriptsQueue.server.ts`), so
+// unlike GraphLog's per-project lock, no lock is needed here -- the queue
+// itself is the only thing that can ever be running at once.
+const ADMIN_SCRIPTS_CONCURRENCY = 1;
+
+async function processAdminScriptJob(job: Job<AdminScriptJobData, unknown, string>): Promise<unknown> {
+  const logLines: string[] = [];
+  const onProgress = (line: string) => {
+    logLines.push(line);
+    job.log(line).catch((err) => console.error("Failed to write job log line:", err));
+  };
+
+  // Same "job id doubles as the run's own id" convention GraphLog's run
+  // tracking uses (see `graphLogPerf.server.ts`'s module doc).
+  await startAdminScriptRun({
+    runId: job.id!,
+    humanId: job.data.actingHumanId,
+    scriptName: job.data.scriptName,
+    dryRun: job.data.dryRun,
+    args: job.data.args,
+  });
+
+  try {
+    const script = getAdminScript(job.data.scriptName);
+    if (!script) throw new Error(`Unknown admin script: "${job.data.scriptName}"`);
+    const result = await script.run({ dryRun: job.data.dryRun, args: job.data.args, log: onProgress });
+    await finishAdminScriptRun(job.id!, { ok: true, summary: result.summary, log: logLines });
+    return result;
+  } catch (err) {
+    await finishAdminScriptRun(job.id!, {
+      ok: false,
+      error: err instanceof Error ? err.message : "Unknown error",
+      log: logLines,
+    });
+    throw err;
+  }
+}
+
+const adminScriptsWorker = new Worker<AdminScriptJobData, unknown, string>(
+  ADMIN_SCRIPTS_QUEUE_NAME,
+  processAdminScriptJob,
+  {
+    connection: { url: REDIS_URL, maxRetriesPerRequest: null },
+    concurrency: ADMIN_SCRIPTS_CONCURRENCY,
+  },
+);
+
+adminScriptsWorker.on("completed", (job) => {
+  console.log(`[worker] admin-script "${job.data.scriptName}" (${job.id}) completed.`);
+});
+adminScriptsWorker.on("failed", (job, err) => {
+  console.error(`[worker] admin-script "${job?.data.scriptName}" (${job?.id}) failed:`, err);
+});
+
+console.log(
+  `[worker] Admin scripts worker listening on queue "${ADMIN_SCRIPTS_QUEUE_NAME}" (concurrency ${ADMIN_SCRIPTS_CONCURRENCY}).`,
+);
+
+// ─── Public folder zip ("Download all" on /public/folder/:folderId) ──────────────────
+// See `publicZip.server.ts`'s own module doc for the caching/dedup shape.
+// No per-folder lock needed like GraphLog's -- two concurrent jobs for the
+// SAME (folder, fingerprint) can't happen at all (`ensurePublicZipJob`
+// only ever enqueues one), and two DIFFERENT folders zipping at once is
+// perfectly fine to run in parallel.
+const PUBLIC_ZIP_CONCURRENCY = 2;
+
+async function processPublicZipJob(
+  job: Job<PublicZipJobData, PublicZipJobResult, string>,
+): Promise<PublicZipJobResult> {
+  return runPublicFolderZip(job.data.folderId, (progress: PublicZipProgress) => {
+    job.updateProgress(progress).catch((err) => console.error("Failed to update zip job progress:", err));
+  });
+}
+
+const publicZipWorker = new Worker<PublicZipJobData, PublicZipJobResult, string>(
+  PUBLIC_ZIP_QUEUE_NAME,
+  processPublicZipJob,
+  {
+    connection: { url: REDIS_URL, maxRetriesPerRequest: null },
+    concurrency: PUBLIC_ZIP_CONCURRENCY,
+    // BullMQ's default lock (30s, auto-renewed every ~15s) is tuned for
+    // fast jobs -- a real production incident showed a big-photo folder's
+    // zip job missing its renewal window ("could not renew lock for job
+    // ...") under memory pressure from the OLD buffer-everything
+    // implementation (see `publicZip.server.ts`'s own doc for the fix).
+    // Streaming now keeps memory far more bounded, but this is kept as a
+    // deliberate safety margin: a real GC pause or a slow file (large
+    // upload over a slow connection) has much more room before the lock
+    // renewal timer could ever miss its window again.
+    lockDuration: 10 * 60 * 1000,
+  },
+);
+
+publicZipWorker.on("completed", (job) => {
+  console.log(
+    `[worker] public zip ${job.id} completed (${job.returnvalue.fileCount} files, ${job.returnvalue.size} bytes).`,
+  );
+});
+publicZipWorker.on("failed", (job, err) => {
+  console.error(`[worker] public zip ${job?.id} failed:`, err);
+});
+
+console.log(
+  `[worker] Public folder zip worker listening on queue "${PUBLIC_ZIP_QUEUE_NAME}" (concurrency ${PUBLIC_ZIP_CONCURRENCY}).`,
+);
+
 // Graceful shutdown — let an in-flight job finish (or fail cleanly) rather
 // than abandon it mid-run: GraphLog's own idempotency makes a clean
 // re-run of an ABANDONED job safe, but an UNGRACEFULLY killed one can
@@ -241,7 +369,7 @@ async function shutdown(signal: string) {
   if (shuttingDown) return;
   shuttingDown = true;
   console.log(`[worker] received ${signal}, finishing in-flight jobs before exit…`);
-  await graphLogWorker.close();
+  await Promise.all([graphLogWorker.close(), adminScriptsWorker.close(), publicZipWorker.close()]);
   process.exit(0);
 }
 process.on("SIGTERM", () => shutdown("SIGTERM"));

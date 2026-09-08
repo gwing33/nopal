@@ -330,6 +330,7 @@ pub enum RunSummary {
         unchanged: u32,
         total_local: usize,
         remote_only: usize,
+        renamed_dirs: u32,
     },
     TwoWay {
         pushed: u32,
@@ -338,6 +339,7 @@ pub enum RunSummary {
         archived: u32,
         deleted_local: u32,
         conflicts: u32,
+        renamed_dirs: u32,
     },
 }
 
@@ -351,9 +353,10 @@ impl RunSummary {
                 unchanged,
                 total_local,
                 remote_only,
+                renamed_dirs,
             } => {
                 let mut line = format!(
-                    "done: {uploaded} new, {replaced} updated, {unchanged} unchanged ({total_local} local file(s))"
+                    "done: {renamed_dirs} folder(s) renamed, {uploaded} new, {replaced} updated, {unchanged} unchanged ({total_local} local file(s))"
                 );
                 if *remote_only > 0 {
                     line.push_str(&format!(
@@ -370,8 +373,9 @@ impl RunSummary {
                 archived,
                 deleted_local,
                 conflicts,
+                renamed_dirs,
             } => format!(
-                "done: {pushed} pushed, {pulled} pulled, {unchanged} unchanged, \
+                "done: {renamed_dirs} folder(s) renamed, {pushed} pushed, {pulled} pulled, {unchanged} unchanged, \
                  {archived} archived, {deleted_local} deleted locally, {conflicts} conflict(s)"
             ),
         }
@@ -520,6 +524,54 @@ pub fn run_target(
         );
     }
 
+    // 2b. Folder rename/move detection: a local directory that's been
+    // renamed (or moved to a different local path, same parent) looks,
+    // pathwise, exactly like "every file under the old path vanished and
+    // an identical set of files appeared under a new path" — that's
+    // rich enough to recognize with confidence (see `detect_dir_renames`),
+    // so it becomes a single remote rename call instead of every file
+    // being re-uploaded (and the old copies left behind/archived).
+    let dir_renames = detect_dir_renames(&local_files, &folder_paths, &remote_files)?;
+    for r in &dir_renames {
+        let new_name = r
+            .new_rel
+            .rsplit_once('/')
+            .map(|(_, n)| n)
+            .unwrap_or(&r.new_rel);
+        log(&format!("  \u{21bb} {} \u{2192} {}", r.old_rel, r.new_rel));
+        rename_remote_folder(client, &r.old_folder_id, new_name)?;
+
+        // Re-point every folder_paths/remote_files entry under the old
+        // path (the renamed dir itself, and everything nested inside it)
+        // at the new path — a single prefix swap, since the manifest
+        // already reflects the whole subtree under the old name.
+        let old_prefix = format!("{}/", r.old_rel);
+        let new_prefix = format!("{}/", r.new_rel);
+
+        let keys: Vec<String> = folder_paths.keys().cloned().collect();
+        for k in keys {
+            if k == r.old_rel {
+                if let Some(id) = folder_paths.remove(&k) {
+                    folder_paths.insert(r.new_rel.clone(), id);
+                }
+            } else if let Some(suffix) = k.strip_prefix(&old_prefix) {
+                if let Some(id) = folder_paths.remove(&k) {
+                    folder_paths.insert(format!("{new_prefix}{suffix}"), id);
+                }
+            }
+        }
+
+        let file_keys: Vec<String> = remote_files.keys().cloned().collect();
+        for k in file_keys {
+            if let Some(suffix) = k.strip_prefix(&old_prefix) {
+                if let Some(entry) = remote_files.remove(&k) {
+                    remote_files.insert(format!("{new_prefix}{suffix}"), entry);
+                }
+            }
+        }
+    }
+    let renamed_dirs = dir_renames.len() as u32;
+
     // 3. Diff + apply.
     let summary = if target.two_way {
         run_two_way(
@@ -529,6 +581,7 @@ pub fn run_target(
             &local_files,
             &remote_files,
             &mut folder_paths,
+            renamed_dirs,
             log,
         )?
     } else {
@@ -538,6 +591,7 @@ pub fn run_target(
             &local_files,
             &remote_files,
             &mut folder_paths,
+            renamed_dirs,
             log,
         )?
     };
@@ -551,14 +605,156 @@ pub fn run_target(
     Ok(summary)
 }
 
+// ─── Folder rename detection ────────────────────────────────────────────
+
+/// One detected local folder rename (or in-place move — same parent,
+/// different name): `old_rel`/`old_folder_id` is the remote side as it
+/// exists right now, `new_rel` the local path it should become.
+struct DirRename {
+    old_folder_id: String,
+    old_rel: String,
+    new_rel: String,
+}
+
+/// Every ancestor directory (relative path, root excluded) of every local
+/// file — the directories the local side actually cares about. Cheap to
+/// derive from `local_files` directly rather than re-walking the
+/// filesystem, and — since it only includes dirs that contain files —
+/// self-limiting in a way that keeps rename detection meaningful (an empty
+/// directory has no content to match on, so it's never a candidate).
+fn local_dir_set(local_files: &[(String, PathBuf)]) -> std::collections::HashSet<String> {
+    let mut dirs = std::collections::HashSet::new();
+    for (rel, _) in local_files {
+        let mut cur = rel.as_str();
+        while let Some((parent, _)) = cur.rsplit_once('/') {
+            dirs.insert(parent.to_string());
+            cur = parent;
+        }
+    }
+    dirs
+}
+
+/// The remote-side "content signature" of everything currently living
+/// under `dir_rel` (the whole subtree, not just direct children) — sorted
+/// (path-within-dir, hash) pairs. `None` if the dir has nothing under it,
+/// or any file lacks a hash (legacy/web-multipart content) and so can't be
+/// matched with confidence.
+fn remote_dir_signature(
+    remote_files: &HashMap<String, RemoteEntry>,
+    dir_rel: &str,
+) -> Option<Vec<(String, String)>> {
+    let prefix = format!("{dir_rel}/");
+    let mut sig = Vec::new();
+    for (rel, entry) in remote_files {
+        if let Some(suffix) = rel.strip_prefix(&prefix) {
+            sig.push((suffix.to_string(), entry.hash.clone()?));
+        }
+    }
+    if sig.is_empty() {
+        return None;
+    }
+    sig.sort();
+    Some(sig)
+}
+
+/// The local-side counterpart of `remote_dir_signature` — same shape, so
+/// the two can be compared directly.
+fn local_dir_signature(
+    local_files: &[(String, PathBuf)],
+    dir_rel: &str,
+) -> Result<Option<Vec<(String, String)>>> {
+    let prefix = format!("{dir_rel}/");
+    let mut sig = Vec::new();
+    for (rel, abs) in local_files {
+        if let Some(suffix) = rel.strip_prefix(&prefix) {
+            sig.push((suffix.to_string(), sha256_file(abs)?));
+        }
+    }
+    if sig.is_empty() {
+        return Ok(None);
+    }
+    sig.sort();
+    Ok(Some(sig))
+}
+
+/// Finds local folder renames: a remote dir with no local counterpart at
+/// its path ("vanished"), paired with a local dir with no remote
+/// counterpart ("new") that (a) shares the same PARENT path — this only
+/// recognizes an in-place rename, not a move to a different parent, which
+/// still falls back to the old delete/recreate behavior — and (b) has an
+/// identical content signature, so the match is confident rather than
+/// guessed. Nested subdirectories of a matched pair are handled by the
+/// caller's blanket prefix rewrite and never need their own entry here.
+fn detect_dir_renames(
+    local_files: &[(String, PathBuf)],
+    folder_paths: &HashMap<String, String>,
+    remote_files: &HashMap<String, RemoteEntry>,
+) -> Result<Vec<DirRename>> {
+    let local_dirs = local_dir_set(local_files);
+
+    let mut old_candidates: Vec<&String> = folder_paths
+        .keys()
+        .filter(|d| !d.is_empty() && !local_dirs.contains(*d))
+        .collect();
+    old_candidates.sort_by_key(|d| d.matches('/').count());
+
+    let new_candidates: Vec<&String> = local_dirs
+        .iter()
+        .filter(|d| !folder_paths.contains_key(*d))
+        .collect();
+
+    let mut used_new: std::collections::HashSet<&String> = std::collections::HashSet::new();
+    let mut matches = Vec::new();
+    for old_rel in old_candidates {
+        let old_parent = old_rel.rsplit_once('/').map(|(p, _)| p).unwrap_or("");
+        let Some(old_sig) = remote_dir_signature(remote_files, old_rel) else {
+            continue;
+        };
+        for new_rel in &new_candidates {
+            if used_new.contains(*new_rel) {
+                continue;
+            }
+            let new_parent = new_rel.rsplit_once('/').map(|(p, _)| p).unwrap_or("");
+            if new_parent != old_parent {
+                continue;
+            }
+            let Some(new_sig) = local_dir_signature(local_files, new_rel)? else {
+                continue;
+            };
+            if old_sig == new_sig {
+                matches.push(DirRename {
+                    old_folder_id: folder_paths[old_rel].clone(),
+                    old_rel: old_rel.clone(),
+                    new_rel: (*new_rel).clone(),
+                });
+                used_new.insert(new_rel);
+                break;
+            }
+        }
+    }
+    Ok(matches)
+}
+
+/// Renames a remote vault folder in place (same parent) — the server-side
+/// half of a detected `DirRename`.
+fn rename_remote_folder(client: &Client, folder_id: &str, new_name: &str) -> Result<()> {
+    let _: serde_json::Value = client.patch_json(
+        &format!("/api/vault/folders/{folder_id}"),
+        &serde_json::json!({ "name": new_name }),
+    )?;
+    Ok(())
+}
+
 /// The original push-only engine: local is truth, the vault never loses a
 /// file, no state needed.
+#[allow(clippy::too_many_arguments)]
 fn run_push_only(
     client: &Client,
     target: &SyncTarget,
     local_files: &[(String, PathBuf)],
     remote_files: &HashMap<String, RemoteEntry>,
     folder_paths: &mut HashMap<String, String>,
+    renamed_dirs: u32,
     log: &mut dyn FnMut(&str),
 ) -> Result<RunSummary> {
     let (mut uploaded, mut replaced, mut unchanged) = (0u32, 0u32, 0u32);
@@ -594,6 +790,7 @@ fn run_push_only(
         unchanged,
         total_local: local_files.len(),
         remote_only,
+        renamed_dirs,
     })
 }
 
@@ -626,6 +823,7 @@ fn run_two_way(
     local_files: &[(String, PathBuf)],
     remote_files: &HashMap<String, RemoteEntry>,
     folder_paths: &mut HashMap<String, String>,
+    renamed_dirs: u32,
     log: &mut dyn FnMut(&str),
 ) -> Result<RunSummary> {
     let mut state = load_state(&target._id);
@@ -804,6 +1002,7 @@ fn run_two_way(
         archived,
         deleted_local,
         conflicts,
+        renamed_dirs,
     })
 }
 
@@ -1017,6 +1216,134 @@ fn ensure_remote_dir(
         parent_id = folder._id;
     }
     Ok(parent_id)
+}
+
+#[cfg(test)]
+mod dir_rename_tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn scratch_dir(label: &str) -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        std::env::temp_dir().join(format!("nopal-sync-test-{label}-{}", nanos))
+    }
+
+    fn write_file(path: &Path, content: &str) {
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, content).unwrap();
+    }
+
+    #[test]
+    fn detects_pure_folder_rename_including_nested_contents() {
+        let local_root = scratch_dir("rename");
+        write_file(&local_root.join("newname/file1.txt"), "hello");
+        write_file(&local_root.join("newname/sub/file2.txt"), "world");
+
+        let mut local_files = Vec::new();
+        scan_dir(&local_root, "", &mut local_files).unwrap();
+
+        let mut folder_paths: HashMap<String, String> = HashMap::new();
+        folder_paths.insert(String::new(), "root_id".into());
+        folder_paths.insert("oldname".into(), "old_id".into());
+        folder_paths.insert("oldname/sub".into(), "sub_id".into());
+
+        let hash_hello = sha256_file(&local_root.join("newname/file1.txt")).unwrap();
+        let hash_world = sha256_file(&local_root.join("newname/sub/file2.txt")).unwrap();
+
+        let mut remote_files: HashMap<String, RemoteEntry> = HashMap::new();
+        remote_files.insert(
+            "oldname/file1.txt".into(),
+            RemoteEntry {
+                file_id: "f1".into(),
+                hash: Some(hash_hello),
+                has_s3: false,
+            },
+        );
+        remote_files.insert(
+            "oldname/sub/file2.txt".into(),
+            RemoteEntry {
+                file_id: "f2".into(),
+                hash: Some(hash_world),
+                has_s3: false,
+            },
+        );
+
+        let renames = detect_dir_renames(&local_files, &folder_paths, &remote_files).unwrap();
+        assert_eq!(renames.len(), 1, "expected exactly one detected rename");
+        assert_eq!(renames[0].old_rel, "oldname");
+        assert_eq!(renames[0].new_rel, "newname");
+        assert_eq!(renames[0].old_folder_id, "old_id");
+
+        let _ = fs::remove_dir_all(&local_root);
+    }
+
+    #[test]
+    fn does_not_match_an_unrelated_new_folder() {
+        let local_root = scratch_dir("unrelated");
+        write_file(
+            &local_root.join("brandnew/file1.txt"),
+            "totally different content",
+        );
+
+        let mut local_files = Vec::new();
+        scan_dir(&local_root, "", &mut local_files).unwrap();
+
+        let mut folder_paths: HashMap<String, String> = HashMap::new();
+        folder_paths.insert(String::new(), "root_id".into());
+        folder_paths.insert("oldname".into(), "old_id".into());
+
+        let mut remote_files: HashMap<String, RemoteEntry> = HashMap::new();
+        remote_files.insert(
+            "oldname/file1.txt".into(),
+            RemoteEntry {
+                file_id: "f1".into(),
+                hash: Some("deadbeef".into()),
+                has_s3: false,
+            },
+        );
+
+        let renames = detect_dir_renames(&local_files, &folder_paths, &remote_files).unwrap();
+        assert!(renames.is_empty());
+
+        let _ = fs::remove_dir_all(&local_root);
+    }
+
+    #[test]
+    fn does_not_match_across_different_parents() {
+        // A folder moved to a different parent (not just renamed in place)
+        // is out of scope for this detector — it should fall back to the
+        // old delete/recreate behavior rather than guess.
+        let local_root = scratch_dir("moved");
+        write_file(&local_root.join("newparent/newname/file1.txt"), "hello");
+
+        let mut local_files = Vec::new();
+        scan_dir(&local_root, "", &mut local_files).unwrap();
+
+        let mut folder_paths: HashMap<String, String> = HashMap::new();
+        folder_paths.insert(String::new(), "root_id".into());
+        folder_paths.insert("oldparent".into(), "old_parent_id".into());
+        folder_paths.insert("oldparent/oldname".into(), "old_id".into());
+        folder_paths.insert("newparent".into(), "new_parent_id".into());
+
+        let hash_hello = sha256_file(&local_root.join("newparent/newname/file1.txt")).unwrap();
+        let mut remote_files: HashMap<String, RemoteEntry> = HashMap::new();
+        remote_files.insert(
+            "oldparent/oldname/file1.txt".into(),
+            RemoteEntry {
+                file_id: "f1".into(),
+                hash: Some(hash_hello),
+                has_s3: false,
+            },
+        );
+
+        let renames = detect_dir_renames(&local_files, &folder_paths, &remote_files).unwrap();
+        assert!(renames.is_empty());
+
+        let _ = fs::remove_dir_all(&local_root);
+    }
 }
 
 fn sha256_file(path: &Path) -> Result<String> {

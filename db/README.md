@@ -107,6 +107,42 @@ A unique index on `name` ensures each migration is recorded only once. Before ap
 
 ---
 
+## Disk space & compaction
+
+The Fly volume backing this database auto-extends when it crosses 80% usage
+(see `[mounts]` in `fly.toml`), and `start.sh` runs a background watchdog that
+logs (and can alert via `DISK_ALERT_WEBHOOK_URL`) at 75%/90% usage.
+
+SurrealDB's `surrealkv` storage engine doesn't currently compact its value
+log automatically, so disk usage can grow well beyond the size of the live
+dataset over time. See [`COMPACTION.md`](./COMPACTION.md) for the root-cause
+analysis and the runbook for reclaiming that space.
+
+---
+
+## Staging environment
+
+`nopal-webapp-staging` (see `webapp/fly.staging.toml`) is a separate Fly
+app running the same webapp image as prod, pointed at an isolated
+`staging` database on this SAME SurrealDB instance/namespace — no second
+database machine to pay for or keep patched.
+
+Refresh staging from a live copy of prod whenever it's gone stale enough
+to matter (no fixed schedule needed — unlike `COMPACTION.md`'s runbook,
+this only ever touches the isolated `staging` database, never prod, so
+it's safe to run any time):
+
+```sh
+make clone-staging-db SURREAL_PASS=<prod-pass>
+```
+
+See `clone-to-staging.sh` for what it does (export prod's `opuntia` → wipe
+`staging` → reimport) and its one real limitation: it carries prod's
+schema as of that export, but not any migration that lands in `opuntia`
+*after* the export and hasn't also been applied to `staging` directly.
+
+---
+
 ## Pagination
 
 One of the first concepts I need to tackle is pagination.

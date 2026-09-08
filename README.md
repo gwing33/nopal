@@ -30,8 +30,48 @@ $ grpcui --plaintext 0.0.0.0:8080
 
 # Deploy
 
-This site uses fly.io.
+This site uses fly.io, across three separate apps (`db`, `webapp`, the
+GraphLog `worker` — see each one's own `fly.toml`) plus a staging copy of
+the webapp (`webapp/fly.staging.toml`, see `db/README.md`'s "Staging
+environment" section).
+
+## Deploy pipeline
+
+`.github/workflows/deploy.yml` runs on every push to `main`:
+
+1. **`test`** — `pnpm --filter remix run test --run`.
+2. **`deploy-staging`** — deploys the webapp to `nopal-webapp-staging`
+   automatically once tests pass. No approval needed.
+3. **`deploy-production`** — deploys `db`, `webapp`, and `worker` to
+   production, but only once a required reviewer approves the run (the
+   `production` GitHub Environment, Settings -> Environments, has
+   required reviewers configured). Find the pending run under the repo's
+   **Actions** tab to approve or reject it.
+
+All three Fly apps deploy through one `FLY_API_TOKEN` repo secret — an
+org-scoped deploy token (`fly tokens create org`), since the pipeline
+touches more than one app. Rotate it the same way (`fly tokens create
+org -o personal`, then `gh secret set FLY_API_TOKEN`) if it's ever leaked
+or simply due for renewal (created with a 1-year expiry).
+
+### Discord notifications
+
+Both `deploy-staging` and `deploy-production` post a result (success or
+failure, with commit/actor/run link) to Discord via
+`.github/actions/notify-discord`, a small composite action that posts to
+an incoming webhook — deliberately NOT the app's own `DISCORD_BOT_TOKEN`/
+`DISCORD_CHANNEL_ID` (those are unused today and a bot token is broader-
+scoped than this needs). Requires a `DISCORD_WEBHOOK_URL` repo secret
+(Discord: Server Settings -> Integrations -> Webhooks -> New Webhook,
+then `gh secret set DISCORD_WEBHOOK_URL`); silently skipped (a log line,
+not a failure) if that secret isn't set.
+
+## Manual deploys
+
+Still available if you need to deploy outside the pipeline (a hotfix, or
+while iterating before a PR merges):
 
 ```bash
-$ fly deploy
+make deploy          # db + webapp + worker, to production
+make deploy-staging  # webapp only, to staging
 ```

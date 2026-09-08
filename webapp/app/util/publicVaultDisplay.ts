@@ -41,3 +41,7 @@ export function isMarkdownFile(file: {
     file.name.toLowerCase().endsWith(".md")
   );
 }
+
+export function isImageFile(file: { content_type: string }): boolean {
+  return file.content_type.startsWith("image/");
+}

@@ -12,6 +12,8 @@ import {
 } from "@aws-sdk/client-s3";
 import type { S3ClientConfig } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { Upload } from "@aws-sdk/lib-storage";
+import sharp from "sharp";
 
 // S3_ENDPOINT        – full endpoint URL for the S3 client
 //                      local:  http://minio:9000  (internal Docker service name)
@@ -207,6 +209,136 @@ export async function downloadFileBytes(s3Key: string): Promise<Buffer> {
   return Buffer.from(bytes);
 }
 
+const RANGE_CHUNK_SIZE = 8 * 1024 * 1024;
+
+/**
+ * Reads an S3 object via small, fixed-size HTTP Range requests (8MB each)
+ * rather than one open-ended GetObjectCommand covering the whole object.
+ *
+ * This exists because the plain "whole-object" streaming response Body
+ * from the AWS SDK was measured, while diagnosing a real production OOM,
+ * to NOT reliably bound memory the way a genuine incremental stream
+ * should -- a synthetic, well-behaved pull-based Readable kept archiver's
+ * own memory flat regardless of total size, but the SDK's own open-ended
+ * GetObjectCommand response stream did not behave the same way. Explicitly
+ * bounding every individual REQUEST's own response size via Range sidesteps
+ * that uncertainty entirely, regardless of the SDK/runtime/network's
+ * internal streaming behavior for an open-ended request -- each chunk is
+ * a brand new, small, self-contained HTTP response.
+ */
+class S3RangeReadStream extends Readable {
+  private position = 0;
+  private totalSize: number | null = null;
+  private reading = false;
+
+  constructor(
+    private client: S3Client,
+    private bucket: string | undefined,
+    private key: string,
+  ) {
+    super();
+  }
+
+  async _read(): Promise<void> {
+    if (this.reading) return;
+    this.reading = true;
+    try {
+      if (this.totalSize !== null && this.position >= this.totalSize) {
+        this.push(null);
+        return;
+      }
+      const end = this.position + RANGE_CHUNK_SIZE - 1;
+      const res = await this.client.send(
+        new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: this.key,
+          Range: `bytes=${this.position}-${end}`,
+        }),
+      );
+      if (this.totalSize === null) {
+        const match = res.ContentRange?.match(/\/(\d+)$/);
+        this.totalSize = match ? parseInt(match[1], 10) : null;
+      }
+      const bytes = await res.Body!.transformToByteArray();
+      this.position += bytes.length;
+      if (bytes.length === 0) {
+        this.push(null);
+        return;
+      }
+      this.push(Buffer.from(bytes));
+    } catch (err) {
+      this.destroy(err as Error);
+    } finally {
+      this.reading = false;
+    }
+  }
+}
+
+/**
+ * Streaming counterpart to downloadFileBytes -- returns the object as a
+ * Node.js Readable that internally fetches it in small Range-bounded
+ * chunks (see S3RangeReadStream above), instead of buffering the whole
+ * thing into memory first. Used by publicZip.server.ts and the public
+ * single-file share route to feed a file's bytes onward (into a zip
+ * archive, or straight through as an HTTP response body) without ever
+ * holding a whole large file (some vault files are large photos) in
+ * memory at once.
+ */
+export async function downloadFileStream(s3Key: string): Promise<Readable> {
+  const client = createS3Client();
+  return new S3RangeReadStream(client, process.env.BUCKET_NAME, s3Key);
+}
+
+/**
+ * Resizes an image DOWN to fit within `maxDimension` on its longer side
+ * (never upscales — `withoutEnlargement`) and re-encodes as WebP, for use
+ * as a lightweight gallery thumbnail. The original bytes/format are always
+ * left untouched in S3; this is generated on demand by the thumbnail route
+ * and never persisted, so a caller must supply its own caching (the public
+ * gallery does this with a long-lived, `updated_at`-fingerprinted URL — see
+ * `api.vault.public-thumb.$fileId.tsx`).
+ *
+ * Cropping is deliberately NOT done here — the caller's CSS already
+ * handles that (`object-fit: cover` on a fixed-aspect-ratio box), so this
+ * only needs to shrink file size/dimensions, not decide what to cut off.
+ *
+ * Animated (multi-frame) GIF/WebP/PNG is passed through as raw bytes
+ * unchanged — sharp's default single-frame read would silently flatten the
+ * animation to its first frame, which is worse than serving the original
+ * at full size.
+ */
+export async function getImageThumbnail(
+  bytes: Buffer,
+  maxDimension = 480,
+): Promise<{ bytes: Buffer; contentType: string }> {
+  const metadata = await sharp(bytes).metadata();
+
+  // Animated (multi-frame) GIF/WebP/PNG passed through unchanged — sharp's
+  // default single-frame read would flatten the animation to its first
+  // frame, which is worse than just serving the original at full size.
+  if ((metadata.pages ?? 1) > 1) {
+    return {
+      bytes,
+      contentType: metadata.format
+        ? `image/${metadata.format}`
+        : "application/octet-stream",
+    };
+  }
+
+  const resized = await sharp(bytes)
+    .rotate() // apply EXIF orientation before resizing, then drop it
+    .resize({
+      width: maxDimension,
+      height: maxDimension,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .webp({ quality: 75 })
+    .toBuffer();
+
+  return { bytes: resized, contentType: "image/webp" };
+}
+
 export async function downloadAndUploadToS3(
   fileUrl: string,
   filename: string,
@@ -315,6 +447,38 @@ export async function uploadPrivateFileToS3(
   }
 }
 
+/**
+ * Streams an arbitrary Readable to S3 via a real multipart upload
+ * (`@aws-sdk/lib-storage`'s `Upload`, which buffers only a handful of
+ * in-flight PARTS — a few MB each — not the whole payload) rather than
+ * requiring the caller to hand over one big Buffer up front. The
+ * streaming counterpart to `uploadPrivateFileToS3`, for a caller (like
+ * `publicZip.server.ts`) that doesn't know the final byte size ahead of
+ * time — a zip's compressed size isn't known until it's fully built.
+ * Private by default (no ACL), same rule every other upload here follows.
+ */
+export async function uploadPrivateStreamToS3(
+  stream: Readable,
+  filename: string,
+): Promise<void> {
+  const client = createS3Client();
+  const upload = new Upload({
+    client,
+    params: {
+      Bucket: process.env.BUCKET_NAME,
+      Key: filename,
+      Body: stream,
+      ContentType: getFileContentType(filename),
+    },
+  });
+  try {
+    await upload.done();
+  } catch (err) {
+    console.error("Error streaming file to S3:", err);
+    throw err;
+  }
+}
+
 export async function deleteFromS3(key: string): Promise<void> {
   const client = createS3Client();
   const deleteCommand = new DeleteObjectCommand({
@@ -418,6 +582,8 @@ export function getFileContentType(filename: string): string {
       return "application/pdf";
     case "h264":
       return "video/h264";
+    case "zip":
+      return "application/zip";
     default:
       return "application/octet-stream";
   }

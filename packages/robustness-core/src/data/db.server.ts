@@ -18,8 +18,11 @@ export interface DbConfig {
 // config.
 export const DEFAULT_CONFIG: DbConfig = {
   url: process.env.DATABASE_URL || "http://localhost:8080/rpc",
-  namespace: "nopal",
-  database: "opuntia",
+  // Overridable so a staging deployment can point at the SAME SurrealDB
+  // instance/credentials as prod, just a different `database` (see
+  // db/clone-to-staging.sh) — unset in prod, so this is a no-op there.
+  namespace: process.env.DATABASE_NAMESPACE || "nopal",
+  database: process.env.DATABASE_DATABASE || "opuntia",
   auth: {
     username: process.env.DATABASE_USERNAME || "",
     password: process.env.DATABASE_PASSWORD || "",

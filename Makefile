@@ -1,10 +1,11 @@
-.PHONY: dev start seed migrate migrate-prod down stop reset clean deploy restart restart-worker restart-all cli release-cli update-cli-version
+.PHONY: dev start seed migrate migrate-prod compact-db clone-staging-db down stop reset clean deploy deploy-staging restart restart-worker restart-all cli release-cli update-cli-version
 
 SURREAL_USER ?= root
 SURREAL_PASS ?= root
 
 # ── Prod database access (for data-migration scripts) ─────────────────────
 DB_APP ?= db-thrumming-water-5938
+WEBAPP_APP ?= webapp-billowing-meadow-8538
 PROXY_PORT ?= 8081
 
 # ── Full-stack dev lifecycle ───────────────────────────────────────────────────
@@ -19,6 +20,13 @@ deploy:
 	cd db && fly deploy
 	fly deploy . --config webapp/fly.toml --dockerfile webapp/Dockerfile
 	fly deploy . --config packages/worker/fly.toml --dockerfile packages/worker/Dockerfile
+
+## Deploy the webapp ONLY, to the staging Fly app (see webapp/fly.staging.toml).
+## Staging has no worker/DB of its own — it shares prod's SurrealDB instance,
+## scoped to an isolated `staging` database (make clone-staging-db populates it).
+deploy-staging:
+	pnpm --filter remix run test --run
+	fly deploy . --config webapp/fly.staging.toml --dockerfile webapp/Dockerfile
 
 ## Start the database and webapp together, then seed the database.
 ## --build keeps the webapp/worker dev image (Dockerfile.dev) in sync
@@ -64,16 +72,44 @@ migrate:
 	sh db/migrate.sh
 
 ## Run a data-migration script from webapp/scripts/ against the PROD database,
-## tunneled through a temporary `fly proxy` (no public DB access required):
-##   make migrate-prod SCRIPT=migrate-vault-root-keys.ts SURREAL_PASS=<prod-pass>
-##   make migrate-prod SCRIPT=migrate-backfill-sharing-roles.ts SURREAL_PASS=<prod-pass> ARGS="--dry-run"
-## SURREAL_USER defaults to root; ARGS is passed through to the script
-## verbatim (e.g. `--dry-run`); the proxy is torn down when the script exits.
-## Scripts should be idempotent — safe to re-run if anything goes sideways.
+## tunneled through a temporary `fly proxy` (no public DB access required).
+## Credentials are pulled LIVE from the webapp app's own Fly secrets — the
+## exact DATABASE_USERNAME/DATABASE_PASSWORD the deployed app itself
+## connects with — via `fly ssh console`, so you never need to know or
+## paste the prod password by hand:
+##   make migrate-prod SCRIPT=demo-project.ts
+##   make migrate-prod SCRIPT=mint-cli-token.ts ARGS="someone@example.com"
+## Pass SURREAL_USER=/SURREAL_PASS= explicitly to override (e.g. to connect
+## as the SurrealDB root user instead of the app's scoped one) — doing so
+## skips the live fetch. ARGS is passed through to the script verbatim;
+## the proxy is torn down when the script exits. Scripts should be
+## idempotent — safe to re-run if anything goes sideways.
+##
+## Repair/maintenance scripts that mutate prod data have mostly moved to
+## the Admin Scripts registry instead (`adminScriptsRegistry.server.ts`,
+## run from /fruits/maker/scripts) — this target is now mainly for
+## whatever's left under webapp/scripts/ (local/dev tooling like
+## `pull-daily-logs.ts`, one-off content imports, etc).
+## See that registry's own module doc before adding a new one-off script
+## here — if it's likely to be RE-RUN regularly against production,
+## register it there instead.
 migrate-prod:
-	@test -n "$(SCRIPT)" || { echo "Usage: make migrate-prod SCRIPT=<file in webapp/scripts/> SURREAL_PASS=<prod-pass> [ARGS=\"--dry-run\"]"; exit 1; }
+	@test -n "$(SCRIPT)" || { echo "Usage: make migrate-prod SCRIPT=<file in webapp/scripts/> [ARGS=\"--dry-run\"]"; exit 1; }
 	@test -f "webapp/scripts/$(SCRIPT)" || { echo "webapp/scripts/$(SCRIPT) not found"; exit 1; }
-	@printf 'Run webapp/scripts/%s %s against PROD (%s) as %s? [y/N] ' "$(SCRIPT)" "$(ARGS)" "$(DB_APP)" "$(SURREAL_USER)"; \
+	@if [ "$(origin SURREAL_USER)" = "command line" ] || [ "$(origin SURREAL_PASS)" = "command line" ]; then \
+		DB_USER="$(SURREAL_USER)"; DB_PASS="$(SURREAL_PASS)"; \
+		echo "Using manually-provided credentials (user: $$DB_USER)."; \
+	else \
+		echo "Fetching live DB credentials from $(WEBAPP_APP) (same ones the deployed app uses)..."; \
+		CREDS=$$(fly ssh console -a $(WEBAPP_APP) -C 'printenv DATABASE_USERNAME DATABASE_PASSWORD' 2>/dev/null); \
+		DB_USER=$$(echo "$$CREDS" | sed -n '1p' | tr -d '\r'); \
+		DB_PASS=$$(echo "$$CREDS" | sed -n '2p' | tr -d '\r'); \
+		if [ -z "$$DB_USER" ] || [ -z "$$DB_PASS" ]; then \
+			echo "Couldn't fetch DATABASE_USERNAME/DATABASE_PASSWORD from $(WEBAPP_APP) — is 'fly' logged in with ssh access? Pass SURREAL_USER=... SURREAL_PASS=... to override."; \
+			exit 1; \
+		fi; \
+	fi; \
+	printf 'Run webapp/scripts/%s %s against PROD (%s) as %s? [y/N] ' "$(SCRIPT)" "$(ARGS)" "$(DB_APP)" "$$DB_USER"; \
 	read -r answer; \
 	[ "$$answer" = "y" ] || { echo "Aborted."; exit 1; }; \
 	echo "Opening tunnel to $(DB_APP) on localhost:$(PROXY_PORT)..."; \
@@ -87,8 +123,24 @@ migrate-prod:
 	curl -s -o /dev/null http://localhost:$(PROXY_PORT)/health || { echo "Tunnel never became ready — is 'fly' logged in?"; exit 1; }; \
 	echo "Tunnel ready — running $(SCRIPT) $(ARGS) against prod..."; \
 	cd webapp && DATABASE_URL=http://localhost:$(PROXY_PORT)/rpc \
-		DATABASE_USERNAME=$(SURREAL_USER) DATABASE_PASSWORD=$(SURREAL_PASS) \
+		DATABASE_USERNAME="$$DB_USER" DATABASE_PASSWORD="$$DB_PASS" \
 		npx vite-node scripts/$(SCRIPT) $(ARGS)
+
+## Export prod DB data to a local, timestamped backup file — step 1 of the
+## compaction runbook in db/COMPACTION.md (reclaiming disk space wasted by
+## SurrealDB's surrealkv value log). Does not touch the remote volume.
+##   make compact-db SURREAL_PASS=yourprodpassword
+compact-db:
+	@test -n "$(SURREAL_PASS)" || { echo "Usage: make compact-db SURREAL_PASS=<prod-pass>"; exit 1; }
+	SURREAL_PASS=$(SURREAL_PASS) DB_APP=$(DB_APP) PROXY_PORT=$(PROXY_PORT) sh db/compact.sh
+
+## Refresh the staging DB (NS nopal / DB staging) from a fresh export of
+## prod. Safe to run any time — only ever touches the isolated `staging`
+## database, never prod (`opuntia`). See db/clone-to-staging.sh.
+##   make clone-staging-db SURREAL_PASS=yourprodpassword
+clone-staging-db:
+	@test -n "$(SURREAL_PASS)" || { echo "Usage: make clone-staging-db SURREAL_PASS=<prod-pass>"; exit 1; }
+	SURREAL_PASS=$(SURREAL_PASS) DB_APP=$(DB_APP) PROXY_PORT=8082 sh db/clone-to-staging.sh
 
 ## Restart the webapp container, clearing the Vite dep cache first.
 ## Use this after package changes or whenever the dev server needs a clean

@@ -1,0 +1,43 @@
+name: Notify Discord
+description: Posts a deploy result to a Discord channel via an incoming webhook.
+
+inputs:
+  webhook-url:
+    description: Discord incoming webhook URL (secrets.DISCORD_WEBHOOK_URL). Silently skipped if empty, so this is safe to wire up before the secret exists.
+    required: true
+  environment-name:
+    description: Human label for what was deployed, e.g. "staging" or "production".
+    required: true
+  status:
+    description: 'The calling job''s status: pass the job context''s status field from the calling workflow (job.status) -- "success", "failure", or "cancelled". Not evaluated here: composite actions have no `job` context of their own, only the caller does.'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        WEBHOOK_URL: ${{ inputs.webhook-url }}
+        ENV_NAME: ${{ inputs.environment-name }}
+        JOB_STATUS: ${{ inputs.status }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        if [ -z "${WEBHOOK_URL}" ]; then
+          echo "DISCORD_WEBHOOK_URL not set — skipping Discord notification."
+          exit 0
+        fi
+
+        SHORT_SHA="${GITHUB_SHA:0:7}"
+
+        case "${JOB_STATUS}" in
+          success) EMOJI="✅"; VERB="deployed" ;;
+          cancelled) EMOJI="⚪"; VERB="deploy cancelled" ;;
+          *) EMOJI="❌"; VERB="**FAILED** to deploy" ;;
+        esac
+
+        CONTENT="${EMOJI} **${ENV_NAME}** ${VERB} — \`${SHORT_SHA}\` by ${GITHUB_ACTOR} — ${RUN_URL}"
+
+        curl -sf -H "Content-Type: application/json" \
+          -d "$(printf '{"content": "%s"}' "${CONTENT}")" \
+          "${WEBHOOK_URL}" \
+          || echo "::warning::Discord notification failed to send (deploy result itself is unaffected)."
