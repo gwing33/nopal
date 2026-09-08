@@ -34,7 +34,11 @@ import { runDailyLogSync } from "./dailyLogSync.server";
 import { runSyncKnowledge, type SyncKnowledgeResult } from "./syncKnowledge.server";
 import { runSyncGraph, type SyncGraphResult } from "./syncGraph.server";
 import { runGraphStructure, type GraphStructureResult } from "./graphStructure.server";
-import { runGraphProjectView, type GraphProjectViewResult } from "./graphProjectView.server";
+import {
+  runGraphProjectView,
+  syncReadmeIncompleteBanner,
+  type GraphProjectViewResult,
+} from "./graphProjectView.server";
 import { getFolderById, type VaultFolder } from "./vault.server";
 import type { LlmProvider } from "./llmProvider";
 import { noopGraphLogRunRecorder, type GraphLogPerfRecorder } from "./graphLogPerf.server";
@@ -183,7 +187,14 @@ export async function runGraphLogPipeline(
   if (!graphProjectView.ok) return { ok: false, error: graphProjectView.error };
   log(graphProjectView.skipped ? "run: graph-project-view skipped." : "run: graph-project-view done.");
 
+  // All FIVE stages, not the last three. `daily-log-sync` and
+  // `sync-knowledge` had no way to report anything at all, which is why a
+  // project that silently described no photos still finished green: the
+  // two stages that carry a photo from a Card into the graph were the two
+  // with no voice in this list.
   const incomplete = [
+    ...dailyLogSync.incomplete.map((r) => `daily-log-sync: ${r}`),
+    ...syncKnowledge.incomplete.map((r) => `sync-knowledge: ${r}`),
     ...syncGraph.incomplete.map((r) => `sync-graph: ${r}`),
     ...graphStructure.incomplete.map((r) => `graph-structure: ${r}`),
     ...graphProjectView.incomplete.map((r) => `graph-project-view: ${r}`),
@@ -204,6 +215,19 @@ export async function runGraphLogPipeline(
   log(
     `run: ${stats.nodesWritten} node(s) written across ${stats.daysWritten} day(s); graph now holds ${stats.graphNodeCount ?? "?"} node(s) in ${stats.threadCount ?? "?"} thread(s).`,
   );
+
+  // The run report already said all of this, on a page nobody opens while
+  // the README looks fine. This puts it where a reader of the PROJECT sees
+  // it, in bold, on the first line. Deliberately last: it needs the whole
+  // run's outcome, and a clean run clears any banner an earlier one left.
+  const bannerChanged = await syncReadmeIncompleteBanner(projectFolder, incomplete);
+  if (bannerChanged) {
+    log(
+      incomplete.length > 0
+        ? "run: marked README.md as incomplete on its own first line."
+        : "run: cleared the incomplete notice from README.md.",
+    );
+  }
 
   return {
     ok: true,
