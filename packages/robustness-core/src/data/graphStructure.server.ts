@@ -996,15 +996,30 @@ export async function runGraphStructure(
     return { ok: true, skipped: false, changed: false, graphNodeCount: null, threadCount: null, incomplete: [] };
   }
 
+  // What reading the graph itself lost, reported on EVERY return below
+  // (ADR-016). A day with null content used to be skipped AND left out of
+  // the hash, so the graph "changed" and the day was absent from the
+  // structure with no line anywhere; a node block with no `:ref` line
+  // used to vanish from the graph, the README, and every weight.
+  const loadIssues: string[] = [];
   const allNodes: GraphLogNode[] = [];
   const hashParts: string[] = [];
+  const parseDiag = { malformed: 0 };
   for (const { listing, date } of graphLogListings) {
     const file = await getFileRefById(listing._id);
-    if (!file?.content) continue;
+    if (!file?.content) {
+      loadIssues.push(`${listing.name} exists but has no content, so its day is missing from the structure`);
+      continue;
+    }
     const { body, frontmatter } = splitFrontmatter(file.content);
     hashParts.push(`${date}:${frontmatter ?? file.content_hash ?? listing._id}`);
-    allNodes.push(...parseGraphLogNodes(date, body));
+    const before = parseDiag.malformed;
+    allNodes.push(...parseGraphLogNodes(date, body, parseDiag));
+    if (parseDiag.malformed > before) {
+      loadIssues.push(`${listing.name}: ${parseDiag.malformed - before} node block(s) have no :ref line and were left out of the graph`);
+    }
   }
+  for (const issue of loadIssues) log(`graph-structure: ${issue}.`);
 
   const newHash = aggregateHash(hashParts);
   const structureListing = files.find((f) => f.name === GRAPH_STRUCTURE_FILE_NAME);
@@ -1013,7 +1028,7 @@ export async function runGraphStructure(
 
   if (existing && existingMeta.asOfGraphHash === newHash) {
     log("graph-structure: up to date, nothing changed since last run.");
-    return { ok: true, skipped: false, changed: false, graphNodeCount: null, threadCount: null, incomplete: [] };
+    return { ok: true, skipped: false, changed: false, graphNodeCount: null, threadCount: null, incomplete: loadIssues };
   }
 
   if (allNodes.length === 0) {
@@ -1030,11 +1045,19 @@ export async function runGraphStructure(
       changed: false,
       graphNodeCount: null,
       threadCount: null,
-      incomplete: [reason],
+      incomplete: [...loadIssues, reason],
     };
   }
 
-  const backlinks = computeBacklinkIndex(allNodes);
+  const linkDiag = { dangling: 0 };
+  const backlinks = computeBacklinkIndex(allNodes, linkDiag);
+  if (linkDiag.dangling > 0) {
+    // Not a shortfall of THIS run (the edges were lost when a day was
+    // rewritten or the graph reset), so it goes to the log and the run's
+    // own event rather than `incomplete` -- but it goes somewhere, since
+    // every one of these is weight the ranking no longer sees.
+    log(`graph-structure: ${linkDiag.dangling} link(s) point at nodes no longer in the graph and carry no weight.`);
+  }
   const allNodesById = new Map(allNodes.map((n) => [n.id, n]));
   const baseMeta: GraphStructureFrontmatter = { ...existingMeta };
 
@@ -1066,7 +1089,7 @@ export async function runGraphStructure(
       changed: true,
       graphNodeCount: allNodes.length,
       threadCount: countNamedClusters(refreshed),
-      incomplete: [],
+      incomplete: loadIssues,
     };
   }
 
@@ -1169,7 +1192,7 @@ export async function runGraphStructure(
           changed: anyCommitted(),
           graphNodeCount: null,
           threadCount: null,
-          incomplete: [reason],
+          incomplete: [...loadIssues, reason],
         };
       }
       if (hitMaxTurns) {
@@ -1181,7 +1204,7 @@ export async function runGraphStructure(
           changed: anyCommitted(),
           graphNodeCount: null,
           threadCount: null,
-          incomplete: [reason],
+          incomplete: [...loadIssues, reason],
         };
       }
       if (hadRefusal()) {
@@ -1193,7 +1216,7 @@ export async function runGraphStructure(
           changed: anyCommitted(),
           graphNodeCount: null,
           threadCount: null,
-          incomplete: [reason],
+          incomplete: [...loadIssues, reason],
         };
       }
     }
@@ -1205,7 +1228,12 @@ export async function runGraphStructure(
     const finalPlaced = buildMembershipIndex(finalSections);
     const stillMissing = allNodes.filter((n) => !finalPlaced.has(n.id));
     if (stillMissing.length > 0) {
-      const reason = `${stillMissing.length} node(s) still unplaced (e.g. ${stillMissing[0].id})`;
+      // Up to five named, then a count -- the same shape sync-knowledge and
+      // daily-log-sync use, instead of one example and a discarded list.
+      const reason =
+        `${stillMissing.length} node(s) still unplaced: ` +
+        stillMissing.slice(0, 5).map((n) => n.id).join(", ") +
+        (stillMissing.length > 5 ? `, and ${stillMissing.length - 5} more` : "");
       log(`graph-structure: ${reason} after this run — will retry next run.`);
       return {
           ok: true,
@@ -1213,7 +1241,7 @@ export async function runGraphStructure(
           changed: anyCommitted(),
           graphNodeCount: null,
           threadCount: null,
-          incomplete: [reason],
+          incomplete: [...loadIssues, reason],
         };
     }
 
@@ -1239,7 +1267,7 @@ export async function runGraphStructure(
       changed: true,
       graphNodeCount: allNodes.length,
       threadCount: countNamedClusters(reconciled),
-      incomplete: [],
+      incomplete: loadIssues,
     };
   } catch (err) {
     log(`graph-structure: couldn't be processed (${err instanceof Error ? err.message : "unknown error"}).`);
@@ -1267,7 +1295,7 @@ export async function runGraphStructure(
       changed: anyCommitted(),
       graphNodeCount: null,
       threadCount: null,
-      incomplete: [`stopped on an error: ${err instanceof Error ? err.message : String(err)}`],
+      incomplete: [...loadIssues, `stopped on an error: ${err instanceof Error ? err.message : String(err)}`],
     };
   }
 }

@@ -122,7 +122,9 @@
  * `KNOWLEDGE.md` change that only touches the sidecar still invalidates
  * the day, not just a source-file edit) — stored in the graph-log file's
  * own front matter. An unchanged day is a total no-op. A CHANGED day's
- * existing `graph-log-*.md` is DELETED and fully regenerated — never
+ * existing `graph-log-*.md` is fully regenerated and REPLACED IN PLACE
+ * once the new content exists (never deleted up front — a failed
+ * re-extraction keeps the previous day; see the day loop) — never
  * partially patched (see the `graphlog` skill's own doc on why: node
  * extraction is a single holistic judgment over the whole day, not
  * something that composes incrementally the way `graph-project-view`'s
@@ -186,6 +188,7 @@ import {
   deleteFileRef,
   getFileRefById,
   listFolderChildren,
+  updateFileRef,
   type VaultFolder,
 } from "./vault.server";
 import { getHumansById } from "./humans.server";
@@ -243,15 +246,28 @@ function extractHeadings(markdown: string): NodeHeading[] {
 }
 
 export function existingSourceHash(content: string | null): string | null {
-  if (!content) return null;
+  return readSourceHash(content).hash;
+}
+
+/**
+ * The hash, AND whether the front matter could be read at all. A bare
+ * `catch { return null }` made corrupt front matter indistinguishable
+ * from "no hash yet", which means "reprocess" -- so a file with
+ * permanently unparseable front matter was re-extracted by the model on
+ * every run, forever, at full cost, and reported itself as ordinary work.
+ * The caller now names it (ADR-016). Still reprocessed, since the day's
+ * content is what matters and the rewrite repairs the front matter.
+ */
+export function readSourceHash(content: string | null): { hash: string | null; unreadable: boolean } {
+  if (!content) return { hash: null, unreadable: false };
   const { frontmatter } = splitFrontmatter(content);
-  if (!frontmatter) return null;
+  if (!frontmatter) return { hash: null, unreadable: false };
   try {
     const data = parseYaml(frontmatter) as Record<string, unknown> | null;
     const hash = data?.sourceHash;
-    return typeof hash === "string" ? hash : null;
+    return { hash: typeof hash === "string" ? hash : null, unreadable: false };
   } catch {
-    return null;
+    return { hash: null, unreadable: true };
   }
 }
 
@@ -642,9 +658,18 @@ function createSyncGraphExecutors(input: {
    * today already holds and not re-capture it -- the mechanism that makes
    * a day safe to split across several conversations. */
   getCapturedSummaries: () => string[];
+  /** Link ids this day's nodes named that were NOT written: invented
+   * (not a real node) or over the per-node cap. Each was reported only in
+   * the `add_node` tool result -- to the model, and to nobody else -- so
+   * the graph's edge density was being clipped with no number anywhere.
+   * Aggregated onto the day's own timeline event and log line (ADR-016).
+   * The cap is ADR-002 and by design; the invented ones are the number
+   * to watch. */
+  getDroppedLinks: () => { invalid: number; overCap: number };
 } {
   const nodeBlocks: string[] = [];
   const capturedSummaries: string[] = [];
+  const droppedLinks = { invalid: 0, overCap: 0 };
   let nextNumber = 1;
 
   const executors: Record<string, (toolInput: Record<string, unknown>) => Promise<string>> = {
@@ -702,6 +727,8 @@ function createSyncGraphExecutors(input: {
         validBackward,
       );
       const droppedCount = invalidCount + overCapCount;
+      droppedLinks.invalid += invalidCount;
+      droppedLinks.overCap += overCapCount;
 
       const linkLines = [
         ...sameDayNumbers.map((n) => `- [${input.date} Node ${n}](./${graphLogFileName(input.date)}#node-${n})`),
@@ -733,7 +760,12 @@ function createSyncGraphExecutors(input: {
     },
   };
 
-  return { executors, getNodeBlocks: () => nodeBlocks, getCapturedSummaries: () => capturedSummaries };
+  return {
+    executors,
+    getNodeBlocks: () => nodeBlocks,
+    getCapturedSummaries: () => capturedSummaries,
+    getDroppedLinks: () => ({ ...droppedLinks }),
+  };
 }
 
 /**
@@ -1221,9 +1253,14 @@ export async function runSyncGraph(
     // previously had NO path into the graph at all, since it never
     // carried a `date` and was never offered as a source here).
     const sourceFiles: (SourceFileInfo | null)[] = [];
+    let uncaptionedSkipped = 0;
     for (const candidate of dayCandidates) {
       const source = await getFileRefById(candidate.fileId);
-      if (!source) continue;
+      if (!source) {
+        // Same condition sync-knowledge already logs; this one didn't.
+        log(`sync-graph: ${date}: a dated candidate (${candidate.fileId}) no longer resolves to a file and was skipped.`);
+        continue;
+      }
 
       const sidecar = await findKnowledgeSidecar(projectFolder.human_id, candidate);
       let knowledgeContent: string | null = null;
@@ -1246,7 +1283,10 @@ export async function runSyncGraph(
       // human's own caption are treated as two independent, either-is-
       // enough sources of grounding. The Card's own text content is
       // never skipped this way.
-      if (attribution.isAttachment && !knowledgeContent && !caption) continue;
+      if (attribution.isAttachment && !knowledgeContent && !caption) {
+        uncaptionedSkipped++;
+        continue;
+      }
 
       hashParts.push(`${candidate.fileId}:${candidate.contentHash ?? candidate.fileId}`);
       if (sidecar) hashParts.push(`${sidecar.fileId}:${sidecar.contentHash ?? sidecar.fileId}`);
@@ -1291,6 +1331,22 @@ export async function runSyncGraph(
       );
     }
 
+    if (uncaptionedSkipped > 0) {
+      // Deliberate (a file with neither a human caption nor a description
+      // is nothing to ground a node in), and until now completely
+      // unreported: no counter, no log, no `incomplete`. A project with
+      // KNOWLEDGE.md on `skip` and forty uncaptioned photos got a clean
+      // green run and forty invisible files -- the case the incomplete
+      // banner was written for, in the one stage that never said so.
+      // Reported once per day, not once per file, so a photo-heavy day
+      // is one line.
+      // The banner says "will retry on the next run"; a retry does not fix
+      // this one, a person does, so the line says what would.
+      const reason = `${date}: ${uncaptionedSkipped} attached file(s) had neither a caption nor a description, so they never became nodes (a caption on the file, or KNOWLEDGE.md turned on, fixes this)`;
+      incomplete.push(reason);
+      log(`sync-graph: ${reason}.`);
+    }
+
     const newHash = aggregateHash(hashParts);
     const existingListing = existingGraphFolder
       ? (await listFolderChildren(projectFolder.human_id, existingGraphFolder._id)).files.find(
@@ -1299,14 +1355,26 @@ export async function runSyncGraph(
       : undefined;
     const existing = existingListing ? await getFileRefById(existingListing._id) : undefined;
 
-    if (existing && existingSourceHash(existing.content) === newHash) {
+    const existingHash = readSourceHash(existing?.content ?? null);
+    if (existing && existingHash.unreadable) {
+      log(`sync-graph: ${graphLogFileName(date)} has front matter this run could not read; re-extracting the day and rewriting it.`);
+    }
+    if (existing && existingHash.hash === newHash) {
       days.push({ date, changed: false, empty: false, nodes: 0, passes: 0 });
       continue;
     }
 
-    if (existing) {
-      await deleteFileRef(existing._id);
-    }
+    // The existing day file is NOT deleted here. It used to be, before
+    // the model was ever called, so a day whose re-extraction then failed
+    // (a rate limit, a Stop, an outage) had its previous nodes erased and
+    // nothing written in their place -- a whole day of somebody's writing
+    // gone from the graph, and every citation of it in graph-structure
+    // and the README left dangling. Reproduced directly: a run whose
+    // model calls all failed deleted twelve days of graph-log files. A
+    // changed day is still fully regenerated (see the module doc), but
+    // the old file survives until the new content exists: replaced in
+    // place on a write, removed on a genuinely empty day, kept untouched
+    // on any failure (ADR-001, ADR-011).
 
     // Combine graph-structure.md's own ids with this run's own live/
     // fallback ones, restricted to STRICTLY earlier days — enforced here
@@ -1324,7 +1392,7 @@ export async function runSyncGraph(
     // that closure, so pass 2 continues from Node 18 rather than
     // restarting at Node 1, and `sameDayLinks` validation still holds
     // across a pass boundary.
-    const { executors, getNodeBlocks, getCapturedSummaries } = createSyncGraphExecutors({
+    const { executors, getNodeBlocks, getCapturedSummaries, getDroppedLinks } = createSyncGraphExecutors({
       date,
       sourceCitations,
       sourceFiles,
@@ -1411,7 +1479,7 @@ export async function runSyncGraph(
         process: "sync-graph",
         type: "llm",
         name: "day",
-        params: { date, passes, nodes: getNodeBlocks().length, shortfall },
+        params: { date, passes, nodes: getNodeBlocks().length, shortfall, droppedLinks: getDroppedLinks() },
         durationMs,
         outcome: shortfall ? "error" : "ok",
       });
@@ -1422,10 +1490,15 @@ export async function runSyncGraph(
         // anything. Either way nothing is being thrown away here.
         if (shortfall) {
           incomplete.push(`${date} captured nothing: ${shortfall}`);
-          log(`sync-graph: ${date} — ${shortfall}; nothing captured, will retry next run.`);
-        } else {
-          log(`sync-graph: ${date} — nothing worth capturing.`);
+          log(
+            `sync-graph: ${date} — ${shortfall}; nothing captured${existing ? ", previous version of the day kept" : ""}, will retry next run.`,
+          );
+          // Stuck, not empty: the previous day file (and its headings)
+          // stay exactly as they were.
+          continue;
         }
+        log(`sync-graph: ${date} — nothing worth capturing.`);
+        if (existing) await deleteFileRef(existing._id);
         headingsByDate.delete(date);
         days.push({ date, changed: true, empty: true, nodes: 0, passes });
         continue;
@@ -1454,13 +1527,15 @@ export async function runSyncGraph(
         incompleteReason: shortfall,
         body: nodeBlocks.join("\n\n"),
       });
-      const created = await createFileRef({
-        human_id: projectFolder.human_id,
-        name: graphLogFileName(date),
-        content,
-        content_type: "text/markdown",
-        folder_id: graphFolder._id,
-      });
+      const created = existing
+        ? await updateFileRef(existing._id, { content })
+        : await createFileRef({
+            human_id: projectFolder.human_id,
+            name: graphLogFileName(date),
+            content,
+            content_type: "text/markdown",
+            folder_id: graphFolder._id,
+          });
       if (!created) {
         // Up to MAX_PASSES_PER_DAY passes of paid model output were just
         // rendered into `content`; losing the write is a real loss and
@@ -1468,7 +1543,7 @@ export async function runSyncGraph(
         // no `days` entry, so the day was invisible in the result AND in
         // the report. Every neighbouring failure branch reports; this one
         // now does too. The hash was not stamped, so the next run retries.
-        const reason = `${date}: the graph-log file could not be created after ${nodeBlocks.length} node(s) were captured`;
+        const reason = `${date}: the graph-log file could not be ${existing ? "rewritten" : "created"} after ${nodeBlocks.length} node(s) were captured`;
         incomplete.push(reason);
         log(`sync-graph: ${reason}; will retry next run.`);
         continue;

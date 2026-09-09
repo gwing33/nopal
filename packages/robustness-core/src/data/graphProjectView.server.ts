@@ -219,6 +219,19 @@ function extractReaderComments(sections: ReadmeSection[]): {
 
 // ─── Section ordering — enforced by code, not the model ───────────────────
 
+/** Headings in the README that are neither the intro nor one of the
+ * canonical six -- a heading the model invented despite being told the
+ * shape is fixed. `reorderSections` keeps them (just before "Notes on this
+ * view") so the content is never lost, and its own doc promised that made
+ * the slip "visible"; it was visible only to a person reading the README.
+ * Counted onto the pass event and the log now, and the skill's "propose a
+ * better cut" invitation finally has a place its answer lands. */
+export function unknownHeadings(sections: ReadmeSection[]): string[] {
+  return sections
+    .filter((s) => s.heading !== "" && !CANONICAL_ORDER.includes(s.heading.toLowerCase()))
+    .map((s) => s.heading);
+}
+
 const CANONICAL_ORDER = [
   "what's carrying weight",
   "where we pull apart",
@@ -234,13 +247,17 @@ const CANONICAL_ORDER = [
  * heading the model invented despite being told the shape is fixed) is
  * left just before "Notes on this view" rather than silently dropped, so
  * an instruction-following slip is visible instead of losing content. */
-function reorderSections(sections: ReadmeSection[]): ReadmeSection[] {
+export function reorderSections(sections: ReadmeSection[]): ReadmeSection[] {
   const intro = sections.filter((s) => s.heading === "");
   const named = sections.filter((s) => s.heading !== "");
-  const known = CANONICAL_ORDER.map((h) => named.find((s) => s.heading.toLowerCase() === h)).filter(
-    (s): s is ReadmeSection => !!s,
-  );
-  const unknown = named.filter((s) => !CANONICAL_ORDER.includes(s.heading.toLowerCase()));
+  // EVERY section under a canonical heading, in file order, not only the
+  // first. `find` kept one and silently dropped the rest, which
+  // contradicted this function's own promise above: `splitReadmeSections`
+  // is line-based and ignores code fences, so a `## ` line inside a
+  // section's prose manufactures a duplicate, and the duplicate's content
+  // was gone on the next commit with nothing to say so.
+  const known = CANONICAL_ORDER.flatMap((h) => named.filter((s) => s.heading.toLowerCase() === h));
+  const unknown = unknownHeadings(sections).map((h) => named.find((s) => s.heading === h)!);
   const notesIndex = known.findIndex((s) => s.heading.toLowerCase() === PROTECTED_HEADING);
   const withoutNotes = notesIndex === -1 ? known : known.filter((_, i) => i !== notesIndex);
   const notes = notesIndex === -1 ? [] : [known[notesIndex]];
@@ -335,12 +352,24 @@ function createReadmeExecutors(input: {
    * pass 2 got right is history, not a reason to retry the whole stage
    * next run. The loop takes the per-pass delta, same as `summaries`. */
   refusals: () => number;
+  /** The reason for each refusal so far, in order -- what a refused final
+   * pass names in `incomplete` instead of only saying that something was
+   * refused. Which section, and whether it was "would erase real content"
+   * or "a cut-off call", are two very different diagnoses that used to
+   * exist only in the job log. */
+  refusalReasons: () => readonly string[];
   getCurrent: () => { content: string; fileId: string | undefined };
 } {
   const { projectFolder, log, allNodesById, validNodeIds, today } = input;
   let currentContent = input.initialContent;
   let currentFileId = input.initialFileId;
   let refusals = 0;
+  const refusalReasons: string[] = [];
+  const refuse = (reason: string) => {
+    refusals++;
+    refusalReasons.push(reason);
+    log(`graph-project-view -- ${reason}.`);
+  };
   let introTurnedBack = false;
   const summaries: string[] = [];
 
@@ -375,8 +404,7 @@ function createReadmeExecutors(input: {
       // the intro is addressed, and `content: ""` is a real instruction
       // the erase guard handles on its own terms.
       if (typeof toolInput.heading !== "string" || typeof toolInput.content !== "string") {
-        refusals++;
-        log("graph-project-view -- refused a malformed update_section (heading/content missing; likely a cut-off call).");
+        refuse("refused a malformed update_section (heading/content missing; likely a cut-off call)");
         return 'Error: update_section needs both "heading" and "content" as strings. Nothing was written.';
       }
       const heading = normalizeIntroHeading(toolInput.heading.trim());
@@ -384,8 +412,7 @@ function createReadmeExecutors(input: {
       const key = heading.toLowerCase();
 
       if (key === PROTECTED_HEADING) {
-        refusals++;
-        log('graph-project-view -- refused update_section on "Notes on this view" (protected; left unchanged).');
+        refuse('refused update_section on "Notes on this view" (protected; left unchanged)');
         return 'Error: "Notes on this view" is off-limits to this tool — it is never edited by GraphLog.';
       }
 
@@ -406,9 +433,8 @@ function createReadmeExecutors(input: {
       }
 
       if (content.trim().length === 0 && existing && existing.content.trim().length > 0) {
-        refusals++;
         const label = heading || "(intro)";
-        log(`graph-project-view -- refused update_section "${label}" (would erase real content with an empty section); left unchanged.`);
+        refuse(`refused update_section "${label}" (would erase real content with an empty section); left unchanged`);
         return `Error: refused -- section "${label}" currently has real content; sending empty content would erase it. Use remove_section if you genuinely want to delete it.`;
       }
 
@@ -427,16 +453,14 @@ function createReadmeExecutors(input: {
       // a cut-off call, and defaulting it to "" would aim a DELETE at
       // the intro.
       if (typeof toolInput.heading !== "string") {
-        refusals++;
-        log("graph-project-view -- refused a malformed remove_section (heading missing; likely a cut-off call).");
+        refuse("refused a malformed remove_section (heading missing; likely a cut-off call)");
         return 'Error: remove_section needs "heading" as a string. Nothing was removed.';
       }
       const heading = normalizeIntroHeading(toolInput.heading.trim());
       const key = heading.toLowerCase();
 
       if (key === PROTECTED_HEADING) {
-        refusals++;
-        log('graph-project-view -- refused remove_section on "Notes on this view" (protected; left unchanged).');
+        refuse('refused remove_section on "Notes on this view" (protected; left unchanged)');
         return 'Error: "Notes on this view" is off-limits to this tool — it is never edited by GraphLog.';
       }
 
@@ -464,7 +488,13 @@ function createReadmeExecutors(input: {
     },
   };
 
-  return { executors, summaries, refusals: () => refusals, getCurrent: () => ({ content: currentContent, fileId: currentFileId }) };
+  return {
+    executors,
+    summaries,
+    refusals: () => refusals,
+    refusalReasons: () => refusalReasons,
+    getCurrent: () => ({ content: currentContent, fileId: currentFileId }),
+  };
 }
 
 // Bumped from the original 8 as a defensive measure -- graph-structure's
@@ -923,7 +953,11 @@ function buildNodePrefetchBlock(
     const included = nodeIds.slice(0, remaining);
     const nodeTexts = included.map((id) => allNodesById.get(id)).filter((n): n is GraphLogNode => !!n);
     if (nodeTexts.length === 0) continue;
-    remaining -= included.length;
+    // Charged for what was actually handed over. This used to charge
+    // `included.length`, so a thread whose ids no longer resolve (a day
+    // rewritten after the structure was built) spent budget on nodes the
+    // model never saw and starved the healthy threads below it.
+    remaining -= nodeTexts.length;
     const truncatedNote = included.length < nodeIds.length
       ? `\n\n(truncated -- ${nodeIds.length - included.length} more node(s) in this thread not shown here; call get_node for any of them by id)`
       : "";
@@ -1334,12 +1368,26 @@ export async function runGraphProjectView(
   const graphLogListings = files
     .map((f) => ({ listing: f, date: GRAPH_LOG_RE.exec(f.name)?.[1] }))
     .filter((x): x is { listing: (typeof files)[number]; date: string } => !!x.date);
+  // Same accounting graph-structure does on its own read of the graph
+  // (ADR-016): a day with no content and a node block with no `:ref`
+  // line are both nodes the README can never cite, and both used to
+  // vanish here without a line anywhere.
+  const loadIssues: string[] = [];
   const allNodes: GraphLogNode[] = [];
+  const parseDiag = { malformed: 0 };
   for (const { listing, date } of graphLogListings) {
     const file = await getFileRefById(listing._id);
-    if (!file?.content) continue;
-    allNodes.push(...parseGraphLogNodes(date, splitFrontmatter(file.content).body));
+    if (!file?.content) {
+      loadIssues.push(`${listing.name} exists but has no content, so its nodes cannot reach the README`);
+      continue;
+    }
+    const before = parseDiag.malformed;
+    allNodes.push(...parseGraphLogNodes(date, splitFrontmatter(file.content).body, parseDiag));
+    if (parseDiag.malformed > before) {
+      loadIssues.push(`${listing.name}: ${parseDiag.malformed - before} node block(s) have no :ref line and cannot be cited`);
+    }
   }
+  for (const issue of loadIssues) log(`graph-project-view: ${issue}.`);
   const allNodesById = new Map(allNodes.map((n) => [n.id, n]));
   const structureSections = splitReadmeSections(splitFrontmatter(structureFile.content).body);
   const validNodeIds = buildMembershipIndex(structureSections);
@@ -1415,7 +1463,7 @@ export async function runGraphProjectView(
     validNodeIds,
     today,
   });
-  const { executors, summaries, refusals, getCurrent } = executors_;
+  const { executors, summaries, refusals, refusalReasons, getCurrent } = executors_;
 
   // Coverage off the COMMITTED README, computed by code between passes and
   // again at the end. Both the loop's own progress measure and the
@@ -1454,7 +1502,7 @@ export async function runGraphProjectView(
       changed: summaries.length > 0,
       summary: summaries,
       coverage: lastCoverage,
-      incomplete: [reason],
+      incomplete: [...loadIssues, reason],
     };
   };
 
@@ -1525,6 +1573,7 @@ export async function runGraphProjectView(
 
       lastCoverage = measure();
       const cites = countCitations(splitFrontmatter(getCurrent().content).body, allNodesById);
+      const invented = unknownHeadings(splitReadmeSections(splitFrontmatter(getCurrent().content).body));
       const writes = summaries.length - before.writes;
       refusedInFinalPass = refusals() - before.refusals;
       const ending = classifyViewPassEnding({
@@ -1557,6 +1606,7 @@ export async function runGraphProjectView(
           citations: cites.citations,
           matched: cites.matched,
           unmatched: cites.unmatched.length,
+          unknownHeadings: invented,
           cutOff: result.truncated ? (result.cutOff ?? "(unknown)") : null,
           shortfall: ending.shortfall,
         },
@@ -1570,6 +1620,9 @@ export async function runGraphProjectView(
           `${result.truncated ? `; cut off writing ${result.cutOff === null ? "a section" : `"${result.cutOff || "(intro)"}"`}` : ""}` +
           `${result.hitMaxTurns ? "; hit its turn limit" : ""}.`,
       );
+      if (invented.length > 0) {
+        log(`graph-project-view: pass ${passes} left ${invented.length} heading(s) outside the skill's shape, kept before "Notes on this view": ${invented.map((h) => `"${h}"`).join(", ")}.`);
+      }
       if (cites.unmatched.length > 0) {
         // ADR-005: a citation the model built rather than copied. Named
         // here because it reads as verified for as long as it survives.
@@ -1615,7 +1668,10 @@ export async function runGraphProjectView(
     // next run resumes from the committed README, same convention as
     // sync-graph's `hash: null` and graph-structure's completeness gate.
     if (shortfall !== null) return partial(shortfall);
-    if (refusedInFinalPass > 0) return partial("had at least one refused edit in its final pass");
+    if (refusedInFinalPass > 0) {
+      const reasons = refusalReasons().slice(-refusedInFinalPass);
+      return partial(`${refusedInFinalPass} refused edit(s) in its final pass: ${reasons.join("; ")}`);
+    }
 
     // Clean finish: one final deterministic reconcile pass, always run
     // regardless of what (if anything) the model touched --
@@ -1668,7 +1724,7 @@ export async function runGraphProjectView(
       log(`graph-project-view: ${coverage.missingFiles.length} attached file(s) were dropped this run (PROJECT_VIEW.md says never): ${coverage.missingFiles.join(", ")}.`);
     }
 
-    return { ok: true, skipped: false, changed, summary: summaries, coverage, incomplete: [] };
+    return { ok: true, skipped: false, changed, summary: summaries, coverage, incomplete: loadIssues };
   } catch (err) {
     log(`graph-project-view: couldn't be processed (${err instanceof Error ? err.message : "unknown error"}).`);
     const durationMs = Date.now() - callStart;

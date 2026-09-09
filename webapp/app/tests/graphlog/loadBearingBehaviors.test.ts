@@ -15,10 +15,17 @@ import {
   classifyPassEnding,
   buildGraphLogContent,
   existingSourceHash,
+  readSourceHash,
   unresolvedContributorIds,
   contributorNameOrThrow,
 } from "robustness-core/data/syncGraph.server";
-import { computeBacklinkIndex, extractDatesFromText, stripRefVerbose, type GraphLogNode } from "robustness-core/data/graphNodeIndex.server";
+import {
+  computeBacklinkIndex,
+  extractDatesFromText,
+  parseGraphLogNodes,
+  stripRefVerbose,
+  type GraphLogNode,
+} from "robustness-core/data/graphNodeIndex.server";
 import {
   sortClustersByWeight,
   parseClusterFields,
@@ -37,6 +44,8 @@ import {
   coverageFromJobResult,
   describeUncited,
   introShouldWait,
+  reorderSections,
+  unknownHeadings,
   type UncitedThread,
 } from "robustness-core/data/graphProjectView.server";
 import { classifyStageSkill, isSkipInstruction } from "robustness-core/data/projectN02.server";
@@ -1046,5 +1055,95 @@ describe("ADR-005: a citation the model composed is counted, not trusted", () =>
 
   it("a README with no citations at all is zero, not an error", () => {
     expect(countCitations("# P\n\n## Settled\n\nnothing cited", nodes)).toEqual({ citations: 0, matched: 0, unmatched: [] });
+  });
+});
+
+// ── ADR-016: in-stage signal reaches a reader ────────────────────────────
+//
+// Each of these is a place where code correctly did the conservative
+// thing (skip a malformed block, ignore a dangling link, treat corrupt
+// front matter as "no hash", drop a duplicate heading) and then told
+// nobody. The conservative move stays; the silence goes.
+
+describe("ADR-016: a malformed node block is counted, not just skipped", () => {
+  const good = `### Node 1\n==said a thing==\n:ref{name="A" datetime="2026-08-20T12:00:00Z" location="/x"}\n`;
+  const bad = `### Node 2\n==no citation line at all==\n`;
+
+  it("parses the good block, drops the bad one, and says so through diagnostics", () => {
+    const diag = { malformed: 0 };
+    const nodes = parseGraphLogNodes("2026-08-20", `${good}\n${bad}`, diag);
+    expect(nodes.map((n) => n.number)).toEqual([1]);
+    expect(diag.malformed).toBe(1);
+  });
+
+  it("is unchanged for callers that pass no diagnostics", () => {
+    expect(parseGraphLogNodes("2026-08-20", `${good}\n${bad}`).length).toBe(1);
+  });
+});
+
+describe("ADR-016: a dangling link is counted, and still carries no weight", () => {
+  it("counts a link whose target is not in the graph without indexing it", () => {
+    const a = node("2026-08-20#1", [{ date: "2026-08-19", number: 7 }, { date: "2026-08-20", number: 2 }]);
+    const b = node("2026-08-20#2");
+    const diag = { dangling: 0 };
+    const index = computeBacklinkIndex([a, b], diag);
+    expect(diag.dangling).toBe(1);
+    expect(index.get("2026-08-20#2")?.count).toBe(1);
+    expect(index.has("2026-08-19#7")).toBe(false);
+  });
+});
+
+describe("ADR-016: corrupt front matter is named, not mistaken for 'never processed'", () => {
+  it("reads a good hash", () => {
+    expect(readSourceHash("---\nsourceHash: abc\n---\nbody")).toEqual({ hash: "abc", unreadable: false });
+  });
+
+  it("no front matter is simply no hash", () => {
+    expect(readSourceHash("just a body")).toEqual({ hash: null, unreadable: false });
+    expect(readSourceHash(null)).toEqual({ hash: null, unreadable: false });
+  });
+
+  it("front matter that cannot be parsed says so, and the old helper still returns null", () => {
+    const corrupt = "---\nsourceHash: [unclosed\n  - : : bad\n---\nbody";
+    expect(readSourceHash(corrupt).unreadable).toBe(true);
+    expect(readSourceHash(corrupt).hash).toBeNull();
+    expect(existingSourceHash(corrupt)).toBeNull();
+  });
+});
+
+describe("ADR-016: the README's shape is enforced without losing content", () => {
+  const notes = { heading: "Notes on this view", content: "*Comment freely below.*" };
+
+  it("keeps BOTH sections under a duplicated canonical heading, in file order", () => {
+    // A `## Settled` line inside a section's prose manufactures a second
+    // "Settled" section; the second one's content used to vanish on the
+    // next commit, contradicting the function's own doc.
+    const out = reorderSections([
+      { heading: "Settled", content: "first" },
+      { heading: "Get shit done", content: "open" },
+      { heading: "Settled", content: "second" },
+      notes,
+    ]);
+    expect(out.map((s) => `${s.heading}:${s.content}`)).toEqual([
+      "Get shit done:open",
+      "Settled:first",
+      "Settled:second",
+      "Notes on this view:*Comment freely below.*",
+    ]);
+  });
+
+  it("names a heading the model invented, and reorderSections keeps it before the notes", () => {
+    const sections = [
+      { heading: "", content: "intro" },
+      { heading: "Settled", content: "done" },
+      { heading: "Vendor shortlist", content: "invented" },
+      notes,
+    ];
+    expect(unknownHeadings(sections)).toEqual(["Vendor shortlist"]);
+    expect(reorderSections(sections).map((s) => s.heading)).toEqual(["", "Settled", "Vendor shortlist", "Notes on this view"]);
+  });
+
+  it("reports nothing for a README that follows the shape", () => {
+    expect(unknownHeadings([{ heading: "", content: "i" }, { heading: "Settled", content: "d" }, notes])).toEqual([]);
   });
 });
