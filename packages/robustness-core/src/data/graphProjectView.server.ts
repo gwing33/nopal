@@ -95,6 +95,7 @@ import {
   parseGraphStructureFrontmatter,
   markGraphStructureApplied,
   hasFallenAway,
+  parseClusterFields,
   nodeIdsInSection,
   buildMembershipIndex,
 } from "./graphStructure.server";
@@ -556,6 +557,45 @@ async function runReadmeAgentLoop(
  * predictable pattern by rank — the next tuning round should read this
  * data across a few real runs before anyone writes a coverage RULE).
  */
+/**
+ * One thread the finished README cites nothing from, WITH what decides
+ * whether that matters.
+ *
+ * A bare list of headings can only ever say "three threads were missed",
+ * and no threshold on that number can become a rule: the skill says
+ * plainly that "a quiet project has thin or empty sections, and that
+ * emptiness is honest signal. Don't manufacture depth to fill a heading."
+ * A minor thread going uncited is the model doing its job. Counting it as
+ * a miss and acting on the count would be wiring a rule that tells the
+ * model to do the thing the skill forbids.
+ *
+ * What makes it a real miss is WHICH thread. graph-structure.md is
+ * already sorted down the importance-and-urgency grid (ADR-008), and this
+ * walk already goes top to bottom through it, so `rank` costs nothing but
+ * writing down the index instead of discarding it. `hasBlocking`/`hasDue`
+ * come from the parse `hasFallenAway` was already doing on the same
+ * section.
+ *
+ * That is the difference between a number nobody can act on and one that
+ * names the miss: "thread 14 of 20 uncited" is fine, "the top thread went
+ * uncited" and "a thread carrying Blocking went uncited" are not, and the
+ * skill is explicit that a hard constraint must never be pushed down the
+ * page.
+ */
+export type UncitedThread = {
+  heading: string;
+  /** 1-based position among the named threads in graph-structure.md's own
+   * ordering. 1 is the most important thing in the project. */
+  rank: number;
+  /** How many named threads there were, so a rank reads as a fraction
+   * rather than an absolute that means different things per project. */
+  of: number;
+  /** ADR-007: `Blocking` names something this thread is holding up. An
+   * uncited thread carrying one is the sharpest miss available. */
+  hasBlocking: boolean;
+  hasDue: boolean;
+};
+
 export type CoverageReport = {
   /** Threads present in graph-structure.md, not fallen away, and with NOT
    * ONE of their nodes cited anywhere in the README's final body — an
@@ -567,7 +607,7 @@ export type CoverageReport = {
    * claims to. It used to substring-match the thread's HEADING against the
    * README, and since the model writes its own section headings in its own
    * voice, a well-covered thread reported as missing nearly every run. */
-  missingThreads: string[];
+  missingThreads: UncitedThread[];
   /** Threads that fell away THIS run per ADR-009/`hasFallenAway`
    * (dormant, no Due, no Blocking) — still fully present in
    * graph-structure.md and still linkable by sync-graph (ADR-004), just
@@ -805,11 +845,16 @@ export function computeCoverageReport(
   const isFeatured = (node: GraphLogNode): boolean =>
     !!node.refLine && normalizedReadme.includes(stripRefVerbose(node.refLine));
 
-  const missingThreads: string[] = [];
+  const missingThreads: UncitedThread[] = [];
   const fellAway: string[] = [];
   const missingFiles: string[] = [];
-  for (const section of sections) {
-    if (section.heading === "" || section.heading.toLowerCase() === "unclustered") continue;
+  // Ranked, not just listed. `sections` arrives in graph-structure.md's
+  // own importance-and-urgency order (ADR-008), so position IS importance
+  // and the only work here is not throwing it away.
+  const named = sections.filter(
+    (sec) => sec.heading !== "" && sec.heading.toLowerCase() !== "unclustered",
+  );
+  for (const [index, section] of named.entries()) {
     const threadFellAway = hasFallenAway(section);
     if (threadFellAway) fellAway.push(section.heading);
 
@@ -821,7 +866,16 @@ export function computeCoverageReport(
     // A thread counts as represented when at least ONE of its nodes is
     // actually cited. A fallen-away thread is intentionally absent
     // (ADR-009), so its absence is never a miss.
-    if (!threadFellAway && featured.length === 0) missingThreads.push(section.heading);
+    if (!threadFellAway && featured.length === 0) {
+      const fields = parseClusterFields(section);
+      missingThreads.push({
+        heading: section.heading,
+        rank: index + 1,
+        of: named.length,
+        hasBlocking: fields.hasBlocking,
+        hasDue: fields.hasDue,
+      });
+    }
 
     // Only a FEATURED node's file can be dropped -- a node the model
     // didn't feature was never carrying its file into the README in the
@@ -834,6 +888,60 @@ export function computeCoverageReport(
     }
   }
   return { missingThreads, fellAway, missingFiles };
+}
+
+/** One uncited thread as a line a person can act on: what it is, where it
+ * ranked, and whether it was carrying a hard constraint. Shared by the run
+ * log and the run report so both say the same thing. */
+export function describeUncited(t: UncitedThread): string {
+  const flags = [t.hasBlocking ? "Blocking" : null, t.hasDue ? "Due" : null].filter(Boolean);
+  return `${t.heading} (${t.rank}/${t.of}${flags.length ? `, ${flags.join("+")}` : ""})`;
+}
+
+/**
+ * Pulls this stage's coverage check off whatever a GraphLog JOB returned,
+ * for both shapes that can carry one: a full `"run"` (coverage sits at the
+ * top level beside `incomplete`) and a lone `"graph-project-view"` job
+ * (the stage result IS the job result). Pure, so the worker's plumbing is
+ * testable without a queue.
+ *
+ * Deliberately separate from the worker's own `collectRunStats`, whose
+ * shape check keys on `nodesWritten`/`daysWritten` -- fields only a
+ * `"run"` job produces. Coverage folded in there would be silently
+ * dropped for the single-stage job, which is the one somebody runs
+ * precisely because they are looking at the README.
+ *
+ * `null` means NOT MEASURED, never "measured and clean". Coverage is
+ * computed only on a clean finish, so every truncated, refused,
+ * turn-limited or skipped run has none -- and those are the runs whose
+ * coverage you would most want. A caller that reads null as clean reports
+ * a passing check that never ran.
+ */
+export function coverageFromJobResult(result: unknown): {
+  uncitedThreads: string[];
+  threadsFellAway: string[];
+  droppedFiles: string[];
+} | null {
+  if (!result || typeof result !== "object") return null;
+  const coverage = (result as { coverage?: unknown }).coverage;
+  if (!coverage || typeof coverage !== "object") return null;
+  const c = coverage as Record<string, unknown>;
+  // `missingThreads` is this file's own field name; "uncited" is what it
+  // measures and what the run row and the run report both call it.
+  if (!Array.isArray(c.missingThreads)) return null;
+  const strings = (v: unknown): string[] =>
+    Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+  const uncited = (v: unknown): string[] =>
+    Array.isArray(v)
+      ? v
+          .filter((x): x is UncitedThread => !!x && typeof x === "object" && typeof (x as UncitedThread).heading === "string")
+          .map(describeUncited)
+      : [];
+  return {
+    uncitedThreads: uncited(c.missingThreads),
+    threadsFellAway: strings(c.fellAway),
+    droppedFiles: strings(c.missingFiles),
+  };
 }
 
 /**
@@ -1138,7 +1246,10 @@ export async function runGraphProjectView(
       allNodesById,
     );
     if (coverage.missingThreads.length > 0) {
-      log(`graph-project-view: ${coverage.missingThreads.length} thread(s) have no representation in the README this run: ${coverage.missingThreads.join(", ")}.`);
+      log(
+        `graph-project-view: ${coverage.missingThreads.length} thread(s) have no representation in the README this run: ` +
+          `${coverage.missingThreads.map(describeUncited).join(", ")}.`,
+      );
     }
     if (coverage.fellAway.length > 0) {
       log(`graph-project-view: ${coverage.fellAway.length} thread(s) fell away this run (dormant, no Due, no Blocking): ${coverage.fellAway.join(", ")}.`);

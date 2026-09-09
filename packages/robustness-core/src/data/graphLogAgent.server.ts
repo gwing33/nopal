@@ -37,6 +37,7 @@ import { runGraphStructure, type GraphStructureResult } from "./graphStructure.s
 import {
   runGraphProjectView,
   syncReadmeIncompleteBanner,
+  type CoverageReport,
   type GraphProjectViewResult,
 } from "./graphProjectView.server";
 import { getFolderById, type VaultFolder } from "./vault.server";
@@ -69,6 +70,12 @@ export type GraphLogPipelineResult =
        * every case is resumable and already committed real progress. What
        * was wrong was the reporting, not the recovery. */
       incomplete: string[];
+      /** `graph-project-view`'s own coverage check for this run, lifted to
+       * the top level beside `incomplete` so a caller never has to reach
+       * into a nested stage result to find it. `null` means NOT MEASURED
+       * (the view stage never reached a clean finish), never "measured and
+       * clean" — see `GraphLogRun.coverage`. */
+      coverage: CoverageReport | null;
       /** 1.7's denominators, so cost becomes a RATE rather than a total.
        *
        * The per-run and per-stage cost was already recorded; what was
@@ -237,6 +244,10 @@ export async function runGraphLogPipeline(
     graphStructure,
     graphProjectView,
     incomplete,
+    // Straight through from the stage. Null whenever the view stage did
+    // not reach a clean finish, which is most of the runs worth looking
+    // at -- the reader has to say "not measured", never "clean".
+    coverage: graphProjectView.coverage,
     stats,
   };
 }
