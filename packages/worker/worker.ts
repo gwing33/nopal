@@ -21,7 +21,7 @@ import {
 import { runSyncKnowledge } from "robustness-core/data/syncKnowledge.server";
 import { runSyncGraph } from "robustness-core/data/syncGraph.server";
 import { runGraphStructure } from "robustness-core/data/graphStructure.server";
-import { coverageFromJobResult, runGraphProjectView } from "robustness-core/data/graphProjectView.server";
+import { coverageFromJobResult, runGraphProjectView, syncReadmeIncompleteBanner } from "robustness-core/data/graphProjectView.server";
 import { runGraphLogPipeline } from "robustness-core/data/graphLogAgent.server";
 import {
   resetProjectView,
@@ -110,6 +110,20 @@ async function runGraphLogJob(
         perf,
       });
       if (!result.ok) throw new Error(result.error);
+      // The stage strips the README's incomplete banner before the model
+      // sees it (so the model cannot helpfully delete it) and relies on
+      // the PIPELINE to put it back from the whole run's outcome. Run as
+      // its own job there was no pipeline, so the banner came off and
+      // nothing restored it -- a silently CLEARED warning, the opposite
+      // of the "stale banner is the safe direction" its doc assumed. A
+      // lone stage can only vouch for itself, so this raises or clears
+      // from its own reasons, prefixed the way the pipeline prefixes
+      // them; the next nightly run re-judges the whole. ADR-016.
+      const changed = await syncReadmeIncompleteBanner(
+        projectFolder,
+        result.incomplete.map((r) => `graph-project-view: ${r}`),
+      );
+      if (changed) onProgress(result.incomplete.length > 0 ? "graph-project-view: marked README.md as incomplete on its own first line." : "graph-project-view: cleared the incomplete notice from README.md.");
       return result;
     }
     case "run": {
