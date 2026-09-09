@@ -48,11 +48,14 @@ import {
   describeUncited,
   extractReaderComments,
   introShouldWait,
+  parseSectionShape,
   reorderSections,
+  resolveSectionOrder,
   unknownHeadings,
   type UncitedThread,
 } from "robustness-core/data/graphProjectView.server";
 import { classifyStageSkill, isSkipInstruction } from "robustness-core/data/projectN02.server";
+import { DEFAULT_PROJECT_VIEW_SKILL } from "robustness-core/data/graphLogDefaults.server";
 import {
   README_INCOMPLETE_BANNER_PREFIX,
   splitReadmeSections,
@@ -1290,5 +1293,71 @@ describe("content types that need converting are recognized", () => {
     expect(isHeicContentType("image/jpeg")).toBe(false);
     expect(isVideoContentType("video/quicktime")).toBe(true);
     expect(isVideoContentType("image/jpeg")).toBe(false);
+  });
+});
+
+// ── The README's shape comes from the skill ──────────────────────────────
+//
+// PROJECT_VIEW.md declared the sections in a fenced block and the code
+// held a second copy of the same list. Two sources of truth, already
+// drifted once. The code reads the skill now; the built-in list is a
+// reported fallback. The migration test is the one that matters: the
+// default skill must parse to exactly the shape the code used to hardcode.
+
+describe("the section shape is read from PROJECT_VIEW.md", () => {
+  it("MIGRATION: the default skill parses to exactly the shape the code used to hardcode", () => {
+    expect(parseSectionShape(DEFAULT_PROJECT_VIEW_SKILL)).toEqual([
+      "what's carrying weight",
+      "where we pull apart",
+      "get shit done",
+      "settled",
+      "open questions",
+    ]);
+    expect(resolveSectionOrder(DEFAULT_PROJECT_VIEW_SKILL)).toEqual({
+      order: ["what's carrying weight", "where we pull apart", "get shit done", "settled", "open questions", "notes on this view"],
+      reason: null,
+    });
+  });
+
+  it("reads only the fenced block under '# The shape', never the skill's own prose headings", () => {
+    const skill = [
+      "# Before you write",
+      "## Not a section",
+      "# The shape",
+      "prose",
+      "```markdown",
+      "# <Project>",
+      "intro text",
+      "## Now",
+      "## Later",
+      "```",
+      "## On the two lanes",
+      "more prose",
+    ].join("\n");
+    expect(parseSectionShape(skill)).toEqual(["now", "later"]);
+  });
+
+  it("a project can declare its own shape, and the protected heading is always last regardless", () => {
+    const skill = "# The shape\n```\n## Notes on this view\n## Status\n## Decisions\n```";
+    expect(resolveSectionOrder(skill).order).toEqual(["status", "decisions", "notes on this view"]);
+  });
+
+  it("falls back to the built-in shape, with a reason, when the skill declares none", () => {
+    for (const skill of [null, "", "skip", "# The shape\n\nno fence here", "# The shape\n```\nno headings\n```"]) {
+      const { order, reason } = resolveSectionOrder(skill);
+      expect(order).toEqual(["what's carrying weight", "where we pull apart", "get shit done", "settled", "open questions", "notes on this view"]);
+      expect(reason).toContain("built-in shape");
+    }
+  });
+
+  it("reorderSections and unknownHeadings follow the given order", () => {
+    const order = ["status", "decisions", "notes on this view"];
+    const sections = [
+      { heading: "Decisions", content: "d" },
+      { heading: "Settled", content: "old shape" },
+      { heading: "Status", content: "s" },
+    ];
+    expect(reorderSections(sections, order).map((s) => s.heading)).toEqual(["Status", "Decisions", "Settled"]);
+    expect(unknownHeadings(sections, order)).toEqual(["Settled"]);
   });
 });

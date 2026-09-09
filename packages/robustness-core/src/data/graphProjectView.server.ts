@@ -49,11 +49,12 @@
  * SECTION ORDER IS ALSO ENFORCED BY CODE, NOT THE MODEL — `update_section`
  * appends a brand new heading to the end of the README's own section
  * list, which would leave section order however sections HAPPENED to get
- * created over a project's life. `CANONICAL_ORDER` below re-sorts the six
- * known headings into `PROJECT_VIEW.md`'s own prescribed shape after
- * every run; anything else (a heading the model invented despite being
- * told not to) is left just before "Notes on this view" rather than
- * silently dropped.
+ * created over a project's life. `reorderSections` re-sorts the known
+ * headings into the shape `PROJECT_VIEW.md` itself declares (read off
+ * the skill by `parseSectionShape`; the built-in list is only a reported
+ * fallback) after every run; anything else (a heading the model invented
+ * despite being told not to) is left just before "Notes on this view"
+ * rather than silently dropped.
  *
  * Deliberately deferred (start simple; add if a real need shows up, same
  * philosophy the `oxmarkdown` skill's Grid/Gallery/Toggle List promotions
@@ -229,38 +230,101 @@ export function extractReaderComments(sections: ReadmeSection[]): {
  * the slip "visible"; it was visible only to a person reading the README.
  * Counted onto the pass event and the log now, and the skill's "propose a
  * better cut" invitation finally has a place its answer lands. */
-export function unknownHeadings(sections: ReadmeSection[]): string[] {
+export function unknownHeadings(sections: ReadmeSection[], order: readonly string[] = BUILT_IN_ORDER): string[] {
   return sections
-    .filter((s) => s.heading !== "" && !CANONICAL_ORDER.includes(s.heading.toLowerCase()))
+    .filter((s) => s.heading !== "" && !order.includes(s.heading.toLowerCase()))
     .map((s) => s.heading);
 }
 
-const CANONICAL_ORDER = [
+/**
+ * THE SHAPE COMES FROM THE SKILL. `PROJECT_VIEW.md` declares the README's
+ * sections in a fenced block under `# The shape`, and the code used to
+ * hold a second copy of the same list here. Two sources of truth, and
+ * they had already drifted once (the skill invited "propose a better
+ * cut" while the code quarantined any heading it did not know). The
+ * sections are read off the project's own skill file now -- see
+ * `parseSectionShape` -- so changing the README's shape is editing one
+ * file, and a project can carry a different shape from the default.
+ *
+ * This built-in list is the FALLBACK for a skill whose shape block cannot
+ * be parsed (reported through `incomplete`, never silent), and the
+ * default for the pure helpers' tests. `PROTECTED_HEADING` stays here
+ * regardless of what any skill says: it guards a section a person may
+ * have written in, and a protection whose scope is read from an editable
+ * text file is not a protection.
+ */
+const BUILT_IN_ORDER: readonly string[] = [
   "what's carrying weight",
   "where we pull apart",
   "get shit done",
   "settled",
   "open questions",
-  "notes on this view",
+  PROTECTED_HEADING,
 ];
 
-/** Re-sorts sections into `PROJECT_VIEW.md`'s prescribed shape — the
- * INTRO (heading `""`) always stays first; any of the six canonical
- * headings goes in `CANONICAL_ORDER`'s position; anything else (a
- * heading the model invented despite being told the shape is fixed) is
- * left just before "Notes on this view" rather than silently dropped, so
- * an instruction-following slip is visible instead of losing content. */
-export function reorderSections(sections: ReadmeSection[]): ReadmeSection[] {
+/**
+ * The section headings a `PROJECT_VIEW.md` declares, lowercased, in
+ * order, or `[]` when it declares none this can read.
+ *
+ * Reads ONLY the fenced block that follows the `# The shape` heading --
+ * never the whole skill, which carries `## ` lines of its own prose
+ * ("## On the two lanes", "## Get shit done is a surface, not an
+ * assignment") that a naive scan would take for sections. The fence is
+ * an unambiguous delimiter; inside it `splitReadmeSections` does the same
+ * work it does on a README, and `# <Project>` falls into the intro
+ * (heading `""`) the way an intro is represented everywhere else.
+ */
+export function parseSectionShape(skill: string | null | undefined): string[] {
+  if (!skill) return [];
+  const lines = skill.split("\n");
+  const headingAt = lines.findIndex((l) => /^#\s+the shape\s*$/i.test(l.trim()));
+  if (headingAt === -1) return [];
+  const fenceStart = lines.findIndex((l, i) => i > headingAt && /^```/.test(l.trim()));
+  if (fenceStart === -1) return [];
+  const fenceEnd = lines.findIndex((l, i) => i > fenceStart && /^```/.test(l.trim()));
+  if (fenceEnd === -1) return [];
+  const block = lines.slice(fenceStart + 1, fenceEnd).join("\n");
+  return splitReadmeSections(block)
+    .map((s) => s.heading.trim().toLowerCase())
+    .filter((h) => h !== "");
+}
+
+/**
+ * The order this run enforces: the skill's own shape with the protected
+ * heading always last (whether or not the skill names it), or the
+ * built-in list when the skill's shape cannot be read. `reason` is the
+ * line for `incomplete` in that case -- a free-text file becoming
+ * load-bearing needs its failure to be loud.
+ */
+export function resolveSectionOrder(skill: string | null | undefined): { order: string[]; reason: string | null } {
+  const parsed = parseSectionShape(skill);
+  if (parsed.length === 0) {
+    return {
+      order: [...BUILT_IN_ORDER],
+      reason: "skills/PROJECT_VIEW.md declares no readable section shape (a fenced block under \"# The shape\"), so the built-in shape was used",
+    };
+  }
+  const withoutProtected = parsed.filter((h) => h !== PROTECTED_HEADING);
+  return { order: [...withoutProtected, PROTECTED_HEADING], reason: null };
+}
+
+/** Re-sorts sections into the skill's prescribed shape — the INTRO
+ * (heading `""`) always stays first; any known heading goes in `order`'s
+ * position; anything else (a heading the model invented despite being
+ * told the shape is fixed) is left just before "Notes on this view"
+ * rather than silently dropped, so an instruction-following slip is
+ * visible instead of losing content. */
+export function reorderSections(sections: ReadmeSection[], order: readonly string[] = BUILT_IN_ORDER): ReadmeSection[] {
   const intro = sections.filter((s) => s.heading === "");
   const named = sections.filter((s) => s.heading !== "");
-  // EVERY section under a canonical heading, in file order, not only the
+  // EVERY section under a known heading, in file order, not only the
   // first. `find` kept one and silently dropped the rest, which
   // contradicted this function's own promise above: `splitReadmeSections`
   // is line-based and ignores code fences, so a `## ` line inside a
   // section's prose manufactures a duplicate, and the duplicate's content
   // was gone on the next commit with nothing to say so.
-  const known = CANONICAL_ORDER.flatMap((h) => named.filter((s) => s.heading.toLowerCase() === h));
-  const unknown = unknownHeadings(sections).map((h) => named.find((s) => s.heading === h)!);
+  const known = order.flatMap((h) => named.filter((s) => s.heading.toLowerCase() === h));
+  const unknown = unknownHeadings(sections, order).map((h) => named.find((s) => s.heading === h)!);
   const notesIndex = known.findIndex((s) => s.heading.toLowerCase() === PROTECTED_HEADING);
   const withoutNotes = notesIndex === -1 ? known : known.filter((_, i) => i !== notesIndex);
   const notes = notesIndex === -1 ? [] : [known[notesIndex]];
@@ -353,6 +417,8 @@ function createReadmeExecutors(input: {
   allNodesById: Map<string, GraphLogNode>;
   validNodeIds: Set<string>;
   today: string;
+  /** The skill's section order -- see `resolveSectionOrder`. */
+  sectionOrder: readonly string[];
 }): {
   executors: Record<string, (toolInput: Record<string, unknown>) => Promise<string>>;
   summaries: string[];
@@ -370,7 +436,7 @@ function createReadmeExecutors(input: {
   refusalReasons: () => readonly string[];
   getCurrent: () => { content: string; fileId: string | undefined };
 } {
-  const { projectFolder, log, allNodesById, validNodeIds, today } = input;
+  const { projectFolder, log, allNodesById, validNodeIds, today, sectionOrder } = input;
   let currentContent = input.initialContent;
   let currentFileId = input.initialFileId;
   let refusals = 0;
@@ -470,7 +536,7 @@ function createReadmeExecutors(input: {
       const updatedSections = existing
         ? sections.map((s, i) => (i === existingIndex ? { heading: existing.heading, content } : s))
         : [...sections, { heading, content }];
-      const ok = await commit(withReadmeBody(currentContent, joinReadmeSections(reorderSections(updatedSections))));
+      const ok = await commit(withReadmeBody(currentContent, joinReadmeSections(reorderSections(updatedSections, sectionOrder))));
       if (!ok) return "Error: failed to save section update";
       const label = heading || "(intro)";
       summaries.push(existing ? `updated "${label}"` : `added "${label}"`);
@@ -497,7 +563,7 @@ function createReadmeExecutors(input: {
       const existingIndex = sections.findIndex((s) => s.heading.toLowerCase() === key);
       if (existingIndex === -1) return `Error: no section named "${heading}" found`;
       const updatedSections = sections.filter((_, i) => i !== existingIndex);
-      const ok = await commit(withReadmeBody(currentContent, joinReadmeSections(reorderSections(updatedSections))));
+      const ok = await commit(withReadmeBody(currentContent, joinReadmeSections(reorderSections(updatedSections, sectionOrder))));
       if (!ok) return "Error: failed to remove section";
       summaries.push(`removed "${heading}"`);
       log(`graph-project-view -- removed README section "${heading}".`);
@@ -1402,6 +1468,14 @@ export async function runGraphProjectView(
   // line are both nodes the README can never cite, and both used to
   // vanish here without a line anywhere.
   const loadIssues: string[] = [];
+  // The README's shape, from this project's own PROJECT_VIEW.md -- see
+  // `resolveSectionOrder`. A skill whose shape cannot be read falls back
+  // to the built-in list and says so on every return below.
+  const { order: sectionOrder, reason: shapeReason } = resolveSectionOrder(skill);
+  if (shapeReason) {
+    loadIssues.push(shapeReason);
+    log(`graph-project-view: ${shapeReason}.`);
+  }
   const allNodes: GraphLogNode[] = [];
   const parseDiag = { malformed: 0 };
   for (const { listing, date } of graphLogListings) {
@@ -1459,7 +1533,7 @@ export async function runGraphProjectView(
   // created, only protected where it exists).
   const initialSections = splitReadmeSections(splitFrontmatter(initialContent).body);
   const { sections: sectionsWithNotes, unstamped, stampAppliedDate } = extractReaderComments(initialSections);
-  const contentWithNotes = withReadmeBody(initialContent, joinReadmeSections(reorderSections(sectionsWithNotes)));
+  const contentWithNotes = withReadmeBody(initialContent, joinReadmeSections(reorderSections(sectionsWithNotes, sectionOrder)));
 
   // If the README didn't already have a real file (or its sections
   // needed re-sorting), persist that shape now, BEFORE
@@ -1491,6 +1565,7 @@ export async function runGraphProjectView(
     allNodesById,
     validNodeIds,
     today,
+    sectionOrder,
   });
   const { executors, summaries, refusals, refusalReasons, getCurrent } = executors_;
 
@@ -1602,7 +1677,7 @@ export async function runGraphProjectView(
 
       lastCoverage = measure();
       const cites = countCitations(splitFrontmatter(getCurrent().content).body, allNodesById);
-      const invented = unknownHeadings(splitReadmeSections(splitFrontmatter(getCurrent().content).body));
+      const invented = unknownHeadings(splitReadmeSections(splitFrontmatter(getCurrent().content).body), sectionOrder);
       const writes = summaries.length - before.writes;
       refusedInFinalPass = refusals() - before.refusals;
       const ending = classifyViewPassEnding({
@@ -1723,6 +1798,7 @@ export async function runGraphProjectView(
       stampedNotes
         ? latestSections.map((s) => (s.heading.toLowerCase() === PROTECTED_HEADING ? stampedNotes : s))
         : latestSections,
+      sectionOrder,
     );
     const reconciledContent = withReadmeBody(latestContent, joinReadmeSections(reconciledSections));
     if (reconciledContent !== latestContent && fileId) {
