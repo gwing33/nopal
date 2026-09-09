@@ -27,7 +27,11 @@ import {
   summarizeClusterFields,
   refreshClusterWeight,
 } from "robustness-core/data/graphStructure.server";
-import { computeCoverageReport } from "robustness-core/data/graphProjectView.server";
+import {
+  computeCoverageReport,
+  coverageFromJobResult,
+  describeUncited,
+} from "robustness-core/data/graphProjectView.server";
 import { classifyStageSkill, isSkipInstruction } from "robustness-core/data/projectN02.server";
 import {
   README_INCOMPLETE_BANNER_PREFIX,
@@ -436,7 +440,7 @@ describe("ADR-006: coverage is measured by citation, not by heading", () => {
   it("counts a thread as missing when the heading appears but no node is cited", () => {
     const readme = "## Scheduling\n\nWe talked about scheduling.\n";
     const report = computeCoverageReport(structure, readme, new Map([["2026-08-26#1", nodeWithRef("2026-08-26#1", REF)]]));
-    expect(report.missingThreads).toEqual(["Scheduling"]);
+    expect(report.missingThreads.map((t) => t.heading)).toEqual(["Scheduling"]);
   });
 
   it("matches across render modes -- a verbose graph-log ref cited inline still counts", () => {
@@ -743,5 +747,100 @@ describe("an incomplete README carries its own warning", () => {
     expect(sections[0].heading).toBe("");
     expect(sections[0].content).toContain(README_INCOMPLETE_BANNER_PREFIX);
     expect(sections.map((s) => s.heading)).toEqual(["", "Settled"]);
+  });
+});
+
+// ── Coverage: not measured is not the same as clean ─────────────────────
+//
+// The coverage check runs ONLY on a clean finish, so a truncated,
+// refused, turn-limited or skipped run produces none at all -- and those
+// are exactly the runs whose coverage you would most want. Every layer
+// that carries this has to keep "nothing was measured" apart from
+// "measured, nothing wrong", or a run that never got far enough to check
+// reads as a run that checked and passed. That is the same quiet failure
+// the README banner exists to stop, one level down.
+//
+// The trap for a future edit is that `?? { uncitedThreads: [], ... }`
+// looks like a tidy way to drop a null check.
+
+describe("coverage: null means not measured, never clean", () => {
+  const clean = { missingThreads: [], fellAway: [], missingFiles: [] };
+
+  it("reads a full run's coverage off the top level", () => {
+    const out = coverageFromJobResult({
+      ok: true,
+      incomplete: [],
+      coverage: { ...clean, missingThreads: [{ heading: "Slab", rank: 2, of: 8, hasBlocking: true, hasDue: false }] },
+    });
+    expect(out).toEqual({ uncitedThreads: ["Slab (2/8, Blocking)"], threadsFellAway: [], droppedFiles: [] });
+  });
+
+  it("reads a single-stage job's coverage off the same field", () => {
+    const out = coverageFromJobResult({ ok: true, changed: true, summary: [], coverage: clean });
+    expect(out).toEqual({ uncitedThreads: [], threadsFellAway: [], droppedFiles: [] });
+  });
+
+  // The distinction the whole thing rests on: a measured-and-clean run
+  // returns empty arrays, an unmeasured one returns null. They must not
+  // collapse into each other.
+  it("tells measured-and-clean apart from never-measured", () => {
+    expect(coverageFromJobResult({ ok: true, coverage: clean })).toEqual({
+      uncitedThreads: [],
+      threadsFellAway: [],
+      droppedFiles: [],
+    });
+    expect(coverageFromJobResult({ ok: true, coverage: null })).toBeNull();
+    expect(coverageFromJobResult({ ok: true, incomplete: ["cut off"] })).toBeNull();
+  });
+
+  it("returns null for a job that never had a README to measure", () => {
+    expect(coverageFromJobResult({ deletedFolders: ["Graph"] })).toBeNull();
+    expect(coverageFromJobResult(null)).toBeNull();
+    expect(coverageFromJobResult("done")).toBeNull();
+  });
+
+  // The whole point of recording rank: a count cannot become a rule,
+  // because the skill says an empty section is honest signal and a minor
+  // thread going uncited is correct. Which thread it was is what decides.
+  it("names where an uncited thread ranked, and whether it was blocking", () => {
+    expect(describeUncited({ heading: "Slab", rank: 1, of: 12, hasBlocking: true, hasDue: true })).toBe(
+      "Slab (1/12, Blocking+Due)",
+    );
+    expect(describeUncited({ heading: "Paint", rank: 11, of: 12, hasBlocking: false, hasDue: false })).toBe(
+      "Paint (11/12)",
+    );
+  });
+
+  it("ranks by graph-structure's own order, so rank 1 is the most important thread", () => {
+    const structure = [
+      "## Slab schedule",
+      "Weight: 1 · Status: active · Blocking: the framing crew",
+      "- 2026-08-26 Node 1 (Gerald L) — a gloss",
+      "",
+      "## Paint colors",
+      "Weight: 1 · Status: active",
+      "- 2026-08-26 Node 2 (Gerald L) — a gloss",
+    ].join("\n");
+    const report = computeCoverageReport(structure, "## Nothing cited here\n", new Map());
+    expect(report.missingThreads.map(describeUncited)).toEqual([
+      "Slab schedule (1/2, Blocking)",
+      "Paint colors (2/2)",
+    ]);
+  });
+
+  it("does not mistake a half-shaped object for a report", () => {
+    expect(coverageFromJobResult({ coverage: { fellAway: ["Slab"] } })).toBeNull();
+    expect(coverageFromJobResult({ coverage: {} })).toBeNull();
+  });
+
+  it("drops non-string members rather than trusting the shape", () => {
+    const out = coverageFromJobResult({
+      coverage: {
+        missingThreads: [{ heading: "Slab", rank: 1, of: 3, hasBlocking: false, hasDue: false }, 7, null],
+        fellAway: "nope",
+        missingFiles: ["a.jpg"],
+      },
+    });
+    expect(out).toEqual({ uncitedThreads: ["Slab (1/3)"], threadsFellAway: [], droppedFiles: ["a.jpg"] });
   });
 });

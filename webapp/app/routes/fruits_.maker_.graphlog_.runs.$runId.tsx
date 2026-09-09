@@ -25,6 +25,7 @@ import { sprinkles } from "stamps/sprinkles.css";
 import {
   getGraphLogRun,
   type GraphLogPerfEventType,
+  type GraphLogRun,
   type GraphLogRunEvent,
 } from "robustness-core/data/graphLogPerf.server";
 import { getFolderById } from "robustness-core/data/vault.server";
@@ -189,6 +190,81 @@ const TYPE_LABEL: Record<GraphLogPerfEventType, string> = {
  * unfinished is NOT OK, and showing it as OK is how a truncated
  * `graph-structure` batch plus a `graph-project-view` that produced
  * nothing sat under a green badge. The reasons render below the header. */
+// ─── Coverage ───────────────────────────────────────────────────────────
+//
+// A MEASUREMENT, never a gate. Nothing retries because of what this says,
+// and it deliberately does not feed README.md's own incomplete banner: the
+// first production run left four of ten threads unrepresented with no
+// predictable pattern by rank, so a warning wired to this today would fire
+// on nearly every run and teach everyone to ignore it. This exists to
+// accumulate the runs that decide where a real threshold belongs.
+//
+// The load-bearing distinction is null vs empty. Coverage is computed ONLY
+// on a clean finish, so a truncated, refused or skipped run records
+// nothing at all -- and the runs whose coverage you would most want are
+// exactly those. Rendering null as "0 uncited" would report a passing
+// check that never ran, which is the same class of quiet failure the
+// banner exists to stop.
+
+const COVERAGE_JOB_NAMES = new Set(["run", "graph-project-view"]);
+
+function CoverageList({ label, items }: { label: string; items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div style={{ marginTop: "6px" }}>
+      <p className="text-xs" style={{ margin: 0 }}>
+        {items.length} {label}
+      </p>
+      <ul style={{ margin: 0, paddingLeft: "20px" }}>
+        {items.map((name, i) => (
+          <li key={i} className="font-mono text-xs subtle-text">
+            {name}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function CoverageSection({
+  jobName,
+  coverage,
+}: {
+  jobName: string;
+  coverage: GraphLogRun["coverage"];
+}) {
+  // A reset or a sync-only job never had a README to measure. Saying
+  // "not measured" there would be noise, not signal.
+  if (!COVERAGE_JOB_NAMES.has(jobName)) return null;
+
+  if (!coverage) {
+    return (
+      <p className="text-sm subtle-text" style={{ margin: 0, marginTop: "12px" }}>
+        Coverage not measured — graph-project-view never reached a clean finish this run.
+      </p>
+    );
+  }
+
+  const total =
+    coverage.uncited_threads.length + coverage.threads_fell_away.length + coverage.dropped_files.length;
+  if (total === 0) {
+    return (
+      <p className="text-sm subtle-text" style={{ margin: 0, marginTop: "12px" }}>
+        Coverage checked: every thread in the graph is cited somewhere in the README.
+      </p>
+    );
+  }
+
+  return (
+    <div className="text-sm" style={{ marginTop: "12px" }}>
+      <p style={{ margin: 0 }}>Coverage checked against the finished README.</p>
+      <CoverageList label="thread(s) the README cites nothing from" items={coverage.uncited_threads} />
+      <CoverageList label="thread(s) fell away (dormant, no Due, no Blocking)" items={coverage.threads_fell_away} />
+      <CoverageList label="attached file(s) dropped from a featured node" items={coverage.dropped_files} />
+    </div>
+  );
+}
+
 function RunStatusBadge({ ok, incomplete }: { ok: boolean | null; incomplete: string[] | null }) {
   if (ok === null) return <Badge variant="warning">Running…</Badge>;
   if (!ok) return <Badge variant="danger">Failed</Badge>;
@@ -376,6 +452,7 @@ export default function FruitsMakerGraphLogRun() {
               </ul>
             </div>
           )}
+          <CoverageSection jobName={run.job_name} coverage={run.coverage ?? null} />
         </div>
 
         <div className="flex items-center gap-3 mb-3 flex-wrap">
