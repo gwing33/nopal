@@ -617,6 +617,18 @@ export async function getEffectiveGraphLogDefaultSkill(stage: GraphLogDefaultSta
   return override && override.trim().length > 0 ? override : STAGE_HARDCODED_DEFAULT[stage];
 }
 
+/** When the override row was last written, and by whom. One row holds
+ * all four stages, so this is the most recent edit to any of them.
+ * Written on every save since the table existed and read by nothing
+ * (ADR-016): editing a default silently changes what every future
+ * project is seeded with, and the page that edits it should say who did
+ * that last and when. `null` when no override has ever been saved. */
+export async function getGraphLogDefaultsLastEdit(): Promise<{ updatedAt: string; updatedByHumanId: string } | null> {
+  const row = await getOverrideRow();
+  if (!row?.updatedAt || !row.updatedByHumanId) return null;
+  return { updatedAt: row.updatedAt, updatedByHumanId: row.updatedByHumanId };
+}
+
 /** All four at once, each labeled with whether it's overridden — what
  * `/fruits/maker/graphlog/defaults`'s own loader uses to render the
  * review/edit UI in a single round trip instead of four. */

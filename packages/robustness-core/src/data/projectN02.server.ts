@@ -132,8 +132,6 @@ export type SkillReseedOutcome = "reseeded" | "unchanged" | "missing";
 export type SkillReseedEntry = {
   file: string;
   outcome: SkillReseedOutcome;
-  previousLength?: number;
-  newLength?: number;
 };
 
 /**
@@ -182,12 +180,7 @@ export async function reseedProjectN02Skills(folder: VaultFolder): Promise<Skill
       continue;
     }
     await updateFileRef(listing._id, { content: nextContent });
-    results.push({
-      file,
-      outcome: "reseeded",
-      previousLength: currentContent.length,
-      newLength: nextContent.length,
-    });
+    results.push({ file, outcome: "reseeded" });
   }
   return results;
 }

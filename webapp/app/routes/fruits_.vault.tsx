@@ -2570,11 +2570,20 @@ export default function VaultV2Page() {
     }
     setGraphLogBusy("cancel");
     try {
-      const data = await apiJson("/api/graphlog/cancel", {
+      const data = (await apiJson("/api/graphlog/cancel", {
         method: "POST",
         body: JSON.stringify({ projectFolderId: folder._id }),
-      });
-      if (data) await refreshGraphLogStatus(folder._id);
+      })) as { wasActive?: boolean } | null;
+      if (data) {
+        // The difference the confirm dialog warns about: a queued job is
+        // gone at once, a running one finishes its current turn first.
+        window.alert(
+          data.wasActive
+            ? "Stopping. The run was already underway, so it finishes its current step first. This can take up to a minute."
+            : "Stopped. The run had not started yet, so nothing ran.",
+        );
+        await refreshGraphLogStatus(folder._id);
+      }
     } finally {
       setGraphLogBusy(null);
     }
