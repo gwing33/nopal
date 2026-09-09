@@ -84,7 +84,12 @@ personal/syncs/Daily Logs (real Cards, one per project per day)
   skill since 2026-09-09, no longer `skip` — a photo nobody captioned had
   no path into the graph at all), to pull out
   METADATA about that file (concrete extractable facts — names, dates,
-  decisions — not a narrative summary) into a sidecar file. Reserved
+  decisions — not a narrative summary) into a sidecar file. A photo is
+  one vision call; a HEIC/HEIF (or any image format the model does not
+  take) is converted to JPEG first; a VIDEO is a few evenly spaced still
+  frames described as a sequence in one call (`attachmentFrames.server.ts`,
+  ffmpeg via `ffmpeg-static`; frames only, no audio, and the sidecar's
+  front matter and first line say so). Reserved
   subfolder name: `_knowledge/`, holding one `<name>.knowledge.md` per
   covered source file, directly inside the SAME sync folder the source
   file lives in (e.g. `syncs/Daily Logs/_knowledge/2026-08-17.knowledge.md`).

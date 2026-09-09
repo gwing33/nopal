@@ -58,6 +58,9 @@ import {
 } from "./vault.server";
 import { downloadFileBytes } from "./file.server";
 import { parseSyncedCardFileName } from "./dailyLogSync.server";
+import { formatSeconds, isVideoContentType, normalizeImageForVision, videoToStills } from "./attachmentFrames.server";
+import type { GraphLogEventKind } from "./graphLogMetrics.server";
+import type { PhotoDescriptionResult } from "./llmProvider";
 import {
   classifyStageSkill,
   getProjectStageSkill,
@@ -141,11 +144,17 @@ function knowledgeFileName(sourceName: string): string {
   return `${base}.knowledge.md`;
 }
 
-function buildKnowledgeContent(input: { sourceFileId: string; hash: string; body: string }): string {
+function buildKnowledgeContent(input: {
+  sourceFileId: string;
+  hash: string;
+  body: string;
+  extraMeta?: Record<string, unknown>;
+}): string {
   const frontmatter = stringifyYaml({
     source: input.sourceFileId,
     sourceHash: input.hash,
     generatedAt: new Date().toISOString(),
+    ...(input.extraMeta ?? {}),
   }).trimEnd();
   return `---\n${frontmatter}\n---\n\n${input.body}`;
 }
@@ -276,21 +285,56 @@ export async function runSyncKnowledge(
     }
 
     let body: string | null = null;
+    /** Extra front-matter lines for a sidecar built from stills rather
+     * than the file itself -- see `attachmentFrames.server.ts`. */
+    let extraMeta: Record<string, unknown> = {};
     const isImage = isImageContentType(source.content_type) && !!source.s3_key;
-    const kind = isImage ? "photo-knowledge" : "text-knowledge";
+    const isVideo = isVideoContentType(source.content_type) && !!source.s3_key;
+    const kind: GraphLogEventKind = isVideo ? "video-knowledge" : isImage ? "photo-knowledge" : "text-knowledge";
     const callStart = Date.now();
     try {
-      if (isImage) {
+      if (isImage || isVideo) {
         photoLlm ??= new AnthropicProvider();
         const bytes = await perf.time("sync-knowledge", "api", "downloadFileBytes", { fileId: source._id }, () =>
           downloadFileBytes(source.s3_key!),
         );
-        const result = await photoLlm.describePhoto({
-          imageBase64: bytes.toString("base64"),
-          mediaType: source.content_type,
-          context: `Knowledge-extraction instructions for this project:\n\n${skillContent}`,
-        });
-        body = result.description;
+        const context = `Knowledge-extraction instructions for this project:\n\n${skillContent}`;
+        let result: PhotoDescriptionResult;
+        if (isVideo) {
+          // A video is a few stills, described as a sequence. Frames only:
+          // narration is not heard, and the sidecar says so in its own
+          // front matter and first line, the way a description-grounded
+          // node says what it is.
+          const extension = source.name.split(".").pop() ?? "bin";
+          const { stills, durationSeconds } = await perf.time(
+            "sync-knowledge",
+            "fn",
+            "videoToStills",
+            { fileId: source._id, name: source.name },
+            () => videoToStills(bytes, extension),
+          );
+          const at = stills.map((f) => formatSeconds(f.atSeconds ?? 0));
+          result = await photoLlm.describeImages({
+            images: stills.map((f, i) => ({
+              imageBase64: f.jpegBase64,
+              mediaType: "image/jpeg",
+              label: `Frame ${i + 1} of ${stills.length}, ${at[i]} into the clip:`,
+            })),
+            context,
+            framing:
+              `You are describing a VIDEO attached to a project's daily-log Card, from ${stills.length} still frames taken in order across its ${formatSeconds(durationSeconds)} length. ` +
+              `Write one short, factual paragraph (3-5 sentences) capturing what the clip shows and what changes across the frames -- objects, people, setting, visible state of progress -- grounded ONLY in what is visible in the frames plus the text context you are given. ` +
+              `You cannot hear it: never describe sound, speech, or narration. Never speculate beyond what is visible. No preamble, no "the video shows" framing -- just the description itself.`,
+          });
+          extraMeta = { describedFrom: "video-frames", frames: stills.length, frameTimes: at, durationSeconds: Math.round(durationSeconds) };
+          body = `*Described from ${stills.length} still frames of a ${formatSeconds(durationSeconds)} video (at ${at.join(", ")}); no audio was heard.*\n\n${result.description}`;
+        } else {
+          // HEIC, and any other image format the model does not take, is
+          // turned into a JPEG first; a plain JPEG/PNG goes through as-is.
+          const image = await normalizeImageForVision(bytes, source.content_type);
+          result = await photoLlm.describePhoto({ imageBase64: image.base64, mediaType: image.mediaType, context });
+          body = result.description;
+        }
         const durationMs = Date.now() - callStart;
         await recordGraphLogUsage({
           humanId: actingHumanId,
@@ -305,8 +349,8 @@ export async function runSyncKnowledge(
         await perf.event({
           process: "sync-knowledge",
           type: "llm",
-          name: "describePhoto",
-          params: { fileId: source._id, name: source.name },
+          name: isVideo ? "describeVideoFrames" : "describePhoto",
+          params: { fileId: source._id, name: source.name, ...extraMeta },
           durationMs,
         });
       } else if (source.content) {
@@ -419,7 +463,7 @@ export async function runSyncKnowledge(
       continue;
     }
 
-    const content = buildKnowledgeContent({ sourceFileId: source._id, hash, body });
+    const content = buildKnowledgeContent({ sourceFileId: source._id, hash, body, extraMeta });
     const knowledgeFileId = existing
       ? (await updateFileRef(existing._id, { content }))?._id
       : (

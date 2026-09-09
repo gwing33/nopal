@@ -61,6 +61,13 @@ import {
   type ReadmeSection,
 } from "robustness-core/data/project.types";
 import { completedToolCalls, cutOffHeading, planTurnToolCalls } from "robustness-core/data/llmProvider";
+import {
+  formatSeconds,
+  frameTimestamps,
+  isHeicContentType,
+  isVideoContentType,
+  parseFfmpegDuration,
+} from "robustness-core/data/attachmentFrames.server";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -1237,5 +1244,51 @@ describe("a section's content holds only its body", () => {
   it("allows h3 subheadings and plain prose", () => {
     expect(contentCarriesHeading("### Cladding\n\nprose with ## inside a sentence")).toBeNull();
     expect(contentCarriesHeading("just a body")).toBeNull();
+  });
+});
+
+// ── A video is a few stills; a HEIC is a JPEG ────────────────────────────
+//
+// The vision model takes four image formats and no video. A phone
+// produces the two things it cannot take, and both used to be reported
+// as unsupported and tossed. The pure parts of turning them into
+// something it can take are guarded here; the ffmpeg and decoder calls
+// are exercised live.
+
+describe("a video's frames are spaced through the clip, not bunched at the ends", () => {
+  it("skips the first and last few percent and spreads the rest evenly", () => {
+    expect(frameTimestamps(50, 4)).toEqual([2.5, 17.5, 32.5, 47.5]);
+  });
+
+  it("takes the middle of a clip when asked for one frame, and nothing from a clip with no length", () => {
+    expect(frameTimestamps(10, 1)).toEqual([5]);
+    expect(frameTimestamps(0, 4)).toEqual([]);
+    expect(frameTimestamps(NaN, 4)).toEqual([]);
+  });
+});
+
+describe("ffmpeg's banner is where the duration comes from", () => {
+  it("reads hours, minutes, and fractional seconds", () => {
+    expect(parseFfmpegDuration("Input #0, mov\n  Duration: 00:00:50.03, start: 0.000000, bitrate: 15582 kb/s")).toBeCloseTo(50.03);
+    expect(parseFfmpegDuration("Duration: 01:02:03.5")).toBeCloseTo(3723.5);
+  });
+
+  it("is null when there is no banner to read", () => {
+    expect(parseFfmpegDuration("At least one output file must be specified")).toBeNull();
+  });
+
+  it("formats seconds the way a person reads a clip length", () => {
+    expect(formatSeconds(2.5)).toBe("0:03");
+    expect(formatSeconds(75)).toBe("1:15");
+  });
+});
+
+describe("content types that need converting are recognized", () => {
+  it("HEIC and HEIF are the iPhone case; video is any video/*", () => {
+    expect(isHeicContentType("image/heic")).toBe(true);
+    expect(isHeicContentType("image/heif")).toBe(true);
+    expect(isHeicContentType("image/jpeg")).toBe(false);
+    expect(isVideoContentType("video/quicktime")).toBe(true);
+    expect(isVideoContentType("image/jpeg")).toBe(false);
   });
 });

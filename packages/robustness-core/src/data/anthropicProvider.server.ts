@@ -23,6 +23,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import type {
+  ImagesDescriptionInput,
   LlmMessage,
   LlmProvider,
   LlmResponse,
@@ -262,32 +263,41 @@ export class AnthropicProvider implements LlmProvider, PhotoDescriber {
   /** See `PhotoDescriber` (`llmProvider.ts`) for the design reasoning —
    * a plain, single-turn vision call, no tools, no message history. */
   async describePhoto(input: PhotoDescriptionInput): Promise<PhotoDescriptionResult> {
-    if (!ANTHROPIC_IMAGE_MEDIA_TYPES.has(input.mediaType)) {
-      throw new Error(`Unsupported image media type for description: ${input.mediaType}`);
+    return this.describeImages({
+      images: [{ imageBase64: input.imageBase64, mediaType: input.mediaType, label: "" }],
+      context: input.context,
+      framing: PHOTO_DESCRIPTION_SYSTEM_PROMPT,
+    });
+  }
+
+  /** Several images, one description. Each image is preceded by its label
+   * as a text block, so the model can refer to "the frame at 0:17". */
+  async describeImages(input: ImagesDescriptionInput): Promise<PhotoDescriptionResult> {
+    if (input.images.length === 0) throw new Error("describeImages needs at least one image");
+    for (const image of input.images) {
+      if (!ANTHROPIC_IMAGE_MEDIA_TYPES.has(image.mediaType)) {
+        throw new Error(`Unsupported image media type for description: ${image.mediaType}`);
+      }
     }
+    const content: Anthropic.ContentBlockParam[] = [];
+    for (const image of input.images) {
+      if (image.label) content.push({ type: "text", text: image.label });
+      content.push({
+        type: "image",
+        source: {
+          type: "base64",
+          media_type: image.mediaType as Anthropic.Base64ImageSource["media_type"],
+          data: image.imageBase64,
+        },
+      });
+    }
+    content.push({ type: "text", text: input.context || "(no additional context provided)" });
+
     const response = await this.client.messages.create({
       model: this.model,
       max_tokens: PHOTO_DESCRIPTION_MAX_TOKENS,
-      system: PHOTO_DESCRIPTION_SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "image",
-              source: {
-                type: "base64",
-                media_type: input.mediaType as Anthropic.Base64ImageSource["media_type"],
-                data: input.imageBase64,
-              },
-            },
-            {
-              type: "text",
-              text: input.context || "(no additional context provided)",
-            },
-          ],
-        },
-      ],
+      system: input.framing,
+      messages: [{ role: "user", content }],
     });
 
     const description = response.content
@@ -298,6 +308,10 @@ export class AnthropicProvider implements LlmProvider, PhotoDescriber {
     return { description, usage: toLlmUsage(response.usage), model: this.model };
   }
 }
+
+/** The single-photo framing, exported so `sync-knowledge` can build the
+ * video framing from it rather than restating it. */
+export { PHOTO_DESCRIPTION_SYSTEM_PROMPT };
 
 /** Whether a real Anthropic call can be made right now — checked by both
  * API routes and the CLI, same "absent env var = feature off" convention
