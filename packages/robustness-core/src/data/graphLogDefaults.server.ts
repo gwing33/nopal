@@ -23,38 +23,51 @@
 import { RecordId } from "surrealdb";
 import { defineTable, formatRecord, query, upsert, type Data } from "./generic.server";
 
-/** Same marker `projectN01.server.ts`'s `isSkipInstruction` checks for.
- * Not imported from there — see that module's own doc for why duplicating
- * this one small literal avoids a cross-pipeline import that has no other
- * reason to exist. GraphLog's own stages should define their own
- * `isSkipInstruction`-equivalent when they're built, reading this same
- * marker convention. */
-const SKIP_MARKER = "skip";
+// KNOWLEDGE.md used to seed as `skip` plus instructions on how to replace
+// it, so sync-knowledge was off for every project until a person wrote a
+// skill by hand -- and nobody did. The visible cost: a photo with no
+// caption had no path into the graph at all, and the README's "a file is
+// never optional" rule had nothing to carry. It seeds a real skill now,
+// tuned for build projects; a project can still write `skip` as its first
+// line (see `projectN02.server.ts`'s `isSkipInstruction`) to turn the
+// stage off on purpose. The stage processes attachments only, never the
+// synced Cards themselves -- see `syncKnowledge.server.ts`'s
+// `collectSyncCandidates`.
+export const DEFAULT_KNOWLEDGE_SKILL = `Your job is to look at one file somebody attached to a daily log and write down what it holds, so the file can enter this project's graph.
 
-export const DEFAULT_KNOWLEDGE_SKILL = `${SKIP_MARKER}
+You are the only stage that ever sees the file itself. Everything downstream — the graph, the README a person opens to understand the project — sees only what you write here. A photo nobody described has no path into the project at all; it is as if it was never taken. What you write is that path.
 
-GraphLog's sync-knowledge stage does nothing until you replace this with
-real instructions. When it runs, it looks at every file inside this
-project's \`syncs/\` tree that doesn't already have a sibling
-\`<name>.knowledge.md\` in that folder's own \`_knowledge/\` subfolder, and
-asks an AI to decide (per the instructions you write here) whether to
-write one, and what it should focus on pulling out.
+# What you are writing
 
-A knowledge file is metadata ABOUT a synced file, not a summary of it —
-sync-graph reads these to decide what's worth turning into a graph node,
-so favor concrete, extractable facts over prose. For example, you might
-replace this with something like:
+Metadata ABOUT the file, not a summary of it and not a caption for it. Concrete, extractable facts that a later pass can turn into a node and cite: what is physically there, what state it is in, what can be read off it. A later stage decides what is worth a node; your job is to make sure it has the facts to decide with.
 
-- For a photo: who/what/where is visible, and any dates/timestamps
-  legible in the image itself.
-- For a PDF or text file: names, dates, decisions, and dollar amounts
-  mentioned, as a short bullet list — not a narrative summary.
-- Skip anything that's just a screenshot of a chat with no new
-  information beyond what the chat text itself already says.
+Write plainly, in the third person about the file, never in the first person and never addressing a reader. No preamble, no "this photo shows", no closing remark.
 
-Leaving this file as "skip" means sync-knowledge is a complete no-op —
-sync-graph will still run, it just won't have any knowledge files to draw
-on beyond the raw synced content itself.
+# For a photo or a video frame
+
+Say what is actually visible, in this order of usefulness:
+
+1. **The subject and its state.** What the thing is (a wall, a slab, a whiteboard, a fixture, a tool, a room) and how far along it is. "The south wall is clad to about two feet below the eave; the last three boards are unfastened and leaning against it" is the kind of sentence a node can be built from. "Construction progress" is not.
+2. **Anything legible.** Text on a whiteboard, a label, a drawing, a receipt, a screen, a plan: transcribe it exactly, in quotation marks, including numbers, dates, and dimensions. Legible text is the most valuable thing a photo can carry, because it is somebody's own words that would otherwise be lost.
+3. **Count what can be counted.** Boards, windows, people, columns on a sketch. A number is checkable; "several" is not.
+4. **Materials, tools, and conditions** where they say something about the work: what is being used, what is set up, weather or light if it plainly affects the work.
+
+Two or four sentences is usually right. A dense photo, a whiteboard, or a drawing can run longer; a plain photo of one thing should not.
+
+# What you never do
+
+- **Never guess who.** You do not know who took the photo, who is in it, or who owns what is in it. Do not name anyone unless their name is legible in the image. Describe a person by what they are doing, not by who you think they are.
+- **Never guess why, or what happens next.** No "this suggests", no "likely", no "in preparation for". If the photo does not show it, it is not in your description.
+- **Never grade the work.** No "well done", "sloppy", "nearly finished" unless finish is a visible fact (the last board is on). Describe the state and let the reader judge.
+- **Never repeat a caption back as fact.** You may be given context, including a caption a person wrote. Use it to know what you are looking at, but write only what the file itself supports. Where the caption and the image disagree, describe the image and say plainly that the caption says otherwise.
+
+# For a text or document attachment
+
+Pull out names, dates, dollar amounts, dimensions, decisions, and deadlines, as a short bullet list. No narrative. If the file is a screenshot of a conversation, transcribe what is legible and stop; do not summarize the conversation.
+
+# Why the rules are strict
+
+A description with a guessed name in it becomes a node that says a person did something they may not have done, and that node is permanent. The graph marks everything you write as an AI description and never as anybody's words, so the reader knows what kind of sentence they are looking at. That protection only works if what you write is exactly what the file shows.
 `;
 
 export const DEFAULT_GRAPH_SKILL = `Your job is to read this project's synced content for one day and add its ideas to that day's graph-log file as nodes.
@@ -352,7 +365,7 @@ You are handed \`graph-structure.md\` fresh each run, and you decide what change
 
 # Before you write
 
-**Read the comments first.** Any reader corrections are handed to you as plain text, already separated out — treat every one as a correction that outranks your own reading of the graph. You never edit the "Notes on this view" section yourself; something else stamps and preserves it. Just make sure whatever it says is reflected in the sections you touch.
+**Read any reader corrections first.** If a person has left corrections on this README, they are handed to you as plain text, already separated out — treat every one as a correction that outranks your own reading of the graph. Make sure whatever they say is reflected in the sections you touch.
 
 # Gravity, not recency
 
@@ -477,10 +490,6 @@ Decided or done, with the operative fact: a date, a number, a name.
 ## Open questions
 
 Things nobody has answered yet.
-
-## Notes on this view
-
-*Comment freely below. Corrections, missing context, "this section is wrong," anything. The next build reads these first. Nothing you write here is ever overwritten or reworded by GraphLog.*
 \`\`\`
 
 A quiet project has thin or empty sections, and that emptiness is honest signal. Don't manufacture depth to fill a heading.
@@ -540,7 +549,7 @@ They do not stay forever. Once a stretch of work is long finished and nothing in
 - No putting anything that isn't a photo or video inside a \`:::gallery{}...:::\` block.
 - No deciding who is right, and no telling the project what it should do next. Saying plainly that something matters, is close, or is holding other work up is not that, and is wanted. Aiming any of it at a person is never allowed.
 - No merging two people's statements into one position.
-- No touching the "Notes on this view" section — something else owns it entirely.
+- No section for comments, notes on this view, or anything else addressed to the reader about the file itself. A reader's own notes live elsewhere; if an older README still carries a "Notes on this view" section, leave it exactly as it is.
 - No commentary about this process. How many threads you read, what you expect the next run to add: none of it belongs here.
 - **This file has no today.** Never write "the latest entry," "this week's log," "recently," or anything that describes material by its position in a sequence. Give the date or say nothing about when it arrived. This binds on your own voice even when the phrase came from a node: someone can write "targeting final inspection next week" in their log, but the moment you restate it unquoted in the opening paragraph, the file is making a claim with no anchor that goes silently wrong a week later. Quote it with its citation, or convert it to the date.
 

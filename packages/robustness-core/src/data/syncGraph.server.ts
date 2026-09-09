@@ -440,6 +440,30 @@ function extractStructureNodeIds(body: string): Map<string, string> {
   return map;
 }
 
+/**
+ * graph-structure.md with one day's own `- <date> Node <N>` lines removed,
+ * for a day being REGENERATED.
+ *
+ * Found in a real run: a day whose sources had changed was re-extracted,
+ * the model was shown the structure with that day's previous nodes listed
+ * under their threads, and it concluded "these nodes already exist in the
+ * graph structure ... no new content to add today". The day came back
+ * empty and lost every node it had. Three days went that way in one run.
+ * The previous version of a regenerated day is NOT captured -- the whole
+ * point of regenerating is that its file is replaced -- so its lines
+ * must not be in front of the model as if it were. Structural, not
+ * instructed: the lines are gone, so there is nothing to misread.
+ */
+export function stripDayFromStructure(body: string, date: string): string {
+  return body
+    .split("\n")
+    .filter((line) => {
+      const match = STRUCTURE_NODE_LINE_RE.exec(line.trim());
+      return !(match && match[1] === date);
+    })
+    .join("\n");
+}
+
 /** Same shape as `extractStructureNodeIds`, but over `headingsByDate`'s
  * live/fallback heading lists (see `runSyncGraph`'s own module doc on
  * when each source is used). */
@@ -986,9 +1010,15 @@ function buildUserPrompt(input: {
    * already captured today -- see `MAX_PASSES_PER_DAY` for why a day is a
    * sequence of passes rather than one conversation. */
   alreadyCaptured: string[];
+  /** True when today's graph-log file already existed and is being
+   * regenerated because its sources changed -- see `stripDayFromStructure`. */
+  regenerating: boolean;
 }): string {
   return [
     `Today's date being processed: ${input.date}`,
+    input.regenerating
+      ? "Today's graph-log file is being REGENERATED from scratch because its sources changed. Its previous version is discarded and nothing from today counts as already captured: capture everything in today's sources that is worth a node, even if you would expect it to have been captured before."
+      : null,
     input.sourceBlocks.join("\n\n---\n\n"),
     input.liveCandidates.length > 0
       ? `Earlier days' nodes not yet reflected in graph-structure.md, which you may also link back to by id (never invent one not listed here):\n${input.liveCandidates.map((c) => `- ${c}`).join("\n")}`
@@ -1432,11 +1462,20 @@ export async function runSyncGraph(
           date,
           sourceBlocks,
           liveCandidates,
+          regenerating: !!existing || [...structureIds.keys()].some((id) => id.startsWith(`${date}#`)),
           alreadyCaptured: getCapturedSummaries(),
         });
         const { usage, model, truncated, hitMaxTurns } = await runSyncGraphDayLoop(
           textLlm,
-          system,
+          // A day the structure already lists gets the structure without
+          // its own previous nodes (see `stripDayFromStructure`) -- whether
+          // its file still exists or only its lines do, since a day whose
+          // file is gone but whose lines remain was declined the same way
+          // in a real run. Every other day shares the run's one cached
+          // system prompt.
+          graphStructureBody && [...structureIds.keys()].some((id) => id.startsWith(`${date}#`))
+            ? buildSystemPrompt(skillContent, stripDayFromStructure(graphStructureBody, date))
+            : system,
           passPrompt,
           callCounter,
           executors,

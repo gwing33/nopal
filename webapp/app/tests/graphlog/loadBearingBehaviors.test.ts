@@ -16,6 +16,7 @@ import {
   buildGraphLogContent,
   existingSourceHash,
   readSourceHash,
+  stripDayFromStructure,
   unresolvedContributorIds,
   contributorNameOrThrow,
 } from "robustness-core/data/syncGraph.server";
@@ -29,6 +30,7 @@ import {
 import {
   sortClustersByWeight,
   parseClusterFields,
+  pruneStaleMembership,
   hasFallenAway,
   withoutProjectViewMarker,
   summarizeClusterFields,
@@ -40,9 +42,11 @@ import {
   buildUserPrompt,
   classifyViewPassEnding,
   computeCoverageReport,
+  contentCarriesHeading,
   countCitations,
   coverageFromJobResult,
   describeUncited,
+  extractReaderComments,
   introShouldWait,
   reorderSections,
   unknownHeadings,
@@ -1145,5 +1149,93 @@ describe("ADR-016: the README's shape is enforced without losing content", () =>
 
   it("reports nothing for a README that follows the shape", () => {
     expect(unknownHeadings([{ heading: "", content: "i" }, { heading: "Settled", content: "d" }, notes])).toEqual([]);
+  });
+});
+
+describe("the notes section is no longer created, and still protected where it exists", () => {
+  it("adds nothing to a README that has no notes section", () => {
+    const sections = [{ heading: "", content: "intro" }, { heading: "Settled", content: "done" }];
+    const out = extractReaderComments(sections);
+    expect(out.sections).toEqual(sections);
+    expect(out.unstamped).toEqual([]);
+    expect(out.stampAppliedDate("2026-09-09")).toEqual(sections);
+  });
+
+  it("still reads and stamps comments on a README that kept one", () => {
+    const sections = [
+      { heading: "Settled", content: "done" },
+      { heading: "Notes on this view", content: "the slab date is wrong\nalready read → read 2026-09-01" },
+    ];
+    const out = extractReaderComments(sections);
+    expect(out.unstamped).toEqual(["the slab date is wrong"]);
+    const stamped = out.stampAppliedDate("2026-09-09");
+    expect(stamped[1].content).toBe("the slab date is wrong → read 2026-09-09\nalready read → read 2026-09-01");
+    expect(stamped[0]).toEqual(sections[0]);
+  });
+});
+
+// ── A regenerated day must not see itself as already captured ────────────
+//
+// Found in a real run: three days whose sources had changed were
+// re-extracted, the model was shown graph-structure.md with each day's
+// previous nodes listed, and concluded "these already exist, nothing to
+// add". Each day came back empty and lost every node it had. The README
+// stage then spent a whole pass calling get_node on ids that no longer
+// existed, because the structure still listed them.
+
+describe("ADR-001: a regenerated day is shown the structure without its own previous nodes", () => {
+  const body = [
+    "## Cladding",
+    "Weight: 3 inbound links",
+    "- 2026-08-20 Node 1 (Austin T) — get it done before Cam is gone",
+    "- 2026-08-26 Node 3 (Gerald L) — 21 boards up",
+    "",
+    "## Plumbing",
+    "- 2026-08-20 Node 2 (Lucas J) — water line",
+  ].join("\n");
+
+  it("drops exactly that day's membership lines and nothing else", () => {
+    const out = stripDayFromStructure(body, "2026-08-20");
+    expect(out).not.toContain("2026-08-20 Node");
+    expect(out).toContain("- 2026-08-26 Node 3");
+    expect(out).toContain("## Plumbing");
+    expect(out).toContain("Weight: 3 inbound links");
+  });
+
+  it("is a no-op for a day the structure does not list", () => {
+    expect(stripDayFromStructure(body, "2026-09-01")).toBe(body);
+  });
+});
+
+describe("graph-structure prunes membership lines whose node is gone", () => {
+  it("drops the stale ids, keeps the live ones and the rest of the section, and names what it dropped", () => {
+    const live = node("2026-08-26#3");
+    const sections = [
+      { heading: "Cladding", content: "Weight: 3\n- 2026-08-20 Node 1 (A) — gone\n- 2026-08-26 Node 3 (G) — here\nStatus: active" },
+      { heading: "Plumbing", content: "- 2026-08-20 Node 2 (L) — gone" },
+    ];
+    const { sections: pruned, dropped } = pruneStaleMembership(sections, new Map([[live.id, live]]));
+    expect(dropped).toEqual(["2026-08-20#1", "2026-08-20#2"]);
+    expect(pruned[0].content).toBe("Weight: 3\n- 2026-08-26 Node 3 (G) — here\nStatus: active");
+    expect(pruned[1].content).toBe("");
+  });
+
+  it("returns the same section objects when nothing is stale", () => {
+    const live = node("2026-08-26#3");
+    const sections = [{ heading: "Cladding", content: "- 2026-08-26 Node 3 (G) — here" }];
+    const { sections: pruned, dropped } = pruneStaleMembership(sections, new Map([[live.id, live]]));
+    expect(dropped).toEqual([]);
+    expect(pruned[0]).toBe(sections[0]);
+  });
+});
+
+describe("a section's content holds only its body", () => {
+  it("names the first h2 line the content carries", () => {
+    expect(contentCarriesHeading("# Crouch\n\nintro\n\n## What's carrying weight\n\n## Settled")).toBe("## What's carrying weight");
+  });
+
+  it("allows h3 subheadings and plain prose", () => {
+    expect(contentCarriesHeading("### Cladding\n\nprose with ## inside a sentence")).toBeNull();
+    expect(contentCarriesHeading("just a body")).toBeNull();
   });
 });

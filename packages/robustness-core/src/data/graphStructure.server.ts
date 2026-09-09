@@ -268,6 +268,44 @@ export function nodeIdsInSection(section: ReadmeSection): string[] {
 /** Exported for `graph-project-view.server.ts`'s own `get_node` id
  * validation — "same as `add_node` already does for link candidates"
  * (1.1). */
+/**
+ * Drops every `- <date> Node <N>` membership line whose node is no longer
+ * in the graph, and says how many.
+ *
+ * A day that was re-extracted is renumbered from 1, so its old ids may
+ * no longer exist; a day that came back empty leaves every one of its
+ * old ids behind. Those lines used to stay in the structure forever: the
+ * membership index counted them as placed, the README stage's own
+ * `get_node` validated them and then found nothing (a real run spent all
+ * twenty turns of a pass that way), and the coverage report ranked
+ * threads by nodes that did not exist. Pruned by code before the delta is
+ * computed, never left to the model (ADR-005: what is in the graph is
+ * computed). The count is reported, since a thread emptied this way is a
+ * thing a person would want to know happened.
+ */
+export function pruneStaleMembership(
+  sections: ReadmeSection[],
+  allNodesById: Map<string, GraphLogNode>,
+): { sections: ReadmeSection[]; dropped: string[] } {
+  const dropped: string[] = [];
+  const pruned = sections.map((section) => {
+    const kept: string[] = [];
+    for (const line of section.content.split("\n")) {
+      const match = NODE_LINE_RE.exec(line.trim());
+      if (match) {
+        const id = `${match[1]}#${Number(match[2])}`;
+        if (!allNodesById.has(id)) {
+          dropped.push(id);
+          continue;
+        }
+      }
+      kept.push(line);
+    }
+    return kept.length === section.content.split("\n").length ? section : { heading: section.heading, content: kept.join("\n") };
+  });
+  return { sections: pruned, dropped };
+}
+
 export function buildMembershipIndex(sections: ReadmeSection[]): Set<string> {
   const set = new Set<string>();
   for (const section of sections) {
@@ -1061,7 +1099,16 @@ export async function runGraphStructure(
   const allNodesById = new Map(allNodes.map((n) => [n.id, n]));
   const baseMeta: GraphStructureFrontmatter = { ...existingMeta };
 
-  const existingSections = existing ? splitReadmeSections(splitFrontmatter(existing.content ?? "").body) : [];
+  const rawExistingSections = existing ? splitReadmeSections(splitFrontmatter(existing.content ?? "").body) : [];
+  const { sections: existingSections, dropped: staleIds } = pruneStaleMembership(rawExistingSections, allNodesById);
+  if (staleIds.length > 0) {
+    const issue =
+      `${staleIds.length} node(s) listed in graph-structure.md no longer exist in the graph and were dropped from it: ` +
+      staleIds.slice(0, 5).join(", ") +
+      (staleIds.length > 5 ? `, and ${staleIds.length - 5} more` : "");
+    loadIssues.push(issue);
+    log(`graph-structure: ${issue}.`);
+  }
   const placedIds = buildMembershipIndex(existingSections);
   const newNodes = allNodes.filter((n) => !placedIds.has(n.id));
 

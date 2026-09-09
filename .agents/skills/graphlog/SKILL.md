@@ -76,9 +76,13 @@ personal/syncs/Daily Logs (real Cards, one per project per day)
   AI judgment at all. `skills/DAILY_LOG.md` was considered and dropped —
   there's no per-project behavior left to configure once routing is fully
   Card-driven.
-- **sync-knowledge** — the first AGENTIC stage. Walks every file under a
-  project's `syncs/` tree (not just Daily Logs — any connector folder) and
-  asks an AI, per `skills/KNOWLEDGE.md`'s instructions, to pull out
+- **sync-knowledge** — the first AGENTIC stage. Walks every ATTACHMENT
+  under a project's `syncs/` tree (not just Daily Logs — any connector
+  folder; never the synced Cards themselves, which sync-graph reads
+  verbatim — see `collectSyncCandidates`) and
+  asks an AI, per `skills/KNOWLEDGE.md`'s instructions (seeded as a REAL
+  skill since 2026-09-09, no longer `skip` — a photo nobody captioned had
+  no path into the graph at all), to pull out
   METADATA about that file (concrete extractable facts — names, dates,
   decisions — not a narrative summary) into a sidecar file. Reserved
   subfolder name: `_knowledge/`, holding one `<name>.knowledge.md` per
@@ -266,8 +270,10 @@ personal/syncs/Daily Logs (real Cards, one per project per day)
   stage runs ONCE per invocation, gated on `graph-structure.md`'s own
   `asOfGraphHash` versus the `appliedByProjectView` marker this stage
   stamps onto that SAME file once an update completes cleanly.
-  - **"Notes on this view" is never touched by the model** — the
-    reader-comment section at the bottom of the README. `update_section`/
+  - **"Notes on this view" is never touched by the model, where a README
+    still has one** — the former reader-comment section at the bottom of
+    the README. No longer created (annotation is its own feature; the
+    skill's shape dropped it 2026-09-09), still protected. `update_section`/
     `remove_section` both hard-refuse any attempt to target it. Reading
     unstamped comments and stamping them ` → read <date>` is
     deterministic, code-owned pre/post-processing, never a tool call the
@@ -1183,9 +1189,9 @@ skill was born from:
      `refusals()` counter — per-pass delta, only the final pass's own
      refusals decide `applied` — same signal a bad edit anywhere already uses to
      block marking the run applied) any attempt to target that heading.
-     The section is guaranteed to exist — created with the standard
-     placeholder text the FIRST time this stage ever runs for a project,
-     since the model can never create it itself. Reading unstamped
+     The section is NO LONGER created (it used to be, with placeholder
+     text, the first time this stage ran for a project); a README that
+     has one keeps it and every protection. Reading unstamped
      comment LINES (anything not already ending ` → read <date>`) and
      stamping them after a clean run is deterministic pre/post-processing
      code (`extractReaderComments`/`stampAppliedDate`), never delegated to
