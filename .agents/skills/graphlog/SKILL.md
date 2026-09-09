@@ -762,10 +762,17 @@ exactly one timeline, no separate id scheme to keep in sync.
   unused today).
 - **Two levels of granularity, nested by actual start time**: each of
   `sync-graph`'s per-day loop, `graph-structure`'s per-batch loop, and
-  `graph-project-view`'s single loop records BOTH an aggregate event
+  `graph-project-view`'s pass loop records BOTH an aggregate event
   (`day`/`batch`/`readme`, piggybacking on the exact spot each stage
   already computes a `durationMs` for `recordGraphLogUsage`) AND one
-  `turn` event PER TURN inside that loop — a real, individually-timed
+  `turn` event PER TURN inside that loop (`graph-project-view` also
+  records one `pass` event per pass, carrying `offered`/`cited` — how
+  many uncited threads a targeted pass was handed and how many it
+  placed — which is the data the not-yet-written "which misses matter"
+  filter will be tuned on, plus `citations`/`matched`/`unmatched`,
+  ADR-005's own test run per pass by `countCitations`: an `unmatched`
+  citation is one the model composed rather than copied, and a real
+  pass once wrote four sections whose citations matched nothing) — a real, individually-timed
   `provider.complete()` call, not a share of the aggregate. A turn event's
   `params` carries `stopReason`, the names of any `toolCalls` made that
   turn, and (see next bullet) the model's own plain text for that turn.
@@ -1144,11 +1151,27 @@ skill was born from:
    ONCE per invocation — not once per graph-log day — gated on
    `graph-structure.md`'s own `asOfGraphHash` versus the
    `appliedByProjectView` marker this stage stamps onto that SAME file
-   once an update completes cleanly. A single bounded tool-calling loop
-   (`update_section`/`remove_section`, same "Deliberately deferred" note
-   on `write_file`/`update_readme`/truncation-retry as before) reconciles
-   the whole README against the current graph-structure.md, grounded in
-   `skills/PROJECT_VIEW.md`.
+   once an update completes cleanly. **A run is a LOOP OF PASSES** (same
+   ADR-013 shape as `sync-graph`'s day loop and `graph-structure`'s
+   batches): pass 1 is one bounded tool-calling conversation
+   (`update_section`/`remove_section`, `MAX_TURNS` bounds the PASS, never
+   the README) that reconciles the whole README against the current
+   graph-structure.md, grounded in `skills/PROJECT_VIEW.md`. Between
+   passes, code runs `computeCoverageReport` on the COMMITTED README, and
+   every later pass is TARGETED — handed by code exactly the threads
+   still cited nowhere (rank, Blocking/Due, node text) plus the name of
+   any section the previous pass was cut off writing, so a retry is never
+   the identical prompt against the identical budget. Remaining work is
+   DERIVED from the README, never stored (a stored marker would survive
+   `resetProjectView` and point at an empty README). `classifyViewPassEnding`
+   holds the stopping rules: a limited pass that wrote sections continues,
+   one that wrote nothing is stuck, a targeted pass that placed nothing is
+   the model declining, `MAX_PASSES = 3` is the runaway guard. Applied iff
+   the FINAL pass ended clean. The whole graph (structure body + node
+   pre-fetch) lives in the cached SYSTEM prompt so passes pay for it
+   once. Still deferred (see the module doc): a write unit BELOW the
+   section — the skill bounds a section far under the output budget, and
+   append isn't idempotent across runs.
    - **Reuses `project.types.ts`'s `splitFrontmatter`/`splitReadmeSections`/
      `joinReadmeSections`/`withReadmeBody` directly** (the same primitives
      `capture.server.ts` uses) — these are neutral README-SHAPE utilities,
@@ -1157,7 +1180,8 @@ skill was born from:
      would have.
    - **"Notes on this view" is protected, code-owned, never a tool
      target.** `update_section`/`remove_section` both hard-refuse (a
-     `hadRefusal` state, same signal a bad edit anywhere already uses to
+     `refusals()` counter — per-pass delta, only the final pass's own
+     refusals decide `applied` — same signal a bad edit anywhere already uses to
      block marking the run applied) any attempt to target that heading.
      The section is guaranteed to exist — created with the standard
      placeholder text the FIRST time this stage ever runs for a project,

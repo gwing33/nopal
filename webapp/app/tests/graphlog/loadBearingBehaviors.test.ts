@@ -18,7 +18,7 @@ import {
   unresolvedContributorIds,
   contributorNameOrThrow,
 } from "robustness-core/data/syncGraph.server";
-import { computeBacklinkIndex, extractDatesFromText, type GraphLogNode } from "robustness-core/data/graphNodeIndex.server";
+import { computeBacklinkIndex, extractDatesFromText, stripRefVerbose, type GraphLogNode } from "robustness-core/data/graphNodeIndex.server";
 import {
   sortClustersByWeight,
   parseClusterFields,
@@ -28,9 +28,16 @@ import {
   refreshClusterWeight,
 } from "robustness-core/data/graphStructure.server";
 import {
+  buildSystemPrompt,
+  buildTargetedUserPrompt,
+  buildUserPrompt,
+  classifyViewPassEnding,
   computeCoverageReport,
+  countCitations,
   coverageFromJobResult,
   describeUncited,
+  introShouldWait,
+  type UncitedThread,
 } from "robustness-core/data/graphProjectView.server";
 import { classifyStageSkill, isSkipInstruction } from "robustness-core/data/projectN02.server";
 import {
@@ -40,7 +47,7 @@ import {
   withIncompleteBanner,
   type ReadmeSection,
 } from "robustness-core/data/project.types";
-import { completedToolCalls, planTurnToolCalls } from "robustness-core/data/llmProvider";
+import { completedToolCalls, cutOffHeading, planTurnToolCalls } from "robustness-core/data/llmProvider";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -842,5 +849,202 @@ describe("coverage: null means not measured, never clean", () => {
       },
     });
     expect(out).toEqual({ uncitedThreads: ["Slab (1/3)"], threadsFellAway: [], droppedFiles: ["a.jpg"] });
+  });
+});
+
+// ── graph-project-view: a run is a loop of passes ───────────────────────
+//
+// The README used to be one conversation. A section that overran the
+// model's output limit was discarded, nothing was marked applied, and
+// the next run re-entered with the identical prompt and identical budget,
+// so the failure recurred forever while the run reported "will retry next
+// run" (ADR-013's own "how you'd know"). Now a run is a loop of passes,
+// and the remaining work is derived from the committed README by the
+// coverage check rather than stored anywhere a reset could leave stale.
+// These guard the rules that decide when the loop goes on.
+
+describe("ADR-013: a view pass ending is classified on two measures", () => {
+  const base = {
+    cutOff: null,
+    uncitedBefore: 4,
+    uncitedAfter: 4,
+    targeted: false,
+    passesCompleted: 1,
+    maxPasses: 3,
+    maxTurns: 20,
+  };
+  const clean = { truncated: false, hitMaxTurns: false };
+
+  it("a limited pass that WROTE sections is working, not stuck -- the next pass carries on", () => {
+    expect(classifyViewPassEnding({ ...base, writes: 3, truncated: true, hitMaxTurns: false }))
+      .toEqual({ stop: false, shortfall: null });
+    expect(classifyViewPassEnding({ ...base, writes: 5, truncated: false, hitMaxTurns: true }))
+      .toEqual({ stop: false, shortfall: null });
+  });
+
+  it("a limited pass that wrote NOTHING is stuck, and the shortfall names the section", () => {
+    const stuck = classifyViewPassEnding({ ...base, writes: 0, truncated: true, hitMaxTurns: false, cutOff: "What's carrying weight" });
+    expect(stuck.stop).toBe(true);
+    expect(stuck.shortfall).toContain('"What\'s carrying weight"');
+    expect(stuck.shortfall).toContain("before writing anything");
+  });
+
+  it("degrades to 'a section' when the cut landed before the heading was readable", () => {
+    const stuck = classifyViewPassEnding({ ...base, writes: 0, truncated: true, hitMaxTurns: false, cutOff: null });
+    expect(stuck.shortfall).toContain("a section");
+    const intro = classifyViewPassEnding({ ...base, writes: 0, truncated: true, hitMaxTurns: false, cutOff: "" });
+    expect(intro.shortfall).toContain("(intro)");
+  });
+
+  it("stops clean the moment nothing is uncited", () => {
+    expect(classifyViewPassEnding({ ...base, ...clean, writes: 5, uncitedAfter: 0 }))
+      .toEqual({ stop: true, shortfall: null });
+  });
+
+  it("after pass 1, offers the uncited threads once even if pass 1 moved nothing", () => {
+    // The first production run left four of ten threads uncited on a
+    // CLEAN finish. This is the branch that catches it.
+    expect(classifyViewPassEnding({ ...base, ...clean, writes: 1, uncitedBefore: 4, uncitedAfter: 4, targeted: false }))
+      .toEqual({ stop: false, shortfall: null });
+  });
+
+  it("a targeted pass that placed nothing is the model declining -- stop clean, do not nag", () => {
+    expect(classifyViewPassEnding({ ...base, ...clean, writes: 0, uncitedBefore: 3, uncitedAfter: 3, targeted: true, passesCompleted: 2 }))
+      .toEqual({ stop: true, shortfall: null });
+  });
+
+  it("a targeted pass that is still placing threads earns another pass", () => {
+    expect(classifyViewPassEnding({ ...base, ...clean, writes: 2, uncitedBefore: 4, uncitedAfter: 2, targeted: true, passesCompleted: 2 }))
+      .toEqual({ stop: false, shortfall: null });
+  });
+
+  it("reports the pass cap as a shortfall only when the last pass was still productive", () => {
+    const atCapProductive = classifyViewPassEnding({ ...base, ...clean, writes: 2, uncitedBefore: 4, uncitedAfter: 2, targeted: true, passesCompleted: 3 });
+    expect(atCapProductive).toEqual({ stop: true, shortfall: "still placing uncited threads after 3 passes" });
+
+    const atCapDeclined = classifyViewPassEnding({ ...base, ...clean, writes: 0, uncitedBefore: 2, uncitedAfter: 2, targeted: true, passesCompleted: 3 });
+    expect(atCapDeclined).toEqual({ stop: true, shortfall: null });
+
+    const atCapCutOff = classifyViewPassEnding({ ...base, writes: 1, truncated: true, hitMaxTurns: false, targeted: true, passesCompleted: 3 });
+    expect(atCapCutOff.stop).toBe(true);
+    expect(atCapCutOff.shortfall).toContain("no passes left");
+  });
+});
+
+describe("a cut-off write is named, read before the call is dropped", () => {
+  it("reads the heading off a partial call whose content was cut", () => {
+    expect(cutOffHeading([{ input: { heading: "Settled", content: "par" } }], "max_tokens")).toBe("Settled");
+    expect(cutOffHeading([{ input: { heading: "Settled" } }], "max_tokens")).toBe("Settled");
+  });
+
+  it("keeps the intro's empty heading distinct from 'unknown'", () => {
+    expect(cutOffHeading([{ input: { heading: "" } }], "max_tokens")).toBe("");
+  });
+
+  it("returns null when the cut landed inside the heading, or there was no call, or the stop was clean", () => {
+    expect(cutOffHeading([{ input: {} }], "max_tokens")).toBeNull();
+    expect(cutOffHeading([], "max_tokens")).toBeNull();
+    expect(cutOffHeading([{ input: { heading: "Settled", content: "done" } }], "tool_use")).toBeNull();
+    expect(cutOffHeading([{ input: { heading: "Settled", content: "done" } }], "end_turn")).toBeNull();
+  });
+
+  it("names the LAST call, which is the only one that can be partial", () => {
+    expect(cutOffHeading([{ input: { heading: "Settled", content: "done" } }, { input: { heading: "Open questions" } }], "max_tokens"))
+      .toBe("Open questions");
+  });
+});
+
+describe("the intro is written last", () => {
+  const notes = { heading: "Notes on this view", content: "*Comment freely below.*" };
+
+  it("turns back an intro write while no body section has content", () => {
+    expect(introShouldWait([notes], "")).toBe(true);
+    expect(introShouldWait([notes, { heading: "Settled", content: "   " }], "")).toBe(true);
+  });
+
+  it("lets the intro through once any body section has content", () => {
+    expect(introShouldWait([notes, { heading: "Settled", content: "Slab poured 8/12." }], "")).toBe(false);
+  });
+
+  it("never applies to a body section, and never counts the notes section as body", () => {
+    expect(introShouldWait([notes], "settled")).toBe(false);
+    expect(introShouldWait([{ ...notes, content: "a real comment" }], "")).toBe(true);
+  });
+});
+
+describe("the graph lives in the system prompt; the pass mandate in the user message", () => {
+  const run = {
+    today: "2026-09-09",
+    writersFact: "Distinct people who have written in this graph: 2 (A, B).",
+    graphStructureBody: "## Slab schedule\n\nWeight: 3\n- 2026-08-01 Node 1",
+    nodeTextBlock: "### Node 1\n\nthe slab is late",
+  };
+
+  it("the system prompt carries the structure body and node text, once per run", () => {
+    const system = buildSystemPrompt("skill text", run);
+    expect(system).toContain("skill text");
+    expect(system).toContain(run.graphStructureBody);
+    expect(system).toContain(run.nodeTextBlock);
+    expect(system).toContain("Today's actual date: 2026-09-09");
+  });
+
+  it("the user prompt carries only what changes per pass", () => {
+    const user = buildUserPrompt({ readmeContent: "# P\n\n## Settled\n\ndone", unstampedComments: ["fix the date"] });
+    expect(user).toContain("## Settled");
+    expect(user).toContain("fix the date");
+    expect(user).not.toContain(run.graphStructureBody);
+    expect(user).not.toContain("Today's actual date");
+  });
+
+  it("the targeted mandate lists exactly the uncited threads with rank and flags", () => {
+    const uncited: UncitedThread[] = [
+      { heading: "Slab schedule", rank: 2, of: 8, hasBlocking: true, hasDue: false },
+      { heading: "Paint colors", rank: 7, of: 8, hasBlocking: false, hasDue: false },
+    ];
+    const user = buildTargetedUserPrompt({
+      readmeContent: "# P",
+      unstampedComments: [],
+      uncited,
+      uncitedNodeText: "### Node 4\n\nslab text",
+      cutOff: null,
+    });
+    expect(user).toContain("- Slab schedule (2/8, Blocking)");
+    expect(user).toContain("- Paint colors (7/8)");
+    expect(user).toContain("slab text");
+    expect(user).not.toContain("cut off");
+  });
+
+  it("the targeted mandate names the section the previous pass was cut off writing", () => {
+    const named = buildTargetedUserPrompt({ readmeContent: "# P", unstampedComments: [], uncited: [], uncitedNodeText: null, cutOff: { heading: "What's carrying weight" } });
+    expect(named).toContain('the section "What\'s carrying weight" was cut off');
+    expect(named).toContain("NOT saved");
+    const unknown = buildTargetedUserPrompt({ readmeContent: "# P", unstampedComments: [], uncited: [], uncitedNodeText: null, cutOff: { heading: null } });
+    expect(unknown).toContain("one section was cut off");
+    const intro = buildTargetedUserPrompt({ readmeContent: "# P", unstampedComments: [], uncited: [], uncitedNodeText: null, cutOff: { heading: "" } });
+    expect(intro).toContain('"(intro)"');
+  });
+});
+
+describe("ADR-005: a citation the model composed is counted, not trusted", () => {
+  const a = node("2026-08-20#1");
+  const b = node("2026-08-26#3");
+  const nodes = new Map([[a.id, a], [b.id, b]]);
+
+  it("matches a copied citation whether or not it kept verbose=\"true\"", () => {
+    const body = `Said so (${a.refLine}).\n\nAnd again (${stripRefVerbose(b.refLine!)}).`;
+    expect(countCitations(body, nodes)).toEqual({ citations: 2, matched: 2, unmatched: [] });
+  });
+
+  it("names a citation that matches no node -- a wrong date reads exactly like a right one", () => {
+    const composed = a.refLine!.replace("2026-08-20T12:00:00Z", "2026-08-21T12:00:00Z");
+    const body = `Real (${a.refLine}). Composed (${composed}). Composed again (${composed}).`;
+    const result = countCitations(body, nodes);
+    expect(result.citations).toBe(3);
+    expect(result.matched).toBe(1);
+    expect(result.unmatched).toEqual([stripRefVerbose(composed)]);
+  });
+
+  it("a README with no citations at all is zero, not an error", () => {
+    expect(countCitations("# P\n\n## Settled\n\nnothing cited", nodes)).toEqual({ citations: 0, matched: 0, unmatched: [] });
   });
 });

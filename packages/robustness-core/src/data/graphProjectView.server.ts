@@ -60,11 +60,21 @@
  *     `update_readme` (a full-body rewrite) — `update_section`/
  *     `remove_section` alone are enough to prove out the incremental
  *     shape first.
- *   - Truncation-retry escalation (`capture.server.ts`'s own
- *     `MAX_TRUNCATION_RETRIES` dance) — a turn that hits `max_tokens` here
- *     is simply treated as an error and retried on a future run, same
- *     "leave it, retry later" convention `sync-knowledge`/`sync-graph`
- *     already use.
+ *   - A write unit BELOW the section (an `append_to_section`). The run
+ *     is a loop of passes now (see "A RUN IS A LOOP OF PASSES" in
+ *     `runGraphProjectView`), so a section that overruns one response
+ *     no longer blocks the sections after it, and the next pass is told
+ *     by name which section was cut off so it can write that one
+ *     shorter. What is still deferred is content that genuinely cannot
+ *     fit one response per section. `PROJECT_VIEW.md` bounds a section
+ *     far below the output budget ("two or three quoted phrases is
+ *     normal, six is a wall"; the whole file readable in one sitting),
+ *     so that case is a skill violation the shortfall names, not a
+ *     shape this stage should quietly absorb. Appending is also not
+ *     idempotent across runs (a half-appended section on retry has no
+ *     marker saying so), which is the hazard `update_section`'s
+ *     replace semantics avoid. Build the sub-unit when a real run names
+ *     a section that could not be written shorter, and not before.
  */
 
 import {
@@ -110,7 +120,7 @@ import { AnthropicProvider, isGraphLogAgentConfigured } from "./anthropicProvide
 import { classifyGraphLogError, recordGraphLogUsage } from "./graphLogMetrics.server";
 import { noopGraphLogRunRecorder, type GraphLogPerfRecorder } from "./graphLogPerf.server";
 import { throwIfGraphLogCancelled } from "./graphLogQueue.server";
-import { completedToolCalls, planTurnToolCalls } from "./llmProvider";
+import { completedToolCalls, cutOffHeading, planTurnToolCalls } from "./llmProvider";
 import type { LlmMessage, LlmProvider, LlmUsage, ToolCall, ToolDefinition } from "./llmProvider";
 
 const GRAPH_STRUCTURE_FILE_NAME = "graph-structure.md";
@@ -287,6 +297,27 @@ function normalizeIntroHeading(heading: string): string {
   return heading === '""' || heading === "''" ? "" : heading;
 }
 
+/**
+ * Whether an `update_section` aimed at the intro (heading `""`) should be
+ * turned back because no body section has any content yet.
+ *
+ * The intro characterizes the whole project, so on a bootstrap it is the
+ * weakest section when written first, and it was (yesterday's finding on
+ * a real README). Under one-write-per-turn the write ORDER is the model's
+ * to choose, which makes the system prompt's "write the intro last" a
+ * hope rather than a rule. This is the structural half. It can only bite
+ * on a bootstrap: any README with one non-empty body section lets the
+ * intro through. "Notes on this view" never counts as body -- it is
+ * always present and code-owned, so it says nothing about whether the
+ * model has written anything yet.
+ */
+export function introShouldWait(sections: ReadmeSection[], headingKey: string): boolean {
+  if (headingKey !== "") return false;
+  return !sections.some(
+    (s) => s.heading !== "" && s.heading.toLowerCase() !== PROTECTED_HEADING && s.content.trim().length > 0,
+  );
+}
+
 function createReadmeExecutors(input: {
   projectFolder: VaultFolder;
   log: (line: string) => void;
@@ -298,13 +329,19 @@ function createReadmeExecutors(input: {
 }): {
   executors: Record<string, (toolInput: Record<string, unknown>) => Promise<string>>;
   summaries: string[];
-  hadRefusal: () => boolean;
+  /** How many edits were refused so far. A COUNTER, not a flag, because
+   * the run is a loop of passes and only the final pass's own refusals
+   * decide whether the result is applied -- a refusal in pass 1 that
+   * pass 2 got right is history, not a reason to retry the whole stage
+   * next run. The loop takes the per-pass delta, same as `summaries`. */
+  refusals: () => number;
   getCurrent: () => { content: string; fileId: string | undefined };
 } {
   const { projectFolder, log, allNodesById, validNodeIds, today } = input;
   let currentContent = input.initialContent;
   let currentFileId = input.initialFileId;
-  let hadRefusal = false;
+  let refusals = 0;
+  let introTurnedBack = false;
   const summaries: string[] = [];
 
   async function commit(newFullContent: string): Promise<boolean> {
@@ -338,7 +375,7 @@ function createReadmeExecutors(input: {
       // the intro is addressed, and `content: ""` is a real instruction
       // the erase guard handles on its own terms.
       if (typeof toolInput.heading !== "string" || typeof toolInput.content !== "string") {
-        hadRefusal = true;
+        refusals++;
         log("graph-project-view -- refused a malformed update_section (heading/content missing; likely a cut-off call).");
         return 'Error: update_section needs both "heading" and "content" as strings. Nothing was written.';
       }
@@ -347,7 +384,7 @@ function createReadmeExecutors(input: {
       const key = heading.toLowerCase();
 
       if (key === PROTECTED_HEADING) {
-        hadRefusal = true;
+        refusals++;
         log('graph-project-view -- refused update_section on "Notes on this view" (protected; left unchanged).');
         return 'Error: "Notes on this view" is off-limits to this tool — it is never edited by GraphLog.';
       }
@@ -356,8 +393,20 @@ function createReadmeExecutors(input: {
       const existingIndex = sections.findIndex((s) => s.heading.toLowerCase() === key);
       const existing = existingIndex === -1 ? null : sections[existingIndex];
 
+      // THE INTRO IS WRITTEN LAST -- see `introShouldWait`. Turned back
+      // ONCE per run, with the reason. Once, not always: a genuinely quiet
+      // project may have nothing for any body section, and a guard that
+      // never yields would leave it with no intro at all. Not counted as
+      // a refusal -- nothing was malformed, the model is simply told what
+      // to write first.
+      if (introShouldWait(sections, key) && !introTurnedBack) {
+        introTurnedBack = true;
+        log("graph-project-view -- turned back an intro write before any body section existed (intro is written last).");
+        return "Not yet: write the body sections first, then the intro. An intro states where the project stands and what it hinges on, and that reads from the sections it introduces. Call update_section for the intro again after the body sections are written.";
+      }
+
       if (content.trim().length === 0 && existing && existing.content.trim().length > 0) {
-        hadRefusal = true;
+        refusals++;
         const label = heading || "(intro)";
         log(`graph-project-view -- refused update_section "${label}" (would erase real content with an empty section); left unchanged.`);
         return `Error: refused -- section "${label}" currently has real content; sending empty content would erase it. Use remove_section if you genuinely want to delete it.`;
@@ -378,7 +427,7 @@ function createReadmeExecutors(input: {
       // a cut-off call, and defaulting it to "" would aim a DELETE at
       // the intro.
       if (typeof toolInput.heading !== "string") {
-        hadRefusal = true;
+        refusals++;
         log("graph-project-view -- refused a malformed remove_section (heading missing; likely a cut-off call).");
         return 'Error: remove_section needs "heading" as a string. Nothing was removed.';
       }
@@ -386,7 +435,7 @@ function createReadmeExecutors(input: {
       const key = heading.toLowerCase();
 
       if (key === PROTECTED_HEADING) {
-        hadRefusal = true;
+        refusals++;
         log('graph-project-view -- refused remove_section on "Notes on this view" (protected; left unchanged).');
         return 'Error: "Notes on this view" is off-limits to this tool — it is never edited by GraphLog.';
       }
@@ -415,7 +464,7 @@ function createReadmeExecutors(input: {
     },
   };
 
-  return { executors, summaries, hadRefusal: () => hadRefusal, getCurrent: () => ({ content: currentContent, fileId: currentFileId }) };
+  return { executors, summaries, refusals: () => refusals, getCurrent: () => ({ content: currentContent, fileId: currentFileId }) };
 }
 
 // Bumped from the original 8 as a defensive measure -- graph-structure's
@@ -427,7 +476,19 @@ function createReadmeExecutors(input: {
 // substantial graph-structure.md the way that one was. A first bootstrap
 // needs at minimum ~5-6 update_section calls (one per canonical section);
 // extra headroom here is free unless actually used.
+//
+// Per ADR-013 this bounds one PASS, never the README: a pass that fills
+// its turns having written sections is a full pass, and the next pass
+// picks up from the README as committed. See `classifyViewPassEnding`.
 const MAX_TURNS = 20;
+
+/** The runaway guard on the pass loop itself, never the number of threads
+ * a README may cite. Three is enough for the shape this loop exists for:
+ * a bootstrap writes the sections, a targeted pass places what the first
+ * left uncited, and a third catches what the second moved. A run still
+ * making progress at the cap says so (a shortfall), is not marked
+ * applied, and the next run resumes from the committed README. */
+const MAX_PASSES = 3;
 
 async function runReadmeAgentLoop(
   provider: LlmProvider,
@@ -436,12 +497,18 @@ async function runReadmeAgentLoop(
   executors: Record<string, (toolInput: Record<string, unknown>) => Promise<string>>,
   perf: GraphLogPerfRecorder,
   projectFolderId: string,
+  pass: number,
+  callCounter: { count: number },
 ): Promise<{
   usage: LlmUsage;
   model: string | null;
   truncated: boolean;
   hitMaxTurns: boolean;
   toolCallsMade: ToolCall[];
+  /** The section the truncating call was writing, when `truncated` and
+   * the partial input still named it -- see `cutOffHeading`. Distinct
+   * from `null` on a clean pass only by `truncated` itself. */
+  cutOff: string | null;
 }> {
   const messages: LlmMessage[] = [{ role: "user", content: userPrompt }];
   const toolCallsMade: ToolCall[] = [];
@@ -449,6 +516,7 @@ async function runReadmeAgentLoop(
   let model: string | null = null;
   let truncated = false;
   let hitMaxTurns = false;
+  let cutOff: string | null = null;
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     // Stop checkpoint (see `graphLogQueue.server.ts`'s own "Cooperative
@@ -457,7 +525,17 @@ async function runReadmeAgentLoop(
     await throwIfGraphLogCancelled(projectFolderId);
 
     const turnStart = Date.now();
-    const response = await provider.complete({ system, messages, tools: TOOLS });
+    // The system prompt carries everything invariant within a run (skill,
+    // structure body, pre-fetched node text -- see `buildSystemPrompt`),
+    // and every pass is a fresh one-message conversation, so without this
+    // flag turn 1 of every pass would re-send all of it uncached
+    // (`anthropicProvider.server.ts` only caches on its own from turn 2).
+    // Pass 1's first turn writes the cache; every later turn and every
+    // later pass reads it. Same reason `graph-structure` drives the flag
+    // from its own shared `callCounter`, kept here for the same
+    // "one counter per run, shared across passes" shape.
+    const response = await provider.complete({ system, messages, tools: TOOLS, cacheSystemPrompt: true });
+    callCounter.count++;
     usage.inputTokens += response.usage.inputTokens;
     usage.outputTokens += response.usage.outputTokens;
     // Cache counts, same as `syncGraph.server.ts`'s own loop -- see there
@@ -479,6 +557,7 @@ async function runReadmeAgentLoop(
       type: "llm",
       name: "turn",
       params: {
+        pass: pass + 1,
         turn: turn + 1,
         stopReason: response.stopReason,
         toolCalls: response.toolCalls.map((c) => c.name),
@@ -505,6 +584,8 @@ async function runReadmeAgentLoop(
       // written and the fact that it was cut off, and it deliberately
       // does NOT mark graph-structure applied, so the next run resumes.
       truncated = true;
+      // Read off the dropped call BEFORE `completedToolCalls` drops it.
+      cutOff = cutOffHeading(response.toolCalls, response.stopReason);
       for (const { call, execute } of planTurnToolCalls(
         completedToolCalls(response.toolCalls, response.stopReason),
         isViewWrite,
@@ -543,7 +624,89 @@ async function runReadmeAgentLoop(
     if (turn === MAX_TURNS - 1) hitMaxTurns = true;
   }
 
-  return { usage, model, truncated, hitMaxTurns, toolCallsMade };
+  return { usage, model, truncated, hitMaxTurns, toolCallsMade, cutOff };
+}
+
+/** What a pass that ended tells the loop to do next. Pure, so the rules
+ * are testable without a model; the shape is `syncGraph.server.ts`'s own
+ * `classifyPassEnding`, with one difference that is the whole point of
+ * this stage's version.
+ *
+ * TWO PROGRESS MEASURES, ON PURPOSE. `writes` (sections committed this
+ * pass) decides whether a pass that hit a limit was WORKING or STUCK: a
+ * pass that rewrote three sections and was cut off on the fourth is
+ * working, and stopping the run there is what used to leave every section
+ * after the big one unwritten, on every run, forever. `uncitedBefore`/
+ * `uncitedAfter` (threads with no citation in the README, computed by
+ * `computeCoverageReport` off the committed file) decides whether ANOTHER
+ * pass is worth running at all. The two answer different questions and a
+ * single number cannot answer both.
+ *
+ * WHEN A TARGETED PASS RUNS. After the first pass, once, whenever
+ * anything is still uncited -- the offer costs one cached read and the
+ * first production run left four of ten threads uncited on a CLEAN
+ * finish, which is the miss this exists to catch. After a targeted pass,
+ * only while the offer is still moving the number: a pass that placed
+ * nothing is the model saying the rest do not belong, which
+ * `PROJECT_VIEW.md` permits ("emptiness is honest signal"), and the loop
+ * takes its word rather than asking again. That is a deliberate
+ * non-rule: which misses MATTER (rank, Blocking, Due) is recorded on
+ * every run now and stays unread by this code until a few real runs show
+ * what the model does with the offer.
+ *
+ * `shortfall === null` is a clean ending. It is the caller's job to
+ * combine that with the final pass's own refusals before marking the
+ * structure applied. */
+export function classifyViewPassEnding(input: {
+  writes: number;
+  truncated: boolean;
+  hitMaxTurns: boolean;
+  /** Which section the truncating call was writing, if known. */
+  cutOff: string | null;
+  uncitedBefore: number;
+  uncitedAfter: number;
+  /** Whether the pass that just ended was a targeted one (pass 2+). */
+  targeted: boolean;
+  passesCompleted: number;
+  maxPasses: number;
+  maxTurns: number;
+}): { stop: boolean; shortfall: string | null } {
+  const where = input.cutOff === null ? "a section" : `"${input.cutOff || "(intro)"}"`;
+  const atCap = input.passesCompleted >= input.maxPasses;
+
+  if (input.truncated || input.hitMaxTurns) {
+    const how = input.truncated
+      ? `was cut off by the model's own output limit while writing ${where}`
+      : `hit its ${input.maxTurns}-turn limit`;
+    if (input.writes === 0) {
+      // Stuck: a limit with nothing to show for it. Retrying the same
+      // pass would hit the same limit the same way.
+      return { stop: true, shortfall: `a pass ${how} before writing anything` };
+    }
+    if (atCap) {
+      return { stop: true, shortfall: `a pass ${how} after writing ${input.writes} section(s), with no passes left` };
+    }
+    // Working: keep what landed, and let the next pass carry on from the
+    // committed README, told by name what was cut off.
+    return { stop: false, shortfall: null };
+  }
+
+  if (input.uncitedAfter === 0) return { stop: true, shortfall: null };
+  if (!input.targeted) {
+    // The first pass ended clean with threads still uncited: offer them
+    // once. Never a shortfall at the cap here -- with MAX_PASSES >= 2 the
+    // first pass always has a pass left, and if it didn't, an unoffered
+    // thread is a measurement, not a failure.
+    return atCap ? { stop: true, shortfall: null } : { stop: false, shortfall: null };
+  }
+  if (input.uncitedAfter < input.uncitedBefore) {
+    if (atCap) {
+      return { stop: true, shortfall: `still placing uncited threads after ${input.maxPasses} passes` };
+    }
+    return { stop: false, shortfall: null };
+  }
+  // A targeted pass that moved nothing: the model declined the offer.
+  return { stop: true, shortfall: null };
 }
 
 // ─── Main entry point ───────────────────────────────────────────────────
@@ -679,14 +842,41 @@ export interface RunGraphProjectViewOptions {
   perf?: GraphLogPerfRecorder;
 }
 
-function buildSystemPrompt(skillContent: string): string {
+/** Everything that does not change between passes within one run. It
+ * lives in the SYSTEM prompt, not the user message, because the provider
+ * caches the system prompt as one block and a run is now several fresh
+ * conversations: the structure body and up to 60 nodes of verbatim text
+ * are written to the cache once on pass 1 and read back by every later
+ * turn and pass. In the user message they were re-sent, uncached, at the
+ * start of every pass. Only what changes per pass (the README as it
+ * stands, the mandate, unread comments) stays in the user message. */
+export type ViewRunContext = {
+  today: string;
+  writersFact: string;
+  graphStructureBody: string;
+  nodeTextBlock: string | null;
+};
+
+export function buildSystemPrompt(skillContent: string, run: ViewRunContext): string {
   return `You are GraphLog's graph-project-view step, keeping a project's README.md an accurate, organized synthesis of the whole graph (given to you as graph-structure.md's own clustered, weighted index, PLUS the actual verbatim text of the nodes behind its top threads). Never invent progress, dates, or facts that aren't grounded in a real node's own words or the README's own existing content -- graph-structure.md's glosses are a table of contents, never something to write prose from directly. Call get_node for any node you need that wasn't already handed to you in full. A node's own text may carry an attached file: a PHOTO or VIDEO (an ordinary markdown image or a link marked ?type=video) belongs in a :::gallery{}...::: block wherever that node's words are featured -- group several photos/videos from the same thread into ONE gallery rather than several. Anything else (a PDF, a doc, ...) is a plain [name](url) link, never put inside a gallery. Either way, that exact image/link line must appear in the same section as the words it came with -- a file is never optional and never gets its own separate section. Only touch sections that actually need to change -- call update_section/remove_section as needed, then stop (no more tool calls) once you're done. Never target "Notes on this view" with either tool -- it's off-limits, handled outside this loop entirely. If nothing needs to change, simply make no tool calls at all.
 
 Make at most ONE update_section or remove_section call per response. Every tool call in one response is generated into that response's single output budget, and a section's whole prose travels in the call, so several writes at once is several sections' worth of text against one limit -- the response gets cut off and the work in it is lost. Write one section, wait for the result, then write the next. Reads (get_node) are free to batch: call as many as you need in one go.
 
 Do not write any planning, reasoning, or summary text outside of a tool call -- go straight to calling update_section/remove_section/get_node with no preamble and no narration in between calls either. Your own output budget per turn is limited, and explanatory text spends it on nothing that ends up in the README.
 
-${skillContent}`;
+Write the intro (the section addressed with an empty heading) LAST, after the sections it introduces exist -- it states where the project stands and what it hinges on, and that reads from the body, not the other way around. An intro attempted before any body section is written is turned back.
+
+${skillContent}
+
+---
+
+Today's actual date: ${run.today}
+
+${run.writersFact}
+
+graph-structure.md (the whole graph, organized -- a table of contents; read the nodes below to write from):
+
+${run.graphStructureBody}${run.nodeTextBlock ? `\n\n---\n\n${run.nodeTextBlock}` : ""}`;
 }
 
 /**
@@ -704,6 +894,10 @@ function buildNodePrefetchBlock(
   sections: ReadmeSection[],
   allNodesById: Map<string, GraphLogNode>,
   today: string,
+  /** The sentence that leads the block. The default describes the run's
+   * own top-down pre-fetch; a targeted pass walks a different list (the
+   * threads still uncited) and says so. */
+  lead = "The actual node text behind graph-structure.md's own top threads, in its own order (read these to decide what to WRITE, not just what to write ABOUT -- call get_node for anything else you need):",
 ): string | null {
   const named = sections.filter((s) => s.heading !== "" && s.heading.toLowerCase() !== "unclustered");
   const blocks: string[] = [];
@@ -736,7 +930,7 @@ function buildNodePrefetchBlock(
     blocks.push(`## ${section.heading}\n\n${nodeTexts.map((n) => formatNodeVerbatim(n, today)).join("\n\n")}${truncatedNote}`);
   }
   if (blocks.length === 0) return null;
-  return `The actual node text behind graph-structure.md's own top threads, in its own order (read these to decide what to WRITE, not just what to write ABOUT -- call get_node for anything else you need):\n\n${blocks.join("\n\n---\n\n")}`;
+  return `${lead}\n\n${blocks.join("\n\n---\n\n")}`;
 }
 
 /** How many DISTINCT people have written anything in this graph, and who.
@@ -783,29 +977,75 @@ function describeWriters(allNodes: GraphLogNode[]): string {
   return `Distinct people who have written in this graph: ${byId.size} (${who}).`;
 }
 
-function buildUserPrompt(input: {
-  today: string;
-  writersFact: string;
-  graphStructureBody: string;
-  nodeTextBlock: string | null;
-  readmeContent: string;
-  unstampedComments: string[];
-}): string {
+/** What changes per pass: the README as it stands (always read from the
+ * executors' own `getCurrent()`, never from the pre-loop content, or a
+ * second pass would be shown a README its first pass already rewrote)
+ * and the unread reader comments. The graph itself is in the system
+ * prompt -- see `ViewRunContext`. */
+function readmeAndComments(input: { readmeContent: string; unstampedComments: string[] }): string[] {
   const currentBody = splitFrontmatter(input.readmeContent).body.trim();
   return [
-    `Today's actual date: ${input.today}`,
-    input.writersFact,
-    `graph-structure.md (the whole graph, organized -- a table of contents; read the nodes below to write from):\n\n${input.graphStructureBody}`,
-    input.nodeTextBlock,
     currentBody
       ? `README.md's CURRENT body (edit this incrementally via update_section/remove_section):\n\n${currentBody}`
       : "README.md is currently empty — this is the first content it will ever have.",
     input.unstampedComments.length > 0
       ? `Unread reader corrections in "Notes on this view" (treat these as ground truth overriding your own reading; you do not need to and should not edit that section yourself):\n${input.unstampedComments.map((c) => `- ${c}`).join("\n")}`
-      : null,
-  ]
-    .filter(Boolean)
-    .join("\n\n---\n\n");
+      : "",
+  ].filter(Boolean);
+}
+
+/** Pass 1: reconcile the README with the graph. */
+export function buildUserPrompt(input: { readmeContent: string; unstampedComments: string[] }): string {
+  return readmeAndComments(input).join("\n\n---\n\n");
+}
+
+/**
+ * Pass 2 and later: a mandate built by code from what the committed
+ * README measurably lacks, never from the model's opinion of its own
+ * work. Two deterministic inputs, either of which is enough to run it:
+ *
+ *   - `uncited`: threads with no node cited anywhere in the README, in
+ *     graph-structure.md's own order, each with its rank and whether it
+ *     carries Blocking/Due (the `computeCoverageReport` shape), plus their
+ *     node text so the ceiling reaches what the pre-fetch floor may have
+ *     missed (ADR-006, ADR-010). It is an OFFER: the skill's "emptiness is
+ *     honest signal" still binds, and the pass may decline it all.
+ *   - `cutOff`: the section the previous pass was writing when its
+ *     output limit hit. That write was never saved, and a retry with the
+ *     same prompt and the same budget cuts off the same way; telling the
+ *     model which section and why is the only input that changes the
+ *     outcome. `heading: null` means the cut landed before the heading
+ *     was readable.
+ */
+export function buildTargetedUserPrompt(input: {
+  readmeContent: string;
+  unstampedComments: string[];
+  uncited: UncitedThread[];
+  uncitedNodeText: string | null;
+  cutOff: { heading: string | null } | null;
+}): string {
+  const parts: string[] = [
+    "This is a follow-up pass over the same graph (given to you above). The README below is as the previous pass left it.",
+    ...readmeAndComments(input),
+  ];
+  if (input.cutOff) {
+    const where = input.cutOff.heading === null ? "one section" : `the section "${input.cutOff.heading || "(intro)"}"`;
+    parts.push(
+      `In the previous pass, your update_section call for ${where} was cut off by your own output limit and was NOT saved. Write that section again, shorter: a few quoted phrases carried by your own prose, every working line still citing its node, and the working-out pointed at rather than reproduced. If it genuinely cannot fit, write the part that carries weight and leave the rest to the graph.`,
+    );
+  }
+  if (input.uncited.length > 0) {
+    parts.push(
+      [
+        `These threads in graph-structure.md have NO node cited anywhere in the README. Rank 1 is the most important thread in the project; a thread carrying Blocking or Due is a hard constraint that must never be pushed off the page:`,
+        ...input.uncited.map((t) => `- ${describeUncited(t)}`),
+        "",
+        "For each one, either place it where its material belongs (in an existing section, citing its nodes exactly as given) or leave it out deliberately. A quiet or minor thread left out is honest signal; a top-ranked thread, or one carrying Blocking or Due, almost never is. Touch only what this changes -- do not rewrite sections that already say what they need to. If nothing should change, make no tool calls.",
+      ].join("\n"),
+    );
+    if (input.uncitedNodeText) parts.push(input.uncitedNodeText);
+  }
+  return parts.join("\n\n---\n\n");
 }
 
 /**
@@ -888,6 +1128,40 @@ export function computeCoverageReport(
     }
   }
   return { missingThreads, fellAway, missingFiles };
+}
+
+/**
+ * ADR-005's own test, run against the README: every citation in output
+ * matches one the code generated, character for character. `citations` is
+ * every `:ref{...}` in the body, `matched` the ones that are some node's
+ * own line (both sides normalized through `stripRefVerbose`, same as the
+ * coverage check), `unmatched` the rest, distinct, as written.
+ *
+ * Found necessary directly: a real pass wrote four sections and the
+ * coverage check matched NOTHING in them, then the next pass rewrote them
+ * and matched every thread. Coverage could not say which of two very
+ * different things had happened -- the model wrote no citations, or it
+ * COMPOSED them (a wrong datetime, a reordered attribute) and the exact
+ * test correctly refused to count them. The second is the failure ADR-005
+ * exists for and it is undetectable by reading. Recorded on every pass's
+ * own event so the two are never confused again.
+ */
+export function countCitations(
+  readmeBody: string,
+  allNodesById: Map<string, GraphLogNode>,
+): { citations: number; matched: number; unmatched: string[] } {
+  const known = new Set<string>();
+  for (const node of allNodesById.values()) {
+    if (node.refLine) known.add(stripRefVerbose(node.refLine).trim());
+  }
+  const found = stripRefVerbose(readmeBody).match(/:ref\{[^}]*\}/g) ?? [];
+  const unmatched = new Set<string>();
+  let matched = 0;
+  for (const ref of found) {
+    if (known.has(ref.trim())) matched++;
+    else unmatched.add(ref);
+  }
+  return { citations: found.length, matched, unmatched: [...unmatched] };
 }
 
 /** One uncited thread as a line a person can act on: what it is, where it
@@ -1078,7 +1352,13 @@ export async function runGraphProjectView(
   const skillContent = [skill, generalSkill, ...extraSkillFiles.map((f) => `## ${f.name}\n\n${f.content}`)]
     .filter(Boolean)
     .join("\n\n");
-  const system = buildSystemPrompt(skillContent);
+  const structureBody = splitFrontmatter(structureFile.content).body;
+  const system = buildSystemPrompt(skillContent, {
+    today,
+    writersFact: describeWriters(allNodes),
+    graphStructureBody: structureBody.trim(),
+    nodeTextBlock,
+  });
 
   const readmeFile = await getReadmeFileForFolder(projectFolder.human_id, projectFolder._id);
   // The incomplete banner comes off BEFORE anything else touches the
@@ -1133,16 +1413,20 @@ export async function runGraphProjectView(
     validNodeIds,
     today,
   });
-  const { executors, summaries, hadRefusal, getCurrent } = executors_;
+  const { executors, summaries, refusals, getCurrent } = executors_;
 
-  const userPrompt = buildUserPrompt({
-    today,
-    writersFact: describeWriters(allNodes),
-    graphStructureBody: splitFrontmatter(structureFile.content).body.trim(),
-    nodeTextBlock,
-    readmeContent: contentWithNotes,
-    unstampedComments: unstamped,
-  });
+  // Coverage off the COMMITTED README, computed by code between passes and
+  // again at the end. Both the loop's own progress measure and the
+  // stage's report read from this one function, so what drives another
+  // pass and what the run row records are the same number.
+  const measure = (): CoverageReport =>
+    computeCoverageReport(structureBody, splitFrontmatter(getCurrent().content).body, allNodesById);
+  // Non-null from here on: a README exists, so coverage is measurable on
+  // every path below, clean or not. `null` stays reserved for the early
+  // returns above, which never had a README to measure. Every partial
+  // return used to hand back null, which made the runs whose coverage you
+  // would most want the only ones without it.
+  let lastCoverage: CoverageReport = measure();
 
   // Every way this stage can stop short of a clean finish, reported the
   // same way. These used to hardcode `changed: false, summary: []`, which
@@ -1167,7 +1451,7 @@ export async function runGraphProjectView(
       skipped: false,
       changed: summaries.length > 0,
       summary: summaries,
-      coverage: null,
+      coverage: lastCoverage,
       incomplete: [reason],
     };
   };
@@ -1175,39 +1459,161 @@ export async function runGraphProjectView(
   const callStart = Date.now();
   try {
     const llm = opts.provider ?? new AnthropicProvider();
-    const { usage, model, truncated, hitMaxTurns } = await runReadmeAgentLoop(
-      llm,
-      system,
-      userPrompt,
-      executors,
-      perf,
-      projectFolder._id,
-    );
+
+    // A RUN IS A LOOP OF PASSES, NOT ONE CONVERSATION.
+    //
+    // Same shape as `sync-graph`'s day loop and `graph-structure`'s
+    // batches, and for the same ADR-013 reason: a turn limit and an
+    // output limit each bound one bounded unit of work, never how much a
+    // README may hold. Each pass is a fresh conversation bounded by
+    // `MAX_TURNS`, over the SAME whole graph (in the cached system
+    // prompt), sharing one set of executors so every section committed
+    // by an earlier pass is in the README the next pass is shown.
+    //
+    // What makes the loop resumable without storing anything: the
+    // remaining work is DERIVED from the committed README by
+    // `computeCoverageReport` (threads with no citation), the way
+    // `graph-structure` derives its unplaced nodes from its own file.
+    // A stored "sections done" marker would survive `resetProjectView`,
+    // which clears the README body and exactly one front-matter key, and
+    // would then point at an empty README -- the live failure
+    // `clearGraphStructureAppliedMarker` was written for. Nothing here
+    // can go stale that way, because nothing here is stored.
+    //
+    // Pass 1 reconciles. Every later pass is TARGETED: told by code which
+    // threads are still uncited, with their node text, and which section
+    // (if any) the previous pass was cut off writing. The rules for
+    // stopping are in `classifyViewPassEnding`.
+    const callCounter = { count: 0 };
+    const runUsage: LlmUsage = { inputTokens: 0, outputTokens: 0 };
+    let runModel: string | null = null;
+    let passes = 0;
+    let shortfall: string | null = null;
+    let refusedInFinalPass = 0;
+    let cutOff: { heading: string | null } | null = null;
+    let uncited: UncitedThread[] = lastCoverage.missingThreads;
+
+    while (passes < MAX_PASSES) {
+      const targeted = passes > 0;
+      const before = { writes: summaries.length, refusals: refusals(), uncited: uncited.length };
+      const current = getCurrent().content;
+      const userPrompt = targeted
+        ? buildTargetedUserPrompt({
+            readmeContent: current,
+            unstampedComments: unstamped,
+            uncited,
+            uncitedNodeText: buildNodePrefetchBlock(
+              structureSections.filter((sec) => uncited.some((t) => t.heading === sec.heading)),
+              allNodesById,
+              today,
+              "The actual node text behind the uncited threads above, in graph-structure.md's own order (call get_node for any node not shown):",
+            ),
+            cutOff,
+          })
+        : buildUserPrompt({ readmeContent: current, unstampedComments: unstamped });
+
+      const passStart = Date.now();
+      const result = await runReadmeAgentLoop(llm, system, userPrompt, executors, perf, projectFolder._id, passes, callCounter);
+      passes++;
+      runUsage.inputTokens += result.usage.inputTokens;
+      runUsage.outputTokens += result.usage.outputTokens;
+      runUsage.cacheReadTokens = (runUsage.cacheReadTokens ?? 0) + (result.usage.cacheReadTokens ?? 0);
+      runUsage.cacheWriteTokens = (runUsage.cacheWriteTokens ?? 0) + (result.usage.cacheWriteTokens ?? 0);
+      runModel = result.model ?? runModel;
+
+      lastCoverage = measure();
+      const cites = countCitations(splitFrontmatter(getCurrent().content).body, allNodesById);
+      const writes = summaries.length - before.writes;
+      refusedInFinalPass = refusals() - before.refusals;
+      const ending = classifyViewPassEnding({
+        writes,
+        truncated: result.truncated,
+        hitMaxTurns: result.hitMaxTurns,
+        cutOff: result.cutOff,
+        uncitedBefore: before.uncited,
+        uncitedAfter: lastCoverage.missingThreads.length,
+        targeted,
+        passesCompleted: passes,
+        maxPasses: MAX_PASSES,
+        maxTurns: MAX_TURNS,
+      });
+      // One event per pass, carrying what the offer was and what it did
+      // with it -- the data the not-yet-written "which misses matter"
+      // filter will be tuned on. `offered`/`cited` are the pass's own
+      // uncited count before and how many of those it placed.
+      await perf.event({
+        process: "graph-project-view",
+        type: "llm",
+        name: "pass",
+        params: {
+          pass: passes,
+          targeted,
+          writes,
+          refused: refusedInFinalPass,
+          offered: targeted ? before.uncited : null,
+          cited: targeted ? before.uncited - lastCoverage.missingThreads.length : null,
+          citations: cites.citations,
+          matched: cites.matched,
+          unmatched: cites.unmatched.length,
+          cutOff: result.truncated ? (result.cutOff ?? "(unknown)") : null,
+          shortfall: ending.shortfall,
+        },
+        durationMs: Date.now() - passStart,
+        outcome: result.truncated || result.hitMaxTurns ? "error" : "ok",
+      });
+      log(
+        `graph-project-view: pass ${passes}${targeted ? ` (targeted, ${before.uncited} uncited thread(s) offered)` : ""}: ` +
+          `${writes} section write(s), ${cites.citations} citation(s) of which ${cites.matched} match a node, ` +
+          `${lastCoverage.missingThreads.length} thread(s) still uncited` +
+          `${result.truncated ? `; cut off writing ${result.cutOff === null ? "a section" : `"${result.cutOff || "(intro)"}"`}` : ""}` +
+          `${result.hitMaxTurns ? "; hit its turn limit" : ""}.`,
+      );
+      if (cites.unmatched.length > 0) {
+        // ADR-005: a citation the model built rather than copied. Named
+        // here because it reads as verified for as long as it survives.
+        const shown = cites.unmatched.slice(0, 3);
+        log(
+          `graph-project-view: pass ${passes} left ${cites.unmatched.length} citation(s) matching no node in the graph (ADR-005: composed, not copied)` +
+            `${shown.length ? `, e.g. ${shown.join(" | ")}` : ""}${cites.unmatched.length > shown.length ? ` and ${cites.unmatched.length - shown.length} more` : ""}.`,
+        );
+      }
+
+      shortfall = ending.shortfall;
+      cutOff = result.truncated ? { heading: result.cutOff } : null;
+      uncited = lastCoverage.missingThreads;
+      if (ending.stop) break;
+    }
 
     const durationMs = Date.now() - callStart;
+    const failed = shortfall !== null || refusedInFinalPass > 0;
     await recordGraphLogUsage({
       humanId: actingHumanId,
       projectFolderId: projectFolder._id,
       stage: "graph-project-view",
       kind: "project-view",
-      model: model ?? undefined,
-      usage,
+      model: runModel ?? undefined,
+      usage: runUsage,
       durationMs,
-      outcome: truncated ? "error" : "success",
-      errorKind: truncated ? "incomplete" : undefined,
+      outcome: failed ? "error" : "success",
+      errorKind: failed ? "incomplete" : undefined,
     });
     await perf.event({
       process: "graph-project-view",
       type: "llm",
       name: "readme",
-      params: null,
+      params: { passes },
       durationMs,
-      outcome: truncated ? "error" : "ok",
+      outcome: failed ? "error" : "ok",
     });
 
-    if (truncated) return partial("update was cut off by the model's own output limit");
-    if (hitMaxTurns) return partial("hit its turn limit before finishing");
-    if (hadRefusal()) return partial("had at least one refused edit");
+    // Applied iff the FINAL pass ended clean. An earlier pass's trouble
+    // that a later pass repaired is in the log and the perf timeline, not
+    // in `incomplete`, because the stage did finish its job. A final pass
+    // with a shortfall or a refusal leaves the structure unapplied so the
+    // next run resumes from the committed README, same convention as
+    // sync-graph's `hash: null` and graph-structure's completeness gate.
+    if (shortfall !== null) return partial(shortfall);
+    if (refusedInFinalPass > 0) return partial("had at least one refused edit in its final pass");
 
     // Clean finish: one final deterministic reconcile pass, always run
     // regardless of what (if anything) the model touched --
@@ -1238,13 +1644,15 @@ export async function runGraphProjectView(
 
     await markGraphStructureApplied(structureListing._id, structureFile.content, meta.asOfGraphHash);
     const changed = summaries.length > 0;
-    log(changed ? `graph-project-view: ${summaries.join(", ")}.` : "graph-project-view: nothing to change.");
-
-    const coverage = computeCoverageReport(
-      splitFrontmatter(structureFile.content).body,
-      splitFrontmatter(reconciledContent).body,
-      allNodesById,
+    log(
+      changed
+        ? `graph-project-view: ${summaries.join(", ")} (${passes} pass${passes === 1 ? "" : "es"}).`
+        : "graph-project-view: nothing to change.",
     );
+
+    // The reconcile above only re-sorts and stamps; it cites nothing new.
+    // Measured once more anyway so the report reads the file as written.
+    const coverage = computeCoverageReport(structureBody, splitFrontmatter(reconciledContent).body, allNodesById);
     if (coverage.missingThreads.length > 0) {
       log(
         `graph-project-view: ${coverage.missingThreads.length} thread(s) have no representation in the README this run: ` +
