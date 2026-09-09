@@ -21,6 +21,9 @@ import { estimateCostUsd, isPricingStale, pricingAgeDays } from "./llmPricing";
 export type GraphLogStage = "sync-knowledge" | "sync-graph" | "graph-structure" | "graph-project-view";
 export type GraphLogEventKind =
   | "photo-knowledge"
+  /** A video described from a few still frames -- its own kind so the
+   * cost of a clip (several images in one call) is visible on its own. */
+  | "video-knowledge"
   | "text-knowledge"
   | "graph-extract"
   | "graph-structure"

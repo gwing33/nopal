@@ -220,6 +220,24 @@ export type PhotoDescriptionResult = {
   model: string;
 };
 
+/** One of several images described together -- the frames of a video,
+ * in order. `label` is what the model is told about each ("0:17 into the
+ * clip"), so the description can say what changes between them. */
+export type LabeledImage = { imageBase64: string; mediaType: string; label: string };
+
+export type ImagesDescriptionInput = {
+  images: LabeledImage[];
+  /** Same role as `PhotoDescriptionInput.context`. */
+  context: string;
+  /** Replaces the single-photo system prompt: what these images are as a
+   * set and how to describe them. Assembled by the caller. */
+  framing: string;
+};
+
 export interface PhotoDescriber {
   describePhoto(input: PhotoDescriptionInput): Promise<PhotoDescriptionResult>;
+  /** Several images in one call, one description. A video is the case
+   * this exists for: a few stills, described as a sequence, so the whole
+   * pipeline downstream sees a video exactly as it sees a photo. */
+  describeImages(input: ImagesDescriptionInput): Promise<PhotoDescriptionResult>;
 }
