@@ -118,6 +118,34 @@ export function completedToolCalls<T>(calls: T[], stopReason: StopReason): T[] {
   return stopReason === "max_tokens" ? calls.slice(0, -1) : calls;
 }
 
+/**
+ * Which section the call `completedToolCalls` dropped was writing, when
+ * that can be known.
+ *
+ * The dropped call's input is a partial object, and `heading` is the
+ * first key in every section-writing schema, so it is usually intact
+ * even when `content` is the field that was cut. That name is the
+ * difference between "a pass was cut off" and "writing 'What's carrying
+ * weight' was cut off", which is what the next pass needs in order to
+ * write that one section shorter, and what a person needs when it keeps
+ * happening. Read it BEFORE `completedToolCalls` slices the call away;
+ * nothing downstream ever sees it again.
+ *
+ * `null` on any other stop reason, when there was no call at all, or when
+ * the cut landed inside the heading itself and the input has no string
+ * heading to read. The caller degrades to "a section" then, never guesses.
+ */
+export function cutOffHeading<T extends { input: Record<string, unknown> }>(
+  calls: T[],
+  stopReason: StopReason,
+): string | null {
+  if (stopReason !== "max_tokens") return null;
+  const last = calls[calls.length - 1];
+  if (!last) return null;
+  const heading = last.input?.heading;
+  return typeof heading === "string" ? heading : null;
+}
+
 export type LlmResponse = {
   /** Any plain text the model produced alongside (or instead of) a tool
    * call — e.g. its reasoning for NOT calling a tool this turn. */
