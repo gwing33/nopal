@@ -12,8 +12,9 @@
  * this does anything at all. When it's "skip", no files are examined, no
  * model is ever called.
  *
- * Walks every file under a project's `syncs/` tree (any connector folder,
- * not just `Daily Logs` — see the `vault` skill's Sync types section) and
+ * Walks every ATTACHMENT under a project's `syncs/` tree (any connector
+ * folder, not just `Daily Logs` — see the `vault` skill's Sync types
+ * section; never the synced Cards themselves, see `collectSyncCandidates`) and
  * asks an LLM, grounded in `KNOWLEDGE.md`'s own instructions, to pull out
  * concrete, extractable METADATA about it — names, dates, decisions — into
  * a sidecar `<name>.knowledge.md`. Deliberately NOT a narrative summary of
@@ -56,6 +57,7 @@ import {
   type VaultFolder,
 } from "./vault.server";
 import { downloadFileBytes } from "./file.server";
+import { parseSyncedCardFileName } from "./dailyLogSync.server";
 import {
   classifyStageSkill,
   getProjectStageSkill,
@@ -150,13 +152,26 @@ function buildKnowledgeContent(input: { sourceFileId: string; hash: string; body
 
 /** Walks a project's `syncs/` tree recursively, collecting every real
  * file — skipping `_knowledge` folders entirely (see this module's own
- * header on why). */
+ * header on why), and skipping the synced daily-log CARDS themselves.
+ *
+ * ATTACHMENTS ONLY, by design. A Card is a person's own words, and
+ * `sync-graph` reads it verbatim one stage later (ADR-001, ADR-012); a
+ * model's "extracted metadata" about it is a second reading of the same
+ * text that sync-graph does not need, costs a call per Card per change,
+ * and is exactly the summary-of-a-summary shape ADR-006 and ADR-010 were
+ * written against. What this stage exists for is the file a Card cannot
+ * speak for: a photo, a video frame, a text attachment -- the thing that
+ * has no path into the graph until something describes it. A file whose
+ * name matches neither shape (a future non-daily-log sync source) is
+ * still a candidate: it is not a Card. */
 async function collectSyncCandidates(
   humanId: string,
   folderId: string,
 ): Promise<SyncKnowledgeCandidate[]> {
   const { folders, files } = await listFolderChildren(humanId, folderId);
-  const out: SyncKnowledgeCandidate[] = files.map((f) => ({ fileId: f._id, name: f.name }));
+  const out: SyncKnowledgeCandidate[] = files
+    .filter((f) => !parseSyncedCardFileName(f.name))
+    .map((f) => ({ fileId: f._id, name: f.name }));
   for (const sub of folders) {
     if (sub.name === KNOWLEDGE_FOLDER_NAME) continue;
     out.push(...(await collectSyncCandidates(humanId, sub._id)));

@@ -35,8 +35,10 @@
  * (via `graphStructure.server.ts`'s `markGraphStructureApplied`) once an
  * update completes cleanly. An unchanged graph is a total no-op.
  *
- * THE "NOTES ON THIS VIEW" SECTION IS NEVER TOUCHED BY THE MODEL — see
- * `PROTECTED_HEADING` below. Reading unstamped reader comments and
+ * A "NOTES ON THIS VIEW" SECTION, WHERE ONE STILL EXISTS, IS NEVER TOUCHED
+ * BY THE MODEL — see `PROTECTED_HEADING` below. It is no longer created
+ * (annotation is its own feature now; see `extractReaderComments`), but
+ * every README that has one keeps it. Reading unstamped reader comments and
  * stamping them ` → read <date>` is deterministic, pre/post-processing
  * code, never a tool call the model could skip, mangle, or reorder. This
  * is the one section of the README more trusted than the model's own
@@ -182,35 +184,36 @@ function isMeaningfulCommentLine(line: string): boolean {
 }
 
 /**
- * Ensures the README has a "Notes on this view" section (creating it with
- * the standard placeholder text if entirely missing — see this file's own
- * module doc for why the MODEL never gets to create this section itself),
- * and returns (a) every unstamped comment line's text, for the model's
- * prompt, and (b) a function that stamps exactly those lines in place —
- * called only after a clean run, never before.
+ * Reads a "Notes on this view" section IF the README has one, and returns
+ * (a) every unstamped comment line's text, for the model's prompt, and
+ * (b) a function that stamps exactly those lines in place — called only
+ * after a clean run, never before.
+ *
+ * NO LONGER CREATED. This section was the README's own comment box until
+ * annotation became its own feature; the skill's shape no longer includes
+ * it and a fresh README does not get one. A README that already carries
+ * one keeps every protection it had: the model can never touch it, its
+ * comments are still read and stamped, and it still sorts last. Nothing
+ * a person wrote there is ever removed by code.
  */
-function extractReaderComments(sections: ReadmeSection[]): {
+export function extractReaderComments(sections: ReadmeSection[]): {
   sections: ReadmeSection[];
   unstamped: string[];
   stampAppliedDate: (date: string) => ReadmeSection[];
 } {
   const key = PROTECTED_HEADING;
-  const existingIndex = sections.findIndex((s) => s.heading.toLowerCase() === key);
-  const notesSection: ReadmeSection = existingIndex === -1
-    ? { heading: "Notes on this view", content: NOTES_SECTION_PLACEHOLDER }
-    : sections[existingIndex];
+  const notesSection = sections.find((s) => s.heading.toLowerCase() === key);
+  if (!notesSection) return { sections, unstamped: [], stampAppliedDate: () => sections };
 
   const lines = notesSection.content.split("\n");
   const unstamped = lines.filter((l) => isMeaningfulCommentLine(l) && !isStamped(l));
 
-  const withNotes = existingIndex === -1 ? [...sections, notesSection] : sections;
-
   return {
-    sections: withNotes,
+    sections,
     unstamped,
     stampAppliedDate: (date: string) => {
       const stampedLines = lines.map((l) => (isMeaningfulCommentLine(l) && !isStamped(l) ? `${l}${stampSuffix(date)}` : l));
-      return withNotes.map((s) =>
+      return sections.map((s) =>
         s.heading.toLowerCase() === key ? { heading: s.heading, content: stampedLines.join("\n") } : s,
       );
     },
@@ -328,6 +331,13 @@ function normalizeIntroHeading(heading: string): string {
  * always present and code-owned, so it says nothing about whether the
  * model has written anything yet.
  */
+/** The first `## ` line inside a section's content, or null. A section's
+ * content must hold only its body -- see the guard in `update_section`. */
+export function contentCarriesHeading(content: string): string | null {
+  const line = content.split("\n").find((l) => /^##\s/.test(l.trim()));
+  return line ? line.trim() : null;
+}
+
 export function introShouldWait(sections: ReadmeSection[], headingKey: string): boolean {
   if (headingKey !== "") return false;
   return !sections.some(
@@ -410,6 +420,25 @@ function createReadmeExecutors(input: {
       const heading = normalizeIntroHeading(toolInput.heading.trim());
       const content = toolInput.content;
       const key = heading.toLowerCase();
+
+      // A section holds its BODY, never headings of its own. The README is
+      // split into sections on `## ` lines, so a content that carries one
+      // becomes two sections on the next read: an empty one under the
+      // heading the call named and a second one under the heading the
+      // content carried. A real run pasted the skill's whole shape
+      // skeleton as the intro and the README came back with every heading
+      // twice, most of them empty. Refused with the reason, so the model
+      // writes the body and the code keeps the shape (ADR-005's spirit:
+      // structure is computed, never authored). `###` is fine; it is how
+      // a section subdivides. Turned back like the intro guard, not
+      // counted as a refusal: the model gets the reason and writes the
+      // body on its next turn, and a corrected slip must not leave the
+      // run unapplied.
+      const h2 = contentCarriesHeading(content);
+      if (h2) {
+        log(`graph-project-view -- turned back update_section "${heading || "(intro)"}": its content carries a "## " heading line (${h2.trim()}).`);
+        return `Error: refused -- a section's content must not contain "## " heading lines (found: ${h2.trim()}). Each section is written with its own update_section call and holds only its body; "###" subheadings are fine. Send this section's body alone.`;
+      }
 
       if (key === PROTECTED_HEADING) {
         refuse('refused update_section on "Notes on this view" (protected; left unchanged)');
@@ -1424,16 +1453,16 @@ export async function runGraphProjectView(
     stripIncompleteBanner(splitFrontmatter(rawReadmeContent).body),
   );
 
-  // Ensure "Notes on this view" exists and pull out anything unstamped —
-  // BEFORE the model ever sees the README, so its own prompt already
-  // reflects the guaranteed-present section (see this file's own module
-  // doc: the model never creates or edits this section itself).
+  // Pull out any unstamped reader comments from a "Notes on this view"
+  // section, if the README still has one -- BEFORE the model ever sees
+  // the README (see `extractReaderComments`: the section is no longer
+  // created, only protected where it exists).
   const initialSections = splitReadmeSections(splitFrontmatter(initialContent).body);
   const { sections: sectionsWithNotes, unstamped, stampAppliedDate } = extractReaderComments(initialSections);
   const contentWithNotes = withReadmeBody(initialContent, joinReadmeSections(reorderSections(sectionsWithNotes)));
 
-  // If the README didn't already have a real file (or was missing
-  // "Notes on this view"), persist that placeholder shape now, BEFORE
+  // If the README didn't already have a real file (or its sections
+  // needed re-sorting), persist that shape now, BEFORE
   // constructing the executors below — they need the REAL file id this
   // produces (a brand new README) to edit the SAME file the model's
   // first tool call touches, rather than starting from `undefined` and
