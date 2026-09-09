@@ -289,10 +289,14 @@ personal/syncs/Daily Logs (real Cards, one per project per day)
     list, which would otherwise leave order however sections happened to
     get created over a project's life. A deterministic reorder pass runs
     after every clean finish (whether or not the model made any edits
-    this run), re-sorting the six canonical headings
-    (`PROJECT_VIEW.md`'s own prescribed shape: What's carrying weight →
-    Where we pull apart → Get shit done → Settled → Open questions →
-    Notes on this view) into place.
+    this run), re-sorting the known headings into the shape the
+    project's own `PROJECT_VIEW.md` declares -- READ OFF THE SKILL by
+    `parseSectionShape` (the fenced block under `# The shape`, and only
+    that block) since 2026-09-09, so changing the README's shape is
+    editing one file and a project may carry its own. A skill whose
+    shape cannot be read falls back to the built-in list and reports it
+    through `incomplete`. "Notes on this view" is always last where it
+    exists, whatever the skill says; `PROTECTED_HEADING` stays in code.
   - **A full project reset** now means: reset `graph-structure.md` (its
     `asOfGraphHash` disappears with the file), which naturally makes
     `graph-project-view`'s own `appliedByProjectView` marker meaningless
@@ -1204,8 +1208,8 @@ skill was born from:
      context ("treat this as ground truth"), not something it edits.
    - **Section order is enforced by a deterministic `reorderSections`
      pass**, run unconditionally on a clean finish (not just when a
-     section was actually edited) — re-sorts the six canonical headings
-     from `PROJECT_VIEW.md`'s prescribed shape into place; anything else
+     section was actually edited) — re-sorts the known headings into the
+     shape read off `PROJECT_VIEW.md` (`resolveSectionOrder`); anything else
      (a heading the model invented despite the fixed shape) lands just
      before "Notes on this view" rather than being silently dropped.
    - **A real bug found and fixed by direct testing**: the executors were
