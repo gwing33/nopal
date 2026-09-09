@@ -1054,10 +1054,9 @@ export type SyncGraphDayResult = {
    * unchanged day. One half of 1.7's cost-per-node denominator: the run
    * timeline already implied this number and nothing stored it. */
   nodes: number;
-  /** How many passes this day took. A day that needed more than one is a
-   * day the old single-conversation shape would have been at risk of
-   * discarding, so this is worth watching directly. */
-  passes: number;
+  // `passes` used to live here too, "worth watching directly" -- and was
+  // read by nothing (ADR-016). It is on the day's own timeline event,
+  // where the run page shows it.
 };
 
 export type SyncGraphResult =
@@ -1390,7 +1389,7 @@ export async function runSyncGraph(
       log(`sync-graph: ${graphLogFileName(date)} has front matter this run could not read; re-extracting the day and rewriting it.`);
     }
     if (existing && existingHash.hash === newHash) {
-      days.push({ date, changed: false, empty: false, nodes: 0, passes: 0 });
+      days.push({ date, changed: false, empty: false, nodes: 0 });
       continue;
     }
 
@@ -1539,7 +1538,7 @@ export async function runSyncGraph(
         log(`sync-graph: ${date} — nothing worth capturing.`);
         if (existing) await deleteFileRef(existing._id);
         headingsByDate.delete(date);
-        days.push({ date, changed: true, empty: true, nodes: 0, passes });
+        days.push({ date, changed: true, empty: true, nodes: 0 });
         continue;
       }
 
@@ -1592,7 +1591,7 @@ export async function runSyncGraph(
       log(
         `sync-graph: wrote ${graphLogFileName(date)} (${nodeBlocks.length} node(s) over ${passes} pass(es))${shortfall ? " — INCOMPLETE" : ""}.`,
       );
-      days.push({ date, changed: true, empty: false, nodes: nodeBlocks.length, passes });
+      days.push({ date, changed: true, empty: false, nodes: nodeBlocks.length });
     } catch (err) {
       // A Stop is not a failed day. `throwIfGraphLogCancelled` runs inside
       // this try (the per-turn checkpoint in the day loop), so without

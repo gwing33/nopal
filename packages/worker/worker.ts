@@ -136,21 +136,33 @@ async function runGraphLogJob(
       if (!result.ok) throw new Error(result.error);
       return result;
     }
+    // Each reset's own summary (what it deleted, what it cleared) used to
+    // be a return value read only by the CLI; the Vault UI read the job
+    // id and nothing else. Recorded onto the run's timeline so the run
+    // page says what a reset did (ADR-016).
     case "reset-project-view": {
-      return await perf.time("reset-project-view", "fn", "resetProjectView", null, () =>
+      const result = await perf.time("reset-project-view", "fn", "resetProjectView", null, () =>
         resetProjectView(projectFolder),
       );
+      await perf.event({ process: "reset-project-view", type: "fn", name: "summary", params: { ...result }, durationMs: 0 });
+      return result;
     }
     case "reset-graph": {
-      return await perf.time("reset-graph", "fn", "resetGraph", null, () => resetGraph(projectFolder));
+      const result = await perf.time("reset-graph", "fn", "resetGraph", null, () => resetGraph(projectFolder));
+      await perf.event({ process: "reset-graph", type: "fn", name: "summary", params: { ...result }, durationMs: 0 });
+      return result;
     }
     case "reset-knowledge": {
-      return await perf.time("reset-knowledge", "fn", "resetKnowledge", null, () =>
+      const result = await perf.time("reset-knowledge", "fn", "resetKnowledge", null, () =>
         resetKnowledge(projectFolder),
       );
+      await perf.event({ process: "reset-knowledge", type: "fn", name: "summary", params: { ...result }, durationMs: 0 });
+      return result;
     }
     case "reset": {
-      return await perf.time("reset", "fn", "resetProjectAll", null, () => resetProjectAll(projectFolder));
+      const result = await perf.time("reset", "fn", "resetProjectAll", null, () => resetProjectAll(projectFolder));
+      await perf.event({ process: "reset", type: "fn", name: "summary", params: { ...result }, durationMs: 0 });
+      return result;
     }
     default:
       throw new Error(`Unknown GraphLog job name: ${job.name}`);
