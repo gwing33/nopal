@@ -2532,12 +2532,21 @@ export default function VaultV2Page() {
       });
       const results = (data?.results ?? []) as { file: string; outcome: string }[];
       const changed = results.filter((r) => r.outcome === "reseeded");
+      // "missing" is the one outcome that matters most and used to be
+      // filtered out of this message entirely: a project whose skill file
+      // was never seeded is a project whose stage is a permanent silent
+      // no-op, and the alert called it "already on the current defaults".
+      // Same for an empty result, which means no Skills folder at all.
+      const missing = results.filter((r) => r.outcome === "missing");
       if (data) {
-        window.alert(
-          changed.length > 0
-            ? `Reseeded: ${changed.map((r) => r.file).join(", ")}`
-            : "Already on the current defaults -- nothing to reseed.",
-        );
+        const lines: string[] = [];
+        if (results.length === 0) lines.push("This project has no Skills folder, so there was nothing to reseed.");
+        if (changed.length > 0) lines.push(`Reseeded: ${changed.map((r) => r.file).join(", ")}.`);
+        if (missing.length > 0) {
+          lines.push(`Missing and not created: ${missing.map((r) => r.file).join(", ")}. A stage with no skill file does nothing at all.`);
+        }
+        if (lines.length === 0) lines.push("Already on the current defaults. Nothing to reseed.");
+        window.alert(lines.join("\n"));
       }
     } finally {
       setGraphLogBusy(null);

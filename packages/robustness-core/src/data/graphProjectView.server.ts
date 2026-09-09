@@ -1233,11 +1233,13 @@ export function coverageFromJobResult(result: unknown): {
  * warning is the one that takes it down and a fixed README cannot keep
  * wearing a stale one.
  *
- * Known gap, stated rather than discovered: a single-stage job run
- * straight off the CLI or the API (`nopal graphlog graph-project-view`)
- * does not go through the pipeline and so neither raises nor clears this.
- * A stale banner is the safe direction (it over-warns rather than
- * under-warns), but it is a gap.
+ * A single-stage job (`nopal graphlog graph-project-view`, or the API
+ * route) does not go through the pipeline, so the worker calls this
+ * itself from the stage's own reasons after such a job. That used to be
+ * described here as "a stale banner is the safe direction", which was
+ * backwards: the stage strips the banner BEFORE the model runs, so with
+ * nobody restoring it the failure direction was a silently cleared
+ * warning, never a stale one.
  */
 export async function syncReadmeIncompleteBanner(
   projectFolder: VaultFolder,

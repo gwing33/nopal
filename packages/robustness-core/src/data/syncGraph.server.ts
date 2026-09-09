@@ -190,6 +190,7 @@ import {
 } from "./vault.server";
 import { getHumansById } from "./humans.server";
 import {
+  classifyStageSkill,
   ensureProjectGraphFolder,
   findProjectGraphFolder,
   getProjectStageSkill,
@@ -202,7 +203,7 @@ import { KNOWLEDGE_FOLDER_NAME } from "./syncKnowledge.server";
 import { AnthropicProvider, isGraphLogAgentConfigured } from "./anthropicProvider.server";
 import { classifyGraphLogError, recordGraphLogUsage } from "./graphLogMetrics.server";
 import { noopGraphLogRunRecorder, type GraphLogPerfRecorder } from "./graphLogPerf.server";
-import { throwIfGraphLogCancelled } from "./graphLogQueue.server";
+import { GraphLogCancelledError, throwIfGraphLogCancelled } from "./graphLogQueue.server";
 import { planTurnToolCalls } from "./llmProvider";
 import type { LlmMessage, LlmProvider, LlmUsage, ToolDefinition } from "./llmProvider";
 
@@ -1050,7 +1051,15 @@ export async function runSyncGraph(
 
   const skill = await getProjectStageSkill(projectFolder, "GRAPH.md");
   if (isSkipInstruction(skill)) {
-    return { ok: true, skipped: true, days: [], nodesWritten: 0, incomplete: [] };
+    // Same split as the other three agentic stages: an explicit `skip`
+    // is a decision and stays quiet, a never-seeded file is a broken
+    // project and says so. This stage was the one left out when the
+    // others were fixed, and it is the one that produces the graph at
+    // all -- a project missing GRAPH.md was a silent, instant, green run.
+    const reason = "skills/GRAPH.md is missing or empty, so this stage had no instructions and wrote no graph";
+    const missing = classifyStageSkill(skill) === "missing";
+    if (missing) log(`sync-graph: ${reason}.`);
+    return { ok: true, skipped: true, days: [], nodesWritten: 0, incomplete: missing ? [reason] : [] };
   }
   if (!isGraphLogAgentConfigured()) {
     return { ok: false, error: "GraphLog isn't configured (missing ANTHROPIC_API_KEY)" };
@@ -1452,7 +1461,18 @@ export async function runSyncGraph(
         content_type: "text/markdown",
         folder_id: graphFolder._id,
       });
-      if (!created) continue;
+      if (!created) {
+        // Up to MAX_PASSES_PER_DAY passes of paid model output were just
+        // rendered into `content`; losing the write is a real loss and
+        // used to be a bare `continue` -- no log line, no `incomplete`,
+        // no `days` entry, so the day was invisible in the result AND in
+        // the report. Every neighbouring failure branch reports; this one
+        // now does too. The hash was not stamped, so the next run retries.
+        const reason = `${date}: the graph-log file could not be created after ${nodeBlocks.length} node(s) were captured`;
+        incomplete.push(reason);
+        log(`sync-graph: ${reason}; will retry next run.`);
+        continue;
+      }
 
       headingsByDate.set(date, extractHeadings(content));
       log(
@@ -1460,7 +1480,26 @@ export async function runSyncGraph(
       );
       days.push({ date, changed: true, empty: false, nodes: nodeBlocks.length, passes });
     } catch (err) {
-      log(`sync-graph: ${date} couldn't be processed (${err instanceof Error ? err.message : "unknown error"}).`);
+      // A Stop is not a failed day. `throwIfGraphLogCancelled` runs inside
+      // this try (the per-turn checkpoint in the day loop), so without
+      // this every remaining day was caught here, logged as "couldn't be
+      // processed (Cancelled by an admin.)", and the stage went on to the
+      // next day only to be cancelled again. Let it reach the worker,
+      // which records a cancelled run as exactly that.
+      if (err instanceof GraphLogCancelledError) throw err;
+
+      const message = err instanceof Error ? err.message : "unknown error";
+      log(`sync-graph: ${date} couldn't be processed (${message}).`);
+      // This used to be the only error path in any agentic stage that
+      // reported NOTHING: not pushed to `incomplete`, not pushed to
+      // `days`. A rate-limited or overloaded day simply vanished, the
+      // run badged OK, and the README's incomplete banner was CLEARED --
+      // the exact failure `incomplete`'s own doc above says it exists to
+      // prevent. The hash was never stamped, so the next run retries; the
+      // report now says so, same as graph-structure and graph-project-view
+      // do on their own error paths. ADR-016: a log line is never the
+      // only place a finding lands.
+      incomplete.push(`${date} stopped on an error: ${message}`);
       const durationMs = Date.now() - callStart;
       await recordGraphLogUsage({
         humanId: actingHumanId,

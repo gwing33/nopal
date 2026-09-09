@@ -416,7 +416,19 @@ export async function runSyncKnowledge(
             folder_id: knowledgeFolder._id,
           })
         )?._id;
-    if (!knowledgeFileId) continue;
+    if (!knowledgeFileId) {
+      // The vision/extraction call was already made and already recorded
+      // as a success in usage metrics; the write is what failed. This was
+      // a bare `continue`: no log, not in `unsupported`, not in
+      // `incomplete`, so the dashboard showed a paid, successful
+      // description that produced no file. It is exactly what
+      // `unsupported` is for -- a file that reached this stage and has no
+      // path into the graph -- so it goes there and rides the existing
+      // `incomplete` line below.
+      log(`sync-knowledge: could not write "${name}" for "${source.name}" after describing it; will retry next run.`);
+      unsupported.push({ fileId: source._id, name: source.name });
+      continue;
+    }
 
     log(`sync-knowledge: wrote "${name}" for "${source.name}".`);
     entries.push({ fileId: source._id, name: source.name, knowledgeFileId, generated: true });
