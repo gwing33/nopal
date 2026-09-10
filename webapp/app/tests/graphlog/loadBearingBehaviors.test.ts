@@ -63,7 +63,7 @@ import {
   withIncompleteBanner,
   type ReadmeSection,
 } from "robustness-core/data/project.types";
-import { completedToolCalls, cutOffHeading, planTurnToolCalls } from "robustness-core/data/llmProvider";
+import { completedToolCalls, cutOffHeading, cutOffSourceIndex, planTurnToolCalls } from "robustness-core/data/llmProvider";
 import {
   formatSeconds,
   frameTimestamps,
@@ -563,6 +563,31 @@ describe("ADR-013: a pass ending is classified, not collapsed", () => {
     expect(stuck.shortfall).not.toBeNull();
   });
 
+  it("a cut-off pass that still captured a node is PRODUCTIVE, not stuck", () => {
+    // The salvage case: a batched turn overran the limit, one complete
+    // call was executed before the pass ended. The day keeps going and
+    // the next pass picks up the rest; nothing here is a shortfall.
+    expect(classifyPassEnding({ ...base, added: 1, truncated: true, hitMaxTurns: false, cutOffSource: 2 }))
+      .toEqual({ stop: false, shortfall: null });
+  });
+
+  it("a stuck pass says whether the model was mid-node or never started one", () => {
+    // Two different next moves hide behind "cut off": mid-node is a size
+    // problem, never-started is a prompt problem. The message has to
+    // separate them or the person reading the run page cannot.
+    const midNode = classifyPassEnding({ ...base, added: 0, truncated: true, hitMaxTurns: false, cutOffSource: 3 });
+    expect(midNode.shortfall).toBe(
+      "a pass was cut off by the model's own output limit while writing a node for Source 3, before capturing anything",
+    );
+    const neverStarted = classifyPassEnding({ ...base, added: 0, truncated: true, hitMaxTurns: false, cutOffSource: null });
+    expect(neverStarted.shortfall).toBe(
+      "a pass was cut off by the model's own output limit before it started any node",
+    );
+    // Callers that predate the field get the never-started wording, not a crash.
+    expect(classifyPassEnding({ ...base, added: 0, truncated: true, hitMaxTurns: false }).shortfall)
+      .toContain("before it started any node");
+  });
+
   it("reports the cap as a shortfall only when the last pass was still productive", () => {
     const atCapProductive = classifyPassEnding({ ...base, passesCompleted: 8, added: 5, truncated: false, hitMaxTurns: false });
     expect(atCapProductive).toEqual({ stop: true, shortfall: "still finding new nodes after 8 passes" });
@@ -687,6 +712,22 @@ describe("ADR-013: a truncated response keeps the calls it finished", () => {
   it("salvages nothing from a lone truncated call, rather than guessing", () => {
     expect(completedToolCalls([{ name: "update_section" }], "max_tokens")).toEqual([]);
     expect(completedToolCalls([], "max_tokens")).toEqual([]);
+  });
+
+  it("sync-graph salvages ONE node from a batched, cut-off turn", () => {
+    // The real 2026-08-26 shape: several `add_node` calls in one turn,
+    // the last one cut mid-JSON. `add_node` is the stage's only tool and
+    // every call is a write, so the two rules leave exactly one to run.
+    // One is enough: `classifyPassEnding` sees a productive pass and the
+    // next pass captures the rest. Before this, the whole turn was
+    // discarded and the day reported "captured nothing".
+    const calls = [
+      { name: "add_node", input: { sourceIndex: 0, blocks: [] } },
+      { name: "add_node", input: { sourceIndex: 1, blocks: [] } },
+      { name: "add_node", input: { sourceIndex: 2 } },
+    ];
+    const planned = planTurnToolCalls(completedToolCalls(calls, "max_tokens"), () => true);
+    expect(planned.filter((p) => p.execute).map((p) => p.call.input.sourceIndex)).toEqual([0]);
   });
 
   it("still bounds the salvaged calls to one write, same as any other turn", () => {
@@ -951,6 +992,23 @@ describe("ADR-013: a view pass ending is classified on two measures", () => {
     const atCapCutOff = classifyViewPassEnding({ ...base, writes: 1, truncated: true, hitMaxTurns: false, targeted: true, passesCompleted: 3 });
     expect(atCapCutOff.stop).toBe(true);
     expect(atCapCutOff.shortfall).toContain("no passes left");
+  });
+});
+
+describe("a cut-off add_node names its source, read before the call is dropped", () => {
+  it("reads sourceIndex off a partial call whose blocks were cut", () => {
+    expect(cutOffSourceIndex([{ input: { sourceIndex: 3, blocks: [{ kind: "paragraph" }] } }], "max_tokens")).toBe(3);
+    expect(cutOffSourceIndex([{ input: { sourceIndex: 0 } }], "max_tokens")).toBe(0);
+  });
+
+  it("returns null when the cut landed before the index, or there was no call, or the stop was clean", () => {
+    expect(cutOffSourceIndex([{ input: {} }], "max_tokens")).toBeNull();
+    expect(cutOffSourceIndex([], "max_tokens")).toBeNull();
+    expect(cutOffSourceIndex([{ input: { sourceIndex: 1, blocks: [] } }], "tool_use")).toBeNull();
+  });
+
+  it("names the LAST call, the only one that can be partial", () => {
+    expect(cutOffSourceIndex([{ input: { sourceIndex: 0, blocks: [] } }, { input: { sourceIndex: 4 } }], "max_tokens")).toBe(4);
   });
 });
 

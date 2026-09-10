@@ -83,6 +83,17 @@
  * suspenders, since a clearer prompt still reduces how often the reject-
  * and-retry path even needs to fire.
  *
+ * That fix had a second half, and it shipped to graph-project-view first:
+ * the reject-and-retry above only runs on a response that came back
+ * CLEAN. A batch big enough to hit the ceiling arrives as `max_tokens`,
+ * and this loop used to discard that whole response before the pruning
+ * ever ran -- complete `add_node` calls and all. A real day (2026-08-26,
+ * Crouch Casita) was recorded as "captured nothing" that way, with the
+ * "retry next run" being the identical pass over identical sources. Now
+ * a cut-off turn executes its first COMPLETE call (`completedToolCalls`)
+ * and ends the pass; one node is a productive pass, so the pass loop
+ * carries on and the next pass captures the rest.
+ *
  * Each node gets a plain, predictable `### Node <N>` heading (an
  * incrementing counter per day's file, never an LLM-generated title —
  * see `GRAPH.md`) and a verbose `:ref{...}` citation
@@ -207,7 +218,7 @@ import { AnthropicProvider, isGraphLogAgentConfigured } from "./anthropicProvide
 import { classifyGraphLogError, recordGraphLogUsage } from "./graphLogMetrics.server";
 import { noopGraphLogRunRecorder, type GraphLogPerfRecorder } from "./graphLogPerf.server";
 import { GraphLogCancelledError, throwIfGraphLogCancelled } from "./graphLogQueue.server";
-import { planTurnToolCalls } from "./llmProvider";
+import { completedToolCalls, cutOffSourceIndex, planTurnToolCalls } from "./llmProvider";
 import type { LlmMessage, LlmProvider, LlmUsage, ToolDefinition } from "./llmProvider";
 
 const GRAPH_LOG_PREFIX = "graph-log-";
@@ -858,6 +869,11 @@ export function classifyPassEnding(input: {
   passesCompleted: number;
   maxPasses: number;
   maxTurns: number;
+  /** When `truncated`: the source the dropped `add_node` call was writing
+   * a node for (`cutOffSourceIndex`), or null when the cut landed before
+   * any node was started. Only read in the STUCK case; a productive pass
+   * that also truncated keeps going and the turn event carries the detail. */
+  cutOffSource?: number | null;
 }): { stop: boolean; shortfall: string | null } {
   if (input.added > 0) {
     // Productive. Only the cap can stop us here, and if it does, the cap
@@ -868,9 +884,16 @@ export function classifyPassEnding(input: {
     return { stop: false, shortfall: null };
   }
   if (input.truncated) {
+    // Two different next moves hide behind "cut off": mid-node means the
+    // model batched or bloated a node (a size problem); never started
+    // means it wrote prose instead of calling the tool (a prompt problem).
+    const doing =
+      typeof input.cutOffSource === "number"
+        ? `while writing a node for Source ${input.cutOffSource}, before capturing anything`
+        : "before it started any node";
     return {
       stop: true,
-      shortfall: "a pass was cut off by the model's own output limit before capturing anything",
+      shortfall: `a pass was cut off by the model's own output limit ${doing}`,
     };
   }
   if (input.hitMaxTurns) {
@@ -892,12 +915,20 @@ async function runSyncGraphDayLoop(
   date: string,
   projectFolderId: string,
   pass: number,
-): Promise<{ usage: LlmUsage; model: string | null; truncated: boolean; hitMaxTurns: boolean }> {
+): Promise<{
+  usage: LlmUsage;
+  model: string | null;
+  truncated: boolean;
+  hitMaxTurns: boolean;
+  /** See `classifyPassEnding`'s `cutOffSource`. */
+  cutOffSource: number | null;
+}> {
   const messages: LlmMessage[] = [{ role: "user", content: userPrompt }];
   const usage: LlmUsage = { inputTokens: 0, outputTokens: 0 };
   let model: string | null = null;
   let truncated = false;
   let hitMaxTurns = false;
+  let cutOffSource: number | null = null;
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     // Stop checkpoint (see `graphLogQueue.server.ts`'s own "Cooperative
@@ -954,7 +985,29 @@ async function runSyncGraphDayLoop(
     });
 
     if (response.stopReason === "max_tokens") {
+      // The other half of the one-call-per-turn fix below. That fix
+      // prunes a batched response AFTER it comes back clean; a batch big
+      // enough to hit the output limit never comes back clean, so it
+      // never reached the pruning and the whole turn was discarded --
+      // complete `add_node` calls included. On a real day that meant
+      // "captured nothing", and the next run replays the identical pass.
+      // A cut-off response is not empty: every tool call before the last
+      // is fully generated (`completedToolCalls`), so execute the first
+      // of those (still one write per turn) and stop this pass. One node
+      // is enough for `classifyPassEnding` to see a productive pass, and
+      // the next pass -- a fresh conversation that lists what is already
+      // captured -- picks up the rest. Same shape as graph-project-view;
+      // the pass loop is this stage's recovery mechanism, not a retry.
       truncated = true;
+      // Read off the dropped call BEFORE `completedToolCalls` drops it.
+      cutOffSource = cutOffSourceIndex(response.toolCalls, response.stopReason);
+      for (const { call, execute } of planTurnToolCalls(
+        completedToolCalls(response.toolCalls, response.stopReason),
+        () => true,
+      )) {
+        if (!execute) continue;
+        await executors[call.name]?.(call.input);
+      }
       break;
     }
 
@@ -992,7 +1045,7 @@ async function runSyncGraphDayLoop(
     if (turn === MAX_TURNS - 1) hitMaxTurns = true;
   }
 
-  return { usage, model, truncated, hitMaxTurns };
+  return { usage, model, truncated, hitMaxTurns, cutOffSource };
 }
 
 function buildSystemPrompt(skillContent: string, graphStructureBody: string | null): string {
@@ -1454,6 +1507,10 @@ export async function runSyncGraph(
       let dayModel: string | null = null;
       let shortfall: string | null = null;
       let passes = 0;
+      // A pass ends at its first cut-off turn, so this counts passes that
+      // were cut off. After a productive-but-truncated pass the day can
+      // still finish clean; this is how the day row says it happened.
+      let truncatedTurns = 0;
 
       while (passes < MAX_PASSES_PER_DAY) {
         const before = getNodeBlocks().length;
@@ -1464,7 +1521,7 @@ export async function runSyncGraph(
           regenerating: !!existing || [...structureIds.keys()].some((id) => id.startsWith(`${date}#`)),
           alreadyCaptured: getCapturedSummaries(),
         });
-        const { usage, model, truncated, hitMaxTurns } = await runSyncGraphDayLoop(
+        const { usage, model, truncated, hitMaxTurns, cutOffSource } = await runSyncGraphDayLoop(
           textLlm,
           // A day the structure already lists gets the structure without
           // its own previous nodes (see `stripDayFromStructure`) -- whether
@@ -1489,6 +1546,7 @@ export async function runSyncGraph(
         dayUsage.cacheReadTokens = (dayUsage.cacheReadTokens ?? 0) + (usage.cacheReadTokens ?? 0);
         dayUsage.cacheWriteTokens = (dayUsage.cacheWriteTokens ?? 0) + (usage.cacheWriteTokens ?? 0);
         dayModel = model ?? dayModel;
+        if (truncated) truncatedTurns++;
         const ending = classifyPassEnding({
           added: getNodeBlocks().length - before,
           truncated,
@@ -1496,6 +1554,7 @@ export async function runSyncGraph(
           passesCompleted: passes,
           maxPasses: MAX_PASSES_PER_DAY,
           maxTurns: MAX_TURNS,
+          cutOffSource,
         });
         shortfall = ending.shortfall;
         if (ending.stop) break;
@@ -1517,7 +1576,7 @@ export async function runSyncGraph(
         process: "sync-graph",
         type: "llm",
         name: "day",
-        params: { date, passes, nodes: getNodeBlocks().length, shortfall, droppedLinks: getDroppedLinks() },
+        params: { date, passes, truncatedTurns, nodes: getNodeBlocks().length, shortfall, droppedLinks: getDroppedLinks() },
         durationMs,
         outcome: shortfall ? "error" : "ok",
       });
