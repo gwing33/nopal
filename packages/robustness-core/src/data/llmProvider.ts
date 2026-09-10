@@ -146,6 +146,29 @@ export function cutOffHeading<T extends { input: Record<string, unknown> }>(
   return typeof heading === "string" ? heading : null;
 }
 
+/**
+ * Which source the `add_node` call `completedToolCalls` dropped was
+ * writing a node for, when that can be known. `sync-graph`'s twin of
+ * `cutOffHeading`: `sourceIndex` is the first key in `add_node`'s schema,
+ * so it is usually intact even when `blocks` is the field that was cut.
+ * A separate helper rather than a keyed `cutOffHeading` because the two
+ * schemas name different first fields and the read is three lines.
+ *
+ * `null` on any other stop reason, when there was no call at all, or
+ * when the cut landed before the index was written. The caller says
+ * "before it started any node" then, never guesses.
+ */
+export function cutOffSourceIndex<T extends { input: Record<string, unknown> }>(
+  calls: T[],
+  stopReason: StopReason,
+): number | null {
+  if (stopReason !== "max_tokens") return null;
+  const last = calls[calls.length - 1];
+  if (!last) return null;
+  const index = last.input?.sourceIndex;
+  return typeof index === "number" && Number.isInteger(index) ? index : null;
+}
+
 export type LlmResponse = {
   /** Any plain text the model produced alongside (or instead of) a tool
    * call — e.g. its reasoning for NOT calling a tool this turn. */
