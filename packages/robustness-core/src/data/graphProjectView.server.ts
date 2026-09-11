@@ -1302,6 +1302,40 @@ export function describeUncited(t: UncitedThread): string {
 }
 
 /**
+ * Every node in every `graph-log-*.md`, plus the accounting graph-structure
+ * does on its own read of the graph (ADR-016): a day with no content and a
+ * node block with no `:ref` line are both nodes the README can never cite,
+ * and both used to vanish here without a line anywhere.
+ *
+ * Shared by the stage's main path and its up-to-date path, which measures
+ * coverage against the README it is leaving alone. One loader so the two
+ * can never disagree about which nodes exist.
+ */
+async function loadGraphNodes(
+  files: { _id: string; name: string }[],
+): Promise<{ allNodes: GraphLogNode[]; issues: string[] }> {
+  const graphLogListings = files
+    .map((f) => ({ listing: f, date: GRAPH_LOG_RE.exec(f.name)?.[1] }))
+    .filter((x): x is { listing: (typeof files)[number]; date: string } => !!x.date);
+  const issues: string[] = [];
+  const allNodes: GraphLogNode[] = [];
+  const parseDiag = { malformed: 0 };
+  for (const { listing, date } of graphLogListings) {
+    const file = await getFileRefById(listing._id);
+    if (!file?.content) {
+      issues.push(`${listing.name} exists but has no content, so its nodes cannot reach the README`);
+      continue;
+    }
+    const before = parseDiag.malformed;
+    allNodes.push(...parseGraphLogNodes(date, splitFrontmatter(file.content).body, parseDiag));
+    if (parseDiag.malformed > before) {
+      issues.push(`${listing.name}: ${parseDiag.malformed - before} node block(s) have no :ref line and cannot be cited`);
+    }
+  }
+  return { allNodes, issues };
+}
+
+/**
  * Pulls this stage's coverage check off whatever a GraphLog JOB returned,
  * for both shapes that can carry one: a full `"run"` (coverage sits at the
  * top level beside `incomplete`) and a lone `"graph-project-view"` job
@@ -1345,6 +1379,22 @@ export function coverageFromJobResult(result: unknown): {
     threadsFellAway: strings(c.fellAway),
     droppedFiles: strings(c.missingFiles),
   };
+}
+
+/**
+ * Whether the job that produced `result` edited README.md, read the way
+ * `coverageFromJobResult` reads coverage. Keyed on the job name because
+ * the two jobs that touch the README return it under different names (the
+ * pipeline lifts it to `readmeChanged`; the lone stage has `changed`), and
+ * every other job's `changed`, if it has one, is about a different file.
+ * `null` for those: not "unchanged", not known.
+ */
+export function readmeChangedFromJobResult(jobName: string, result: unknown): boolean | null {
+  if (!result || typeof result !== "object") return null;
+  const r = result as Record<string, unknown>;
+  if (jobName === "run") return typeof r.readmeChanged === "boolean" ? r.readmeChanged : null;
+  if (jobName === "graph-project-view") return typeof r.changed === "boolean" ? r.changed : null;
+  return null;
 }
 
 /**
@@ -1452,45 +1502,43 @@ export async function runGraphProjectView(
     return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [reason] };
   }
   if (meta.appliedByProjectView === meta.asOfGraphHash) {
+    // The README is not rewritten, but it still exists and the graph is
+    // still the graph, so coverage is measurable and gets measured. This
+    // used to return `coverage: null`, which the run page reads (correctly)
+    // as "graph-project-view never reached a clean finish" -- on a run
+    // where nothing was wrong. A warning that fires on the normal state
+    // is training to ignore the warning; the no-op run on production
+    // read that way the first time anyone did one.
     log("graph-project-view: up to date, nothing changed since last run.");
-    return { ok: true, skipped: false, changed: false, summary: [], coverage: null, incomplete: [] };
+    const { allNodes } = await loadGraphNodes(files);
+    const readme = await getReadmeFileForFolder(projectFolder.human_id, projectFolder._id);
+    const coverage = readme
+      ? computeCoverageReport(
+          splitFrontmatter(structureFile.content).body,
+          stripIncompleteBanner(splitFrontmatter(readme.content ?? "").body),
+          new Map(allNodes.map((n) => [n.id, n])),
+        )
+      : null;
+    return { ok: true, skipped: false, changed: false, summary: [], coverage, incomplete: [] };
   }
 
   // 1.1's own floor+ceiling (ADR-006): read every graph-log file's real
   // node text, not just graph-structure.md's own glosses, so the model
   // has actual words to write from -- see `buildNodePrefetchBlock`/
   // `get_node`'s own doc for the full reasoning.
-  const graphLogListings = files
-    .map((f) => ({ listing: f, date: GRAPH_LOG_RE.exec(f.name)?.[1] }))
-    .filter((x): x is { listing: (typeof files)[number]; date: string } => !!x.date);
-  // Same accounting graph-structure does on its own read of the graph
-  // (ADR-016): a day with no content and a node block with no `:ref`
-  // line are both nodes the README can never cite, and both used to
-  // vanish here without a line anywhere.
-  const loadIssues: string[] = [];
   // The README's shape, from this project's own PROJECT_VIEW.md -- see
   // `resolveSectionOrder`. A skill whose shape cannot be read falls back
   // to the built-in list and says so on every return below.
   const { order: sectionOrder, reason: shapeReason } = resolveSectionOrder(skill);
+  const loadIssues: string[] = [];
   if (shapeReason) {
     loadIssues.push(shapeReason);
     log(`graph-project-view: ${shapeReason}.`);
   }
-  const allNodes: GraphLogNode[] = [];
-  const parseDiag = { malformed: 0 };
-  for (const { listing, date } of graphLogListings) {
-    const file = await getFileRefById(listing._id);
-    if (!file?.content) {
-      loadIssues.push(`${listing.name} exists but has no content, so its nodes cannot reach the README`);
-      continue;
-    }
-    const before = parseDiag.malformed;
-    allNodes.push(...parseGraphLogNodes(date, splitFrontmatter(file.content).body, parseDiag));
-    if (parseDiag.malformed > before) {
-      loadIssues.push(`${listing.name}: ${parseDiag.malformed - before} node block(s) have no :ref line and cannot be cited`);
-    }
-  }
-  for (const issue of loadIssues) log(`graph-project-view: ${issue}.`);
+  const loaded = await loadGraphNodes(files);
+  const allNodes = loaded.allNodes;
+  loadIssues.push(...loaded.issues);
+  for (const issue of loaded.issues) log(`graph-project-view: ${issue}.`);
   const allNodesById = new Map(allNodes.map((n) => [n.id, n]));
   const structureSections = splitReadmeSections(splitFrontmatter(structureFile.content).body);
   const validNodeIds = buildMembershipIndex(structureSections);

@@ -21,7 +21,7 @@ import {
 import { runSyncKnowledge } from "robustness-core/data/syncKnowledge.server";
 import { runSyncGraph } from "robustness-core/data/syncGraph.server";
 import { runGraphStructure } from "robustness-core/data/graphStructure.server";
-import { coverageFromJobResult, runGraphProjectView, syncReadmeIncompleteBanner } from "robustness-core/data/graphProjectView.server";
+import { coverageFromJobResult, readmeChangedFromJobResult, runGraphProjectView, syncReadmeIncompleteBanner } from "robustness-core/data/graphProjectView.server";
 import { runGraphLogPipeline } from "robustness-core/data/graphLogAgent.server";
 import {
   resetProjectView,
@@ -236,6 +236,7 @@ async function processGraphLogJob(job: Job<GraphLogJobData, unknown, GraphLogJob
         incomplete: collectIncomplete(result),
         stats: collectRunStats(result),
         coverage: coverageFromJobResult(result),
+        readmeChanged: readmeChangedFromJobResult(job.name, result),
       });
       return result;
     } finally {

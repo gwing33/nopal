@@ -103,6 +103,12 @@ export type GraphLogRun = Data & {
     threads_fell_away: string[];
     dropped_files: string[];
   } | null;
+  /** Whether this run edited README.md. Read next to `coverage`: a
+   * coverage figure on a run that changed nothing was measured against
+   * the README as it already stood, and the run page says which. `null`
+   * for a job that never touches the README (a reset, a sync-only job)
+   * and for rows written before this field existed. */
+  readme_changed: boolean | null;
 };
 
 export type GraphLogRunEvent = Data & {
@@ -299,6 +305,7 @@ export async function finishGraphLogRun(
       threadsFellAway: string[];
       droppedFiles: string[];
     } | null;
+    readmeChanged?: boolean | null;
   },
 ): Promise<void> {
   try {
@@ -335,6 +342,7 @@ export async function finishGraphLogRun(
             dropped_files: outcome.coverage.droppedFiles,
           }
         : null,
+      readme_changed: outcome.readmeChanged ?? null,
     });
   } catch (err) {
     console.error("GraphLog run tracking failed to finish (non-fatal):", err);

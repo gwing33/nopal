@@ -53,6 +53,7 @@ import {
   resolveSectionOrder,
   unknownHeadings,
   type UncitedThread,
+  readmeChangedFromJobResult,
 } from "robustness-core/data/graphProjectView.server";
 import { classifyStageSkill, isSkipInstruction } from "robustness-core/data/projectN02.server";
 import { DEFAULT_PROJECT_VIEW_SKILL } from "robustness-core/data/graphLogDefaults.server";
@@ -833,6 +834,30 @@ describe("an incomplete README carries its own warning", () => {
 //
 // The trap for a future edit is that `?? { uncitedThreads: [], ... }`
 // looks like a tidy way to drop a null check.
+
+describe("a no-op run says which README its coverage was measured against", () => {
+  // The first no-op run on production read "graph-project-view never
+  // reached a clean finish" because the up-to-date path returned null
+  // coverage. Coverage is now measured against the README the run left
+  // alone, and this flag is how the run page says so instead of "the
+  // finished README", which would claim this run wrote it.
+  it("reads the pipeline's lifted flag for a full run", () => {
+    expect(readmeChangedFromJobResult("run", { readmeChanged: false, coverage: null })).toBe(false);
+    expect(readmeChangedFromJobResult("run", { readmeChanged: true })).toBe(true);
+  });
+
+  it("reads the lone stage's own `changed` only for that stage's job", () => {
+    expect(readmeChangedFromJobResult("graph-project-view", { changed: false })).toBe(false);
+    // graph-structure's `changed` is about graph-structure.md, not the README.
+    expect(readmeChangedFromJobResult("graph-structure", { changed: true })).toBeNull();
+    expect(readmeChangedFromJobResult("reset", { changed: true })).toBeNull();
+  });
+
+  it("is null, never false, when the fact is absent", () => {
+    expect(readmeChangedFromJobResult("run", {})).toBeNull();
+    expect(readmeChangedFromJobResult("run", null)).toBeNull();
+  });
+});
 
 describe("coverage: null means not measured, never clean", () => {
   const clean = { missingThreads: [], fellAway: [], missingFiles: [] };
