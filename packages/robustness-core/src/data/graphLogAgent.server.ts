@@ -76,6 +76,12 @@ export type GraphLogPipelineResult =
        * (the view stage never reached a clean finish), never "measured and
        * clean" — see `GraphLogRun.coverage`. */
       coverage: CoverageReport | null;
+      /** Whether `graph-project-view` edited README.md this run. Beside
+       * `coverage` rather than inside `stats` for the same reason coverage
+       * is: it is a fact about the README, and the run page needs it to
+       * say whether a coverage figure was measured against a README this
+       * run wrote or one it left alone. */
+      readmeChanged: boolean;
       /** 1.7's denominators, so cost becomes a RATE rather than a total.
        *
        * The per-run and per-stage cost was already recorded; what was
@@ -248,6 +254,7 @@ export async function runGraphLogPipeline(
     // not reach a clean finish, which is most of the runs worth looking
     // at -- the reader has to say "not measured", never "clean".
     coverage: graphProjectView.coverage,
+    readmeChanged: graphProjectView.changed,
     stats,
   };
 }

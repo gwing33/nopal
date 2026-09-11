@@ -132,7 +132,10 @@ export function ErrorBoundary() {
 function formatDatetime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("en-US", {
+  // Says which zone it is. The project page formats in the viewer's own
+  // zone, so a start time here that read "1:31 AM" next to "6:31 PM"
+  // there looked like a bug rather than a deliberate pin.
+  return `${d.toLocaleString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -140,7 +143,7 @@ function formatDatetime(iso: string): string {
     minute: "2-digit",
     second: "2-digit",
     timeZone: "UTC",
-  });
+  })} UTC`;
 }
 
 function formatDuration(ms: number | null): string {
@@ -229,9 +232,11 @@ function CoverageList({ label, items }: { label: string; items: string[] }) {
 function CoverageSection({
   jobName,
   coverage,
+  readmeChanged,
 }: {
   jobName: string;
   coverage: GraphLogRun["coverage"];
+  readmeChanged: boolean | null;
 }) {
   // A reset or a sync-only job never had a README to measure. Saying
   // "not measured" there would be noise, not signal.
@@ -245,19 +250,23 @@ function CoverageSection({
     );
   }
 
+  // A no-op run measures against the README it left alone; the figure is
+  // just as real, but "the finished README" would imply this run wrote
+  // it. Rows from before `readme_changed` existed read as written.
+  const against = readmeChanged === false ? "the README, unchanged this run" : "the finished README";
   const total =
     coverage.uncited_threads.length + coverage.threads_fell_away.length + coverage.dropped_files.length;
   if (total === 0) {
     return (
       <p className="text-sm subtle-text" style={{ margin: 0, marginTop: "12px" }}>
-        Coverage checked: every thread in the graph is cited somewhere in the README.
+        Coverage checked against {against}: every thread in the graph is cited somewhere in it.
       </p>
     );
   }
 
   return (
     <div className="text-sm" style={{ marginTop: "12px" }}>
-      <p style={{ margin: 0 }}>Coverage checked against the finished README.</p>
+      <p style={{ margin: 0 }}>Coverage checked against {against}.</p>
       <CoverageList label="thread(s) the README cites nothing from" items={coverage.uncited_threads} />
       <CoverageList label="thread(s) fell away (dormant, no Due, no Blocking)" items={coverage.threads_fell_away} />
       <CoverageList label="attached file(s) dropped from a featured node" items={coverage.dropped_files} />
@@ -452,7 +461,7 @@ export default function FruitsMakerGraphLogRun() {
               </ul>
             </div>
           )}
-          <CoverageSection jobName={run.job_name} coverage={run.coverage ?? null} />
+          <CoverageSection jobName={run.job_name} coverage={run.coverage ?? null} readmeChanged={run.readme_changed ?? null} />
         </div>
 
         <div className="flex items-center gap-3 mb-3 flex-wrap">

@@ -1066,7 +1066,20 @@ export async function runGraphStructure(
 
   if (existing && existingMeta.asOfGraphHash === newHash) {
     log("graph-structure: up to date, nothing changed since last run.");
-    return { ok: true, skipped: false, changed: false, graphNodeCount: null, threadCount: null, incomplete: loadIssues };
+    // Both counts are already in hand here (every node was just parsed
+    // to compute the hash, and the index is the file being compared), so
+    // a no-op run reports the graph's size like any other. Returning
+    // null made the run header drop its "graph now N node(s)" line on
+    // exactly the runs where nothing else on the page says how big the
+    // graph is.
+    return {
+      ok: true,
+      skipped: false,
+      changed: false,
+      graphNodeCount: allNodes.length,
+      threadCount: countNamedClusters(splitReadmeSections(splitFrontmatter(existing.content ?? "").body)),
+      incomplete: loadIssues,
+    };
   }
 
   if (allNodes.length === 0) {
