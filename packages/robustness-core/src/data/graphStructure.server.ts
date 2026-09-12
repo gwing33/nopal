@@ -140,7 +140,7 @@ import { AnthropicProvider, isGraphLogAgentConfigured } from "./anthropicProvide
 import { classifyGraphLogError, recordGraphLogUsage } from "./graphLogMetrics.server";
 import { noopGraphLogRunRecorder, type GraphLogPerfRecorder } from "./graphLogPerf.server";
 import { throwIfGraphLogCancelled } from "./graphLogQueue.server";
-import { planTurnToolCalls } from "./llmProvider";
+import { headingText, planTurnToolCalls } from "./llmProvider";
 import type { LlmMessage, LlmProvider, LlmUsage, ToolDefinition } from "./llmProvider";
 
 const GRAPH_STRUCTURE_FILE_NAME = "graph-structure.md";
@@ -647,7 +647,7 @@ function createStructureExecutors(input: {
 
   const executors: Record<string, (toolInput: Record<string, unknown>) => Promise<string>> = {
     update_cluster: async (toolInput) => {
-      const heading = String(toolInput.heading ?? "").trim();
+      const heading = headingText(String(toolInput.heading ?? ""));
       const content = String(toolInput.content ?? "");
       if (!heading) return "Error: heading is required";
       const key = heading.toLowerCase();
@@ -669,7 +669,7 @@ function createStructureExecutors(input: {
       return `${existing ? "Updated" : "Added"} cluster "${heading}".`;
     },
     remove_cluster: async (toolInput) => {
-      const heading = String(toolInput.heading ?? "").trim();
+      const heading = headingText(String(toolInput.heading ?? ""));
       const key = heading.toLowerCase();
       const existingIndex = currentSections.findIndex((s) => s.heading.toLowerCase() === key);
       if (existingIndex === -1) return `Error: no cluster named "${heading}" found`;
@@ -1186,7 +1186,7 @@ export async function runGraphStructure(
 
   const runCallStart = Date.now();
   try {
-    const llm = opts.provider ?? new AnthropicProvider();
+    const llm = opts.provider ?? AnthropicProvider.forStage("graph-structure");
     const callCounter = { count: 0 };
 
     for (const [batchIndex, batchNodes] of batches.entries()) {

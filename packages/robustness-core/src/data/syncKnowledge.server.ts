@@ -294,7 +294,7 @@ export async function runSyncKnowledge(
     const callStart = Date.now();
     try {
       if (isImage || isVideo) {
-        photoLlm ??= new AnthropicProvider();
+        photoLlm ??= AnthropicProvider.forStage("sync-knowledge");
         const bytes = await perf.time("sync-knowledge", "api", "downloadFileBytes", { fileId: source._id }, () =>
           downloadFileBytes(source.s3_key!),
         );
@@ -354,7 +354,7 @@ export async function runSyncKnowledge(
           durationMs,
         });
       } else if (source.content) {
-        textLlm ??= new AnthropicProvider();
+        textLlm ??= AnthropicProvider.forStage("sync-knowledge");
         const cacheSystemPrompt = realTextCallsSoFar > 0;
         realTextCallsSoFar++;
         const response = await textLlm.complete({

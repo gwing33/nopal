@@ -161,19 +161,60 @@ export function cutOffHeading<T extends { input: Record<string, unknown> }>(
 export function cutOffSourceIndex<T extends { input: Record<string, unknown> }>(
   calls: T[],
   stopReason: StopReason,
+  /** The cut-off call's raw JSON prefix, when the provider streamed it
+   * (`LlmResponse.partialToolCall`). The API drops an unfinished
+   * `tool_use` block from the final message entirely, so on a real cut
+   * this is usually the ONLY place the index survives. */
+  partialToolJson?: string | null,
 ): number | null {
   if (stopReason !== "max_tokens") return null;
   const last = calls[calls.length - 1];
-  if (!last) return null;
-  const index = last.input?.sourceIndex;
-  return typeof index === "number" && Number.isInteger(index) ? index : null;
+  const index = last?.input?.sourceIndex;
+  if (typeof index === "number" && Number.isInteger(index)) return index;
+  const fromPrefix = partialToolJson ? /"sourceIndex"\s*:\s*(\d+)/.exec(partialToolJson)?.[1] : undefined;
+  return fromPrefix !== undefined ? Number(fromPrefix) : null;
 }
+
+/**
+ * A heading the model wrote, as a heading: leading markdown hashes and
+ * the whitespace after them removed. Two models in the same test handed
+ * `update_cluster` the value "## Siding install", and code that only
+ * trimmed whitespace wrote `## ## Siding install` into graph-structure.md.
+ * The tool asks for the heading TEXT; this makes the code read it that
+ * way whatever the model does.
+ */
+export function headingText(raw: string): string {
+  return raw.trim().replace(/^#+\s*/, "").trim();
+}
+
+/** How hard the model is asked to think on one call. Maps to the API's
+ * `output_config.effort`; the API default is `high`. Passed per call so a
+ * stage that selects lines (extraction) and a stage that judges (the
+ * README) can spend differently -- see `AnthropicProvider`. */
+export type LlmEffort = "low" | "medium" | "high" | "xhigh" | "max";
 
 export type LlmResponse = {
   /** Any plain text the model produced alongside (or instead of) a tool
    * call — e.g. its reasoning for NOT calling a tool this turn. */
   text: string | null;
   toolCalls: ToolCall[];
+  /** What the model spent on deliberation before (or instead of) any
+   * content this call. On the current model family thinking is ON BY
+   * DEFAULT and its tokens count against `max_tokens`, and nothing here
+   * surfaced it: a turn that hit the limit with `text` null and
+   * `toolCalls` empty read as "the model produced nothing", when it had
+   * produced 8192 tokens of thinking and been cut off before the first
+   * tool call. That is exactly how a real day was lost. `blocks` is how
+   * many thinking blocks arrived; `text` is the API's summary of them
+   * (requested by the provider), null when the model did not think or
+   * no summary was returned. */
+  thinking: { blocks: number; text: string | null };
+  /** The `tool_use` block that was still being generated when the model
+   * hit `max_tokens`, as the raw JSON prefix streamed so far. The final
+   * message omits an unfinished block entirely, so without streaming a
+   * cut mid-call is indistinguishable from a call that never started.
+   * Null on every other stop, and when the cut fell outside a tool call. */
+  partialToolCall: { name: string; inputJson: string } | null;
   stopReason: StopReason;
   usage: LlmUsage;
   /** Which model actually served this call — for usage tracking
@@ -205,6 +246,8 @@ export interface LlmProvider {
      * a WHOLE graph's total node count and keeps growing for as long as
      * the project exists). Omit for the provider's own normal default. */
     maxTokens?: number;
+    /** See `LlmEffort`. Omit for the provider's own default. */
+    effort?: LlmEffort;
   }): Promise<LlmResponse>;
 }
 
