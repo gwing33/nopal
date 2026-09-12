@@ -8,7 +8,7 @@
 // silently drifting in production, which is how every one of these
 // behaviors would otherwise break.
 
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect } from "vitest";
 import {
   capNodeLinks,
   MAX_LINKS_PER_NODE,
@@ -64,7 +64,8 @@ import {
   withIncompleteBanner,
   type ReadmeSection,
 } from "robustness-core/data/project.types";
-import { completedToolCalls, cutOffHeading, cutOffSourceIndex, planTurnToolCalls } from "robustness-core/data/llmProvider";
+import { completedToolCalls, cutOffHeading, cutOffSourceIndex, headingText, planTurnToolCalls } from "robustness-core/data/llmProvider";
+import { modelForStage } from "robustness-core/data/anthropicProvider.server";
 import {
   formatSeconds,
   frameTimestamps,
@@ -589,6 +590,20 @@ describe("ADR-013: a pass ending is classified, not collapsed", () => {
       .toContain("before it started any node");
   });
 
+  it("a stuck pass that thought to the limit says so", () => {
+    // The shape a real day was lost to: thinking is on by default, its
+    // tokens count against max_tokens, and the turn returned neither text
+    // nor a call. "Before it started any node" was true and useless; the
+    // fix for this is room to think or less effort, not a smaller node.
+    const thought = classifyPassEnding({ ...base, added: 0, truncated: true, hitMaxTurns: false, cutOffSource: null, cutOffThinking: true });
+    expect(thought.shortfall).toBe(
+      "a pass was cut off by the model's own output limit after spending the whole limit thinking, before it started any node",
+    );
+    // A known source outranks the thinking wording: mid-node is mid-node.
+    const midNode = classifyPassEnding({ ...base, added: 0, truncated: true, hitMaxTurns: false, cutOffSource: 2, cutOffThinking: true });
+    expect(midNode.shortfall).toContain("while writing a node for Source 2");
+  });
+
   it("reports the cap as a shortfall only when the last pass was still productive", () => {
     const atCapProductive = classifyPassEnding({ ...base, passesCompleted: 8, added: 5, truncated: false, hitMaxTurns: false });
     expect(atCapProductive).toEqual({ stop: true, shortfall: "still finding new nodes after 8 passes" });
@@ -1034,6 +1049,52 @@ describe("a cut-off add_node names its source, read before the call is dropped",
 
   it("names the LAST call, the only one that can be partial", () => {
     expect(cutOffSourceIndex([{ input: { sourceIndex: 0, blocks: [] } }, { input: { sourceIndex: 4 } }], "max_tokens")).toBe(4);
+  });
+
+  it("reads the index off the streamed JSON prefix when the API dropped the block", () => {
+    // The final message omits a tool_use block that was cut off, so the
+    // calls list is EMPTY on exactly the cut this exists for. The
+    // provider streams the prefix; this is the only place the index
+    // survives.
+    expect(cutOffSourceIndex([], "max_tokens", '{"sourceIndex": 3, "blocks": [{"type":"paragraph","text":"Need to g')).toBe(3);
+    expect(cutOffSourceIndex([], "max_tokens", '{"sourceInd')).toBeNull();
+    expect(cutOffSourceIndex([], "max_tokens", null)).toBeNull();
+    // A complete call in the list still wins over the prefix.
+    expect(cutOffSourceIndex([{ input: { sourceIndex: 1 } }], "max_tokens", '{"sourceIndex": 9')).toBe(1);
+  });
+});
+
+describe("a heading the model wrote is read as heading text", () => {
+  it("strips leading markdown hashes, which two models added in the same test", () => {
+    expect(headingText("## Siding install")).toBe("Siding install");
+    expect(headingText("  ###   Toilet water line  ")).toBe("Toilet water line");
+    expect(headingText("Siding install")).toBe("Siding install");
+    expect(headingText("")).toBe("");
+  });
+});
+
+describe("each stage runs on its measured model and effort", () => {
+  // The grid of 2026-09-11 (see STAGE_DEFAULTS). Pinned so a change here
+  // is a decision, not a drift.
+  const saved = { ...process.env };
+  afterEach(() => { for (const k of Object.keys(process.env)) if (k.startsWith("PHYLOG_ANTHROPIC")) delete process.env[k]; Object.assign(process.env, saved); });
+
+  it("defaults: Sonnet medium for extraction, Sonnet high for structure, Opus medium for the README", () => {
+    for (const k of Object.keys(process.env)) if (k.startsWith("PHYLOG_ANTHROPIC")) delete process.env[k];
+    expect(modelForStage("sync-graph")).toEqual({ model: "claude-sonnet-5", effort: "medium" });
+    expect(modelForStage("graph-structure")).toEqual({ model: "claude-sonnet-5", effort: "high" });
+    expect(modelForStage("graph-project-view")).toEqual({ model: "claude-opus-5", effort: "medium" });
+    expect(modelForStage("sync-knowledge")).toEqual({ model: "claude-sonnet-5" });
+  });
+
+  it("a per-stage env override beats the global one, which beats the table", () => {
+    process.env.PHYLOG_ANTHROPIC_MODEL = "claude-haiku-4-5";
+    expect(modelForStage("graph-project-view").model).toBe("claude-haiku-4-5");
+    process.env.PHYLOG_ANTHROPIC_MODEL_GRAPH_PROJECT_VIEW = "claude-opus-5";
+    expect(modelForStage("graph-project-view").model).toBe("claude-opus-5");
+    expect(modelForStage("sync-graph").model).toBe("claude-haiku-4-5");
+    process.env.PHYLOG_ANTHROPIC_EFFORT_SYNC_GRAPH = "low";
+    expect(modelForStage("sync-graph").effort).toBe("low");
   });
 });
 

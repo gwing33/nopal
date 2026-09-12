@@ -874,6 +874,12 @@ export function classifyPassEnding(input: {
    * any node was started. Only read in the STUCK case; a productive pass
    * that also truncated keeps going and the turn event carries the detail. */
   cutOffSource?: number | null;
+  /** When `truncated` and no node was started: whether the cut-off turn
+   * had produced thinking and nothing else. That is the shape a real day
+   * was lost to (thinking is on by default and counts against the output
+   * limit), and it wants a different fix (room to think, or less effort)
+   * than a node that grew too big. */
+  cutOffThinking?: boolean;
 }): { stop: boolean; shortfall: string | null } {
   if (input.added > 0) {
     // Productive. Only the cap can stop us here, and if it does, the cap
@@ -890,7 +896,9 @@ export function classifyPassEnding(input: {
     const doing =
       typeof input.cutOffSource === "number"
         ? `while writing a node for Source ${input.cutOffSource}, before capturing anything`
-        : "before it started any node";
+        : input.cutOffThinking
+          ? "after spending the whole limit thinking, before it started any node"
+          : "before it started any node";
     return {
       stop: true,
       shortfall: `a pass was cut off by the model's own output limit ${doing}`,
@@ -920,8 +928,9 @@ async function runSyncGraphDayLoop(
   model: string | null;
   truncated: boolean;
   hitMaxTurns: boolean;
-  /** See `classifyPassEnding`'s `cutOffSource`. */
+  /** See `classifyPassEnding`'s `cutOffSource` and `cutOffThinking`. */
   cutOffSource: number | null;
+  cutOffThinking: boolean;
 }> {
   const messages: LlmMessage[] = [{ role: "user", content: userPrompt }];
   const usage: LlmUsage = { inputTokens: 0, outputTokens: 0 };
@@ -929,6 +938,7 @@ async function runSyncGraphDayLoop(
   let truncated = false;
   let hitMaxTurns = false;
   let cutOffSource: number | null = null;
+  let cutOffThinking = false;
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     // Stop checkpoint (see `graphLogQueue.server.ts`'s own "Cooperative
@@ -978,6 +988,17 @@ async function runSyncGraphDayLoop(
         turn: turn + 1,
         stopReason: response.stopReason,
         toolCalls: response.toolCalls.map((c) => c.name),
+        // Where the output tokens went. A turn that reports 8192 tokens
+        // and no tool call is not "the model produced nothing"; it is
+        // usually the model thinking to the limit, and until this was
+        // recorded that turn was unreadable from the run page.
+        thinkingBlocks: response.thinking.blocks,
+        thinking: response.thinking.text ? response.thinking.text.slice(0, 4000) : null,
+        // The cut-off call's JSON as far as it got, on a cut only. The
+        // API drops the block, so this is the only record of it.
+        partialToolCall: response.partialToolCall
+          ? { name: response.partialToolCall.name, inputJson: response.partialToolCall.inputJson.slice(0, 2000) }
+          : null,
         text: response.text?.trim() ? response.text.trim().slice(0, 8000) : null,
       },
       durationMs: Date.now() - turnStart,
@@ -999,8 +1020,14 @@ async function runSyncGraphDayLoop(
       // captured -- picks up the rest. Same shape as graph-project-view;
       // the pass loop is this stage's recovery mechanism, not a retry.
       truncated = true;
-      // Read off the dropped call BEFORE `completedToolCalls` drops it.
-      cutOffSource = cutOffSourceIndex(response.toolCalls, response.stopReason);
+      // Read off the dropped call BEFORE `completedToolCalls` drops it --
+      // from the streamed prefix when the API dropped the block itself.
+      cutOffSource = cutOffSourceIndex(response.toolCalls, response.stopReason, response.partialToolCall?.inputJson);
+      cutOffThinking =
+        cutOffSource === null &&
+        response.toolCalls.length === 0 &&
+        !response.text?.trim() &&
+        response.thinking.blocks > 0;
       for (const { call, execute } of planTurnToolCalls(
         completedToolCalls(response.toolCalls, response.stopReason),
         () => true,
@@ -1045,7 +1072,7 @@ async function runSyncGraphDayLoop(
     if (turn === MAX_TURNS - 1) hitMaxTurns = true;
   }
 
-  return { usage, model, truncated, hitMaxTurns, cutOffSource };
+  return { usage, model, truncated, hitMaxTurns, cutOffSource, cutOffThinking };
 }
 
 function buildSystemPrompt(skillContent: string, graphStructureBody: string | null): string {
@@ -1483,7 +1510,7 @@ export async function runSyncGraph(
 
     const callStart = Date.now();
     try {
-      textLlm ??= new AnthropicProvider();
+      textLlm ??= AnthropicProvider.forStage("sync-graph");
 
       // A DAY IS A LOOP OF PASSES, NOT ONE CONVERSATION.
       //
@@ -1521,7 +1548,7 @@ export async function runSyncGraph(
           regenerating: !!existing || [...structureIds.keys()].some((id) => id.startsWith(`${date}#`)),
           alreadyCaptured: getCapturedSummaries(),
         });
-        const { usage, model, truncated, hitMaxTurns, cutOffSource } = await runSyncGraphDayLoop(
+        const { usage, model, truncated, hitMaxTurns, cutOffSource, cutOffThinking } = await runSyncGraphDayLoop(
           textLlm,
           // A day the structure already lists gets the structure without
           // its own previous nodes (see `stripDayFromStructure`) -- whether
@@ -1555,6 +1582,7 @@ export async function runSyncGraph(
           maxPasses: MAX_PASSES_PER_DAY,
           maxTurns: MAX_TURNS,
           cutOffSource,
+          cutOffThinking,
         });
         shortfall = ending.shortfall;
         if (ending.stop) break;

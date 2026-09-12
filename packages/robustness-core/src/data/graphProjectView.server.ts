@@ -123,7 +123,7 @@ import { AnthropicProvider, isGraphLogAgentConfigured } from "./anthropicProvide
 import { classifyGraphLogError, recordGraphLogUsage } from "./graphLogMetrics.server";
 import { noopGraphLogRunRecorder, type GraphLogPerfRecorder } from "./graphLogPerf.server";
 import { throwIfGraphLogCancelled } from "./graphLogQueue.server";
-import { completedToolCalls, cutOffHeading, planTurnToolCalls } from "./llmProvider";
+import { completedToolCalls, cutOffHeading, headingText, planTurnToolCalls } from "./llmProvider";
 import type { LlmMessage, LlmProvider, LlmUsage, ToolCall, ToolDefinition } from "./llmProvider";
 
 const GRAPH_STRUCTURE_FILE_NAME = "graph-structure.md";
@@ -483,7 +483,7 @@ function createReadmeExecutors(input: {
         refuse("refused a malformed update_section (heading/content missing; likely a cut-off call)");
         return 'Error: update_section needs both "heading" and "content" as strings. Nothing was written.';
       }
-      const heading = normalizeIntroHeading(toolInput.heading.trim());
+      const heading = normalizeIntroHeading(headingText(toolInput.heading));
       const content = toolInput.content;
       const key = heading.toLowerCase();
 
@@ -551,7 +551,7 @@ function createReadmeExecutors(input: {
         refuse("refused a malformed remove_section (heading missing; likely a cut-off call)");
         return 'Error: remove_section needs "heading" as a string. Nothing was removed.';
       }
-      const heading = normalizeIntroHeading(toolInput.heading.trim());
+      const heading = normalizeIntroHeading(headingText(toolInput.heading));
       const key = heading.toLowerCase();
 
       if (key === PROTECTED_HEADING) {
@@ -1660,7 +1660,7 @@ export async function runGraphProjectView(
 
   const callStart = Date.now();
   try {
-    const llm = opts.provider ?? new AnthropicProvider();
+    const llm = opts.provider ?? AnthropicProvider.forStage("graph-project-view");
 
     // A RUN IS A LOOP OF PASSES, NOT ONE CONVERSATION.
     //
